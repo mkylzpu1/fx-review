@@ -10,6 +10,7 @@ import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { CallbackPage } from "@/features/auth/pages/CallbackPage";
 import { RequireOnboarded } from "@/features/onboarding/components/RequireOnboarded";
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
+import { RulesPage } from "@/features/rules/pages/RulesPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { ROUTES } from "@/constants/routes";
 
@@ -23,7 +24,6 @@ const PLACEHOLDERS: { path: string; title: string }[] = [
   { path: ROUTES.TRADE_IMPORT, title: "CSV取り込み" },
   { path: ROUTES.TRADE_DETAIL, title: "トレード詳細" },
   { path: ROUTES.TRADE_EDIT, title: "トレード編集" },
-  { path: ROUTES.RULES, title: "ルール" },
   { path: ROUTES.RULE_DETAIL, title: "ルール詳細" },
   { path: ROUTES.NOTES, title: "学習メモ" },
   { path: ROUTES.NOTE_DETAIL, title: "AI分析の結果" },
@@ -58,6 +58,7 @@ export function App() {
                       element={<OnboardingPage />}
                     />
                     <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+                    <Route path={ROUTES.RULES} element={<RulesPage />} />
                     <Route
                       path="/"
                       element={<Navigate to={ROUTES.STATS} replace />}
