@@ -173,3 +173,45 @@ export function useCreateItem() {
 | `POST` | `/tags` | 追加 `{ kind, name }`。削除済みの同名タグは復活させる |
 | `PUT` | `/tags/{id}` | 名前・並び順の更新 `{ name?, sortOrder? }` |
 | `DELETE` | `/tags/{id}` | 論理削除（過去のトレードに付いたタグは残る） |
+
+---
+
+## FXレビュー: P1 エンドポイント
+
+すべて認証必須。一覧系は `{ items, total, page, limit }`（ページング）を返す。
+
+### ルール
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| `GET` | `/rules` | 一覧（並び順どおり。無効なルールも含む） |
+| `GET` | `/rules/{id}` | 1件取得（遵守率の推移・破ったトレードはP4で追加） |
+| `POST` | `/rules` | 追加 `{ title, description?, autoKey?, isActive? }`。並び順は末尾 |
+| `PUT` | `/rules/{id}` | 更新 `{ title?, description?, isActive?, sortOrder?, autoKey? }`。無効化しても過去の判定は残る |
+| `DELETE` | `/rules/{id}` | 削除（そのルールの過去の判定も消える。通常は無効化を使う） |
+
+`autoKey`: `sl_set` / `risk_within_limit` / `hold_to_tp` / `null`（手動チェック）
+
+### トレード
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| `GET` | `/trades` | 一覧。`result=win\|loss`, `deviationOnly=true`, `q`（メモ・理由・洞察の部分一致）, `pair`, `from`, `to`（ISO日時）, `pending=true`（入力のないトレードのみ）, `sort=entry_desc\|entry_asc\|pnl_desc\|pnl_asc`, `page`(1〜), `limit`(1〜100, 既定20) |
+| `POST` | `/trades` | 新規作成。`draft: true` で下書き |
+| `GET` | `/trades/{id}` | 詳細（導出値つき） |
+| `PUT` | `/trades/{id}` | 更新（決済入力・書き足しもこれ） |
+| `DELETE` | `/trades/{id}` | 論理削除（`POST .../restore` で取り消せる） |
+| `POST` | `/trades/{id}/restore` | 削除の取り消し |
+| `GET` | `/trades/queue` | 未入力キュー。`filter=all\|sl_tp\|no_rationale\|open\|loss`, `sort`, `page`, `limit`。`pendingCount`・`totalCount`・`filledCount` も返す |
+
+`POST` / `PUT` ボディ:
+`pair`, `side`(`buy|sell`), `lots`(>0, 小数2桁), `entryAt`(ISO・オフセット付き), `entryPrice`,
+任意: `slPrice`, `tpPrice`, `slReason`, `tpReason`, `rationaleMemo`, `confidence`(1〜5), `exitAt`, `exitPrice`, `exitMethod`(`tp|sl|manual|breakeven`), `insight`, `nextRule`, `draft`, `tagIds[]`, `ruleChecks[{ruleId,result}]`
+
+検証: 買いのSLはエントリーより低く、売りは高く（TPは逆）。`exitAt` と `exitPrice` は両方そろえて送る。
+RRが設定の最低値未満でも保存はできる（警告は画面側）。
+
+レスポンス（TradeView）は保存値に加えて、導出値 `pips`, `rMultiple`, `plannedRr`, `riskJpy`, `riskPct`, `holdMinutes`, `ruleResults`, `deviation`, `isUnfilled`, `missing` を含む。SLが無いトレードの `rMultiple` / `plannedRr` / `riskJpy` / `riskPct` は `null`。
+
+「入力のないトレード」（`isUnfilled`）の定義は `services/trade/unfilled.ts` の1か所:
+**未決済、または SL・TP・根拠タグがいずれも空**。
