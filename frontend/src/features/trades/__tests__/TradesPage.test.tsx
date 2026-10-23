@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -73,8 +73,9 @@ describe("トレード一覧", () => {
       ]),
     );
     renderPage();
-    expect(await screen.findByText("+30.0 pips")).toBeInTheDocument();
-    expect(screen.getByText("−12.5 pips")).toBeInTheDocument();
+    const table = within(await screen.findByRole("table"));
+    expect(table.getByText("+30.0 pips")).toBeInTheDocument();
+    expect(table.getByText("−12.5 pips")).toBeInTheDocument();
     expect(screen.getByText("⚠ ルール逸脱")).toBeInTheDocument();
     expect(screen.getByText("SL未入力")).toBeInTheDocument();
     expect(screen.getByText("根拠なし")).toBeInTheDocument();
@@ -84,7 +85,7 @@ describe("トレード一覧", () => {
   it("絞り込みはサーバーに渡し、該当なしなら条件を変える案内を出す", async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce(page([trade()]));
     renderPage();
-    await screen.findByText("+30.0 pips");
+    await screen.findByRole("table");
     vi.mocked(apiClient.get).mockResolvedValue(page([]));
     await userEvent.click(screen.getByRole("button", { name: "負け" }));
     await userEvent.click(screen.getByLabelText("ルール逸脱のみ"));
