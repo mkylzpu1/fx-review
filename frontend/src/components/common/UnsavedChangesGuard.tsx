@@ -4,8 +4,8 @@ import { ConfirmDialog } from "./ConfirmDialog";
 
 interface UnsavedChangesGuardProps {
   dirty: boolean;
-  /** 指定すると「下書き保存」ボタンを出す。保存後に移動する */
-  onSaveDraft?: () => Promise<void> | void;
+  /** 指定すると「下書き保存」ボタンを出す。保存後に移動する（false を返すと移動しない） */
+  onSaveDraft?: () => Promise<boolean | void> | boolean | void;
 }
 
 /** 未保存のまま画面を離れるとき確認する（ルート遷移＋タブを閉じる） */
@@ -37,8 +37,9 @@ export function UnsavedChangesGuard({
           ? {
               label: "下書き保存",
               onClick: async () => {
-                await onSaveDraft();
-                blocker.proceed?.();
+                const saved = await onSaveDraft();
+                if (saved === false) blocker.reset?.();
+                else blocker.proceed?.();
               },
             }
           : undefined
