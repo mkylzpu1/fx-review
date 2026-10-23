@@ -8,6 +8,9 @@ import { NotFoundPage } from "@/components/common/NotFoundPage";
 import { PlaceholderPage } from "@/components/common/PlaceholderPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { CallbackPage } from "@/features/auth/pages/CallbackPage";
+import { RequireOnboarded } from "@/features/onboarding/components/RequireOnboarded";
+import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
+import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { ROUTES } from "@/constants/routes";
 
 /** 後続フェーズで実装する画面（フェーズ完了時に実ページへ差し替える） */
@@ -25,9 +28,7 @@ const PLACEHOLDERS: { path: string; title: string }[] = [
   { path: ROUTES.NOTES, title: "学習メモ" },
   { path: ROUTES.NOTE_DETAIL, title: "AI分析の結果" },
   { path: ROUTES.EXPORT, title: "エクスポート" },
-  { path: ROUTES.SETTINGS, title: "設定" },
   { path: ROUTES.ACCOUNT, title: "アカウント" },
-  { path: ROUTES.ONBOARDING, title: "はじめに設定しましょう" },
 ];
 
 export function App() {
@@ -50,20 +51,27 @@ export function App() {
           element={
             <RequireAuth>
               <AppLayout>
-                <Routes>
-                  <Route
-                    path="/"
-                    element={<Navigate to={ROUTES.STATS} replace />}
-                  />
-                  {PLACEHOLDERS.map((p) => (
+                <RequireOnboarded>
+                  <Routes>
                     <Route
-                      key={p.path}
-                      path={p.path}
-                      element={<PlaceholderPage title={p.title} />}
+                      path={ROUTES.ONBOARDING}
+                      element={<OnboardingPage />}
                     />
-                  ))}
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
+                    <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
+                    <Route
+                      path="/"
+                      element={<Navigate to={ROUTES.STATS} replace />}
+                    />
+                    {PLACEHOLDERS.map((p) => (
+                      <Route
+                        key={p.path}
+                        path={p.path}
+                        element={<PlaceholderPage title={p.title} />}
+                      />
+                    ))}
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </RequireOnboarded>
               </AppLayout>
             </RequireAuth>
           }

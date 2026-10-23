@@ -14,10 +14,7 @@ export function LoginPage() {
         <p className="text-ink-sub text-sm text-center mb-8">
           Googleアカウントでログイン
         </p>
-        <button
-          onClick={handleLogin}
-          className="btn w-full gap-3"
-        >
+        <button onClick={handleLogin} className="btn w-full gap-3">
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
