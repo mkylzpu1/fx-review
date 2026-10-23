@@ -271,6 +271,96 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/tags/index.ts]
 
+  RulesListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/rules/index.listHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /rules
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/rules/index.ts]
+
+  RulesGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/rules/index.getHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /rules/{id}
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/rules/index.ts]
+
+  RulesCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/rules/index.createHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /rules
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/rules/index.ts]
+
+  RulesUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/rules/index.updateHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /rules/{id}
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/rules/index.ts]
+
+  RulesDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/rules/index.deleteHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /rules/{id}
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/rules/index.ts]
+
   # ─── TODO: 機能ハンドラーをここに追加する ───────────────
   # ExampleGetFunction:
   #   Type: AWS::Serverless::Function

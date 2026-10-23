@@ -1,6 +1,15 @@
 import { describe, it, expect } from "vitest";
 import {
-  slPips, tpPips, resultPips, rMultiple, riskReward, riskJpy, riskPct, pnlFromPips, validatePlan, holdMinutes,
+  slPips,
+  tpPips,
+  resultPips,
+  rMultiple,
+  riskReward,
+  riskJpy,
+  riskPct,
+  pnlFromPips,
+  validatePlan,
+  holdMinutes,
 } from "../../../src/services/trade/calc";
 import { judgeAuto } from "../../../src/services/trade/ruleJudge";
 
@@ -36,7 +45,9 @@ describe("価格・損益計算", () => {
     expect(pnlFromPips(-20, 1000, 0.5)).toBe(-10000);
   });
   it("保有時間", () => {
-    expect(holdMinutes("2026-10-01T00:00:00Z", "2026-10-01T01:30:00Z")).toBe(90);
+    expect(holdMinutes("2026-10-01T00:00:00Z", "2026-10-01T01:30:00Z")).toBe(
+      90,
+    );
     expect(holdMinutes("2026-10-01T00:00:00Z", null)).toBeNull();
   });
 });
@@ -59,20 +70,34 @@ describe("validatePlan", () => {
 });
 
 describe("judgeAuto", () => {
-  const base = { hasSl: true, hasTp: true, riskPct: 0.8, maxRiskPct: 1, exitMethod: "tp" as const };
+  const base = {
+    hasSl: true,
+    hasTp: true,
+    riskPct: 0.8,
+    maxRiskPct: 1,
+    exitMethod: "tp" as const,
+  };
   it("sl_set: SLがあればok、無ければna", () => {
     expect(judgeAuto("sl_set", base)).toBe("ok");
     expect(judgeAuto("sl_set", { ...base, hasSl: false })).toBe("na");
   });
   it("risk_within_limit: 上限ちょうどはok、超えたらng、SLなしはna", () => {
     expect(judgeAuto("risk_within_limit", { ...base, riskPct: 1 })).toBe("ok");
-    expect(judgeAuto("risk_within_limit", { ...base, riskPct: 1.01 })).toBe("ng");
-    expect(judgeAuto("risk_within_limit", { ...base, riskPct: null })).toBe("na");
+    expect(judgeAuto("risk_within_limit", { ...base, riskPct: 1.01 })).toBe(
+      "ng",
+    );
+    expect(judgeAuto("risk_within_limit", { ...base, riskPct: null })).toBe(
+      "na",
+    );
   });
   it("hold_to_tp: 手動決済ng / TP到達ok / SL到達・TPなしはna", () => {
-    expect(judgeAuto("hold_to_tp", { ...base, exitMethod: "manual" })).toBe("ng");
+    expect(judgeAuto("hold_to_tp", { ...base, exitMethod: "manual" })).toBe(
+      "ng",
+    );
     expect(judgeAuto("hold_to_tp", base)).toBe("ok");
     expect(judgeAuto("hold_to_tp", { ...base, exitMethod: "sl" })).toBe("na");
-    expect(judgeAuto("hold_to_tp", { ...base, hasTp: false, exitMethod: "manual" })).toBe("na");
+    expect(
+      judgeAuto("hold_to_tp", { ...base, hasTp: false, exitMethod: "manual" }),
+    ).toBe("na");
   });
 });
