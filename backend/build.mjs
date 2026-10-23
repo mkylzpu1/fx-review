@@ -12,6 +12,7 @@ const handlers = [
   "src/handlers/currencyPairs/index.ts",
   "src/handlers/tags/index.ts",
   "src/handlers/rules/index.ts",
+  "src/handlers/trades/index.ts",
   // TODO: 機能ハンドラーをここに追加する
   // "src/handlers/example/index.ts",
 ];

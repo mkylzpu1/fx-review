@@ -361,6 +361,132 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/rules/index.ts]
 
+  TradesListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/trades/index.listHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /trades
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/trades/index.ts]
+
+  TradesQueueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/trades/index.queueHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /trades/queue
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/trades/index.ts]
+
+  TradesCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/trades/index.createHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /trades
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/trades/index.ts]
+
+  TradesGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/trades/index.getHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /trades/{id}
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/trades/index.ts]
+
+  TradesUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/trades/index.updateHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /trades/{id}
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/trades/index.ts]
+
+  TradesDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/trades/index.deleteHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /trades/{id}
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/trades/index.ts]
+
+  TradesRestoreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/trades/index.restoreHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /trades/{id}/restore
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/trades/index.ts]
+
   # ─── TODO: 機能ハンドラーをここに追加する ───────────────
   # ExampleGetFunction:
   #   Type: AWS::Serverless::Function
