@@ -1,5 +1,6 @@
 import {
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   keepPreviousData,
@@ -121,4 +122,25 @@ export async function findNextUnfilledId(
   const i = ids.indexOf(currentId);
   const next = i >= 0 ? ids[i + 1] : ids[0];
   return next ?? ids.find((id) => id !== currentId) ?? null;
+}
+
+const QUEUE_FILTERS: QueueFilter[] = ["all", "sl_tp", "no_rationale", "open"];
+
+/** キューの絞り込みごとの件数（件数だけ欲しいので1件だけ取得する） */
+export function useQueueCounts() {
+  const results = useQueries({
+    queries: QUEUE_FILTERS.map((f) => ({
+      queryKey: ["trades", "queue-count", f],
+      queryFn: () =>
+        apiClient.get<QueueResult>(
+          `/trades/queue${toQueryString({ filter: f, limit: 1 })}`,
+        ),
+    })),
+  });
+  const counts: Partial<Record<QueueFilter, number>> = {};
+  QUEUE_FILTERS.forEach((f, i) => {
+    const total = results[i].data?.total;
+    if (total !== undefined) counts[f] = total;
+  });
+  return counts;
 }
