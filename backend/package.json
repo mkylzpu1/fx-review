@@ -1,0 +1,38 @@
+{
+  "name": "app-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "quality": "npm run lint:fix && npm run format && npm run typecheck"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ssm": "^3.654.0",
+    "aws-jwt-verify": "^4.0.1",
+    "postgres": "^3.4.9",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.10.0",
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22.20.1",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "@typescript-eslint/parser": "^8.6.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.10.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.6.0",
+    "vitest": "^2.1.1"
+  }
+}

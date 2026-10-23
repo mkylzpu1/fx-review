@@ -1,0 +1,27 @@
+# cp terraform.tfvars.example terraform.tfvars して値を埋めること。
+# terraform.tfvars は .gitignore に含めること (機密情報を含むため)。
+
+app_name   = "your-app-name"
+aws_region = "ap-northeast-1"
+
+# 独自ドメインを使わない場合は空のままでよい (CloudFront デフォルトドメインを使用)。
+frontend_domain_name           = ""
+cloudfront_acm_certificate_arn = ""
+
+# bootstrap で出力された STG 用 GitHub Actions ロール ARN を設定する。
+github_actions_role_arn = "arn:aws:iam::123456789012:role/your-app-name-github-actions-deploy-stg"
+
+# Cognito Hosted UI ドメイン (全 AWS アカウント横断でユニークである必要あり)。
+cognito_domain_prefix = "your-app-name-stg-auth"
+
+# STG 用 Google OAuth クライアント (本番とは別のクライアントを用意すること)。
+# Authorized redirect URIs に Cognito Hosted UI の Callback URL を追加すること。
+google_oauth_client_id     = "xxxxxxxxxxxx.apps.googleusercontent.com"
+google_oauth_client_secret = "GOCSPX-xxxxxxxxxxxxxxxxxxxxxxxx"
+
+monthly_budget_limit_usd = "10"
+alert_notification_email = "your-email@example.com"
+
+tags = {
+  Project = "your-app-name"
+}

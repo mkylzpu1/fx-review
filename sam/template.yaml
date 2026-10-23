@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: App - ローカル開発環境
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    Timeout: 30
+    CodeUri: ../backend/
+    MemorySize: 1024
+    Environment:
+      Variables:
+        DATABASE_URL: !Ref DatabaseUrl
+        IS_LOCAL: !Ref IsLocal
+        COGNITO_USER_POOL_ID: !Ref CognitoUserPoolId
+        LOG_LEVEL: debug
+  Api:
+    Cors:
+      AllowOrigin: "'http://localhost:5173'"
+      AllowHeaders: "'Content-Type,Authorization'"
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    Default: "postgresql://postgres:postgres@host.docker.internal:5432/postgres"
+  IsLocal:
+    Type: String
+    Default: "true"
+  CognitoUserPoolId:
+    Type: String
+    Default: ""
+
+Resources:
+  # ─── 認証 ───────────────────────────────────────────────
+  AuthMeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/auth/me.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /auth/me
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/auth/me.ts]
+
+  AuthWithdrawalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/auth/withdrawal.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /auth/me
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/auth/withdrawal.ts]
+
+  AuthRegistrationStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/auth/registrationStatus.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /auth/registration-status
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/auth/registrationStatus.ts]
+
+  # ─── TODO: 機能ハンドラーをここに追加する ───────────────
+  # ExampleGetFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Handler: src/handlers/example/index.getHandler
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /example/{id}
+  #           Method: GET
+  #   Metadata:
+  #     BuildMethod: esbuild
+  #     BuildProperties:
+  #       Minify: false
+  #       Target: es2022
+  #       Sourcemap: true
+  #       EntryPoints: [src/handlers/example/index.ts]
