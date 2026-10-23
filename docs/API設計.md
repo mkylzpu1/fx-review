@@ -202,7 +202,7 @@ export function useCreateItem() {
 | `PUT` | `/trades/{id}` | 更新（決済入力・書き足しもこれ） |
 | `DELETE` | `/trades/{id}` | 論理削除（`POST .../restore` で取り消せる） |
 | `POST` | `/trades/{id}/restore` | 削除の取り消し |
-| `GET` | `/trades/queue` | 未入力キュー。`filter=all\|sl_tp\|no_rationale\|open\|loss`, `sort`, `page`, `limit`。`pendingCount`・`totalCount`・`filledCount` も返す |
+| `GET` | `/trades/queue` | 未入力キュー。`filter=all\|sl_tp\|no_rationale\|open\|loss`（`all` は「入力のないトレード」。それ以外は全トレードから条件で絞る: `sl_tp`=SLまたはTPが空、`no_rationale`=根拠タグなし、`open`=未決済、`loss`=損失）, `sort`, `page`, `limit`。`pendingCount`（入力のないトレード）・`totalCount`・`filledCount` も返す |
 
 `POST` / `PUT` ボディ:
 `pair`, `side`(`buy|sell`), `lots`(>0, 小数2桁), `entryAt`(ISO・オフセット付き), `entryPrice`,
