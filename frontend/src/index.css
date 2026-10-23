@@ -1,3 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid #9db4ff;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .num {
+    @apply font-mono tabular-nums;
+  }
+  .btn {
+    @apply inline-flex min-h-touch items-center justify-center rounded-btn border border-field px-4 text-sm font-medium text-ink transition-colors hover:bg-surface disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn border-accent bg-accent text-white hover:bg-accent/90;
+  }
+  .btn-danger {
+    @apply btn border-loss text-loss hover:bg-loss/10;
+  }
+  .input {
+    @apply min-h-touch w-full rounded-btn border border-field bg-bg px-3 font-mono text-sm text-ink placeholder:text-ink-mute;
+  }
+  .input-error {
+    @apply border-loss;
+  }
+  .card {
+    @apply rounded-card border border-line bg-card p-6;
+  }
+}
