@@ -75,10 +75,40 @@ export interface TradeView extends TradeRecord {
   riskJpy: number | null;
   riskPct: number | null;
   holdMinutes: number | null;
-  /** 有効なルールごとの判定（自動判定は計算結果） */
-  ruleResults: { ruleId: string; title: string; result: RuleResult }[];
+  /**
+   * ルールごとの判定（自動判定は計算結果）。
+   * 有効なルールに加え、無効化したルールの手動チェックも過去の判定として残す
+   */
+  ruleResults: {
+    ruleId: string;
+    title: string;
+    result: RuleResult;
+    isActive: boolean;
+  }[];
   deviation: boolean;
   /** 入力のないトレード（キューの対象） */
   isUnfilled: boolean;
   missing: ("sl" | "tp" | "rationale" | "open")[];
+}
+
+export type TradeSort = "entry_desc" | "entry_asc" | "pnl_desc" | "pnl_asc";
+export type QueueFilter = "all" | "sl_tp" | "no_rationale" | "open" | "loss";
+export type MissingItem = TradeView["missing"][number];
+
+/** 一覧・キューの絞り込み（store に渡す形） */
+export interface TradeFilter {
+  result?: "win" | "loss";
+  q?: string;
+  pair?: string;
+  from?: string;
+  to?: string;
+  queue?: QueueFilter;
+  sort: TradeSort;
+}
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
 }
