@@ -1,3 +1,4 @@
+import type { JSONValue } from "postgres";
 import { sql } from "../lib/db";
 import type { AccountSettings, AccountSettingsPatch } from "../types/settings";
 
@@ -36,7 +37,7 @@ export const settingsStore = {
         chart_default_tf  = COALESCE(${p.chartDefaultTf ?? null}, chart_default_tf),
         chart_bars_before = COALESCE(${p.chartBarsBefore ?? null}, chart_bars_before),
         chart_bars_after  = COALESCE(${p.chartBarsAfter ?? null}, chart_bars_after),
-        ema_settings      = COALESCE(${p.emaSettings ? JSON.stringify(p.emaSettings) : null}::jsonb, ema_settings),
+        ema_settings      = COALESCE(${p.emaSettings ? sql.json(p.emaSettings as unknown as JSONValue) : null}::jsonb, ema_settings),
         updated_at        = NOW()
       WHERE user_id = ${userId}
     `;
