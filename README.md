@@ -138,7 +138,8 @@ npm install
 cp .env.example .env.local
 ```
 
-`.env.local` にCognito設定を記入：
+ローカル開発は固定ユーザー認証（`VITE_LOCAL_AUTH=true`、Backendは `IS_LOCAL=true`）で動くため、**CognitoやGoogleの設定は不要**。`.env.example` をコピーするだけでよい。
+以下のCognito設定はSTG/PRD相当の動作を確認するときだけ記入する：
 
 ```env
 VITE_API_URL=http://localhost:3000

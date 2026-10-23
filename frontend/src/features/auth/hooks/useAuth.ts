@@ -3,6 +3,7 @@ import { getCurrentUser, signOut as amplifySignOut } from "aws-amplify/auth";
 import { Amplify } from "aws-amplify";
 import type { AuthUser } from "../types";
 import { apiClient } from "@/services/apiClient";
+import { IS_LOCAL_AUTH, LOCAL_USER } from "../localAuth";
 
 Amplify.configure({
   Auth: {
@@ -32,6 +33,12 @@ export function useAuth() {
 
   async function checkAuth() {
     try {
+      if (IS_LOCAL_AUTH) {
+        // Cognito を使わず固定ユーザーで通す。DBにユーザー行を作るため /auth/me は呼ぶ
+        const me = await apiClient.get<AuthUser>("/auth/me").catch(() => LOCAL_USER);
+        setUser(me);
+        return;
+      }
       await getCurrentUser();
       const me = await apiClient.get<AuthUser>("/auth/me");
       setUser(me);
@@ -43,6 +50,7 @@ export function useAuth() {
   }
 
   async function signOut() {
+    if (IS_LOCAL_AUTH) return;
     await amplifySignOut();
     setUser(null);
   }
