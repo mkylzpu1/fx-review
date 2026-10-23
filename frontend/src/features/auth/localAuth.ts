@@ -5,7 +5,8 @@ import type { AuthUser } from "./types";
  * Backend の verifyAuth（IS_LOCAL=true）が返すユーザーと同じ値にする。
  * 開発ビルド（import.meta.env.DEV）かつ VITE_LOCAL_AUTH=true のときだけ有効。
  */
-export const IS_LOCAL_AUTH = import.meta.env.DEV && import.meta.env.VITE_LOCAL_AUTH === "true";
+export const IS_LOCAL_AUTH =
+  import.meta.env.DEV && import.meta.env.VITE_LOCAL_AUTH === "true";
 
 export const LOCAL_USER: AuthUser = {
   userId: "local-user-id",

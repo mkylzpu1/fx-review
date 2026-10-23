@@ -1,7 +1,16 @@
-export function LoadingSpinner() {
+/** fullScreen=false でセクション内用の小さい表示になる */
+export function LoadingSpinner({
+  fullScreen = true,
+}: {
+  fullScreen?: boolean;
+}) {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    <div
+      role="status"
+      aria-label="読み込み中"
+      className={`flex items-center justify-center ${fullScreen ? "min-h-screen bg-bg" : "py-12"}`}
+    >
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
     </div>
   );
 }

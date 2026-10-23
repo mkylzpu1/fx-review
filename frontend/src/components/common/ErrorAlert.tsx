@@ -3,16 +3,19 @@ interface ErrorAlertProps {
   onRetry?: () => void;
 }
 
-export function ErrorAlert({ message = "エラーが発生しました", onRetry }: ErrorAlertProps) {
+export function ErrorAlert({
+  message = "通信を確認して、もう一度試してください。入力内容は残っています。",
+  onRetry,
+}: ErrorAlertProps) {
   return (
-    <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-      <p className="text-sm text-red-700">{message}</p>
+    <div
+      role="alert"
+      className="rounded-card border border-loss bg-loss/10 p-4"
+    >
+      <p className="text-sm text-loss">{message}</p>
       {onRetry && (
-        <button
-          onClick={onRetry}
-          className="mt-2 text-sm text-red-600 underline hover:no-underline"
-        >
-          再試行
+        <button onClick={onRetry} className="btn mt-2">
+          再読み込み
         </button>
       )}
     </div>

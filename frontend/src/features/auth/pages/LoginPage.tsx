@@ -6,18 +6,17 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">
-          {/* TODO: アプリ名を変更する */}
-          App
+    <div className="min-h-screen flex items-center justify-center bg-bg">
+      <div className="card p-8 w-full max-w-sm">
+        <h1 className="text-2xl font-bold text-ink mb-2 text-center">
+          FXレビュー
         </h1>
-        <p className="text-gray-500 text-sm text-center mb-8">
+        <p className="text-ink-sub text-sm text-center mb-8">
           Googleアカウントでログイン
         </p>
         <button
           onClick={handleLogin}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          className="btn w-full gap-3"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

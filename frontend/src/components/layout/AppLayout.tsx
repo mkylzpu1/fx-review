@@ -1,116 +1,130 @@
 import { ReactNode, useState, useEffect } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { LogOut, Menu, X } from "lucide-react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { CandlestickChart, User } from "lucide-react";
 import { useAuthContext } from "@/features/auth/components/AuthProvider";
+import { ROUTES } from "@/constants/routes";
+import {
+  NAV_ITEMS,
+  MOBILE_TABS,
+  MOBILE_MORE_ITEMS,
+  isCurrent,
+} from "./navItems";
 
-// TODO: NAV_ITEMSにアプリのナビゲーション項目を追加する
-// import { Home } from "lucide-react";
-// import { ROUTES } from "@/constants/routes";
-const NAV_ITEMS: { to: string; label: string; icon: React.ElementType; end: boolean }[] = [
-  // { to: ROUTES.DASHBOARD, label: "ダッシュボード", icon: Home, end: true },
-];
+const TAB_BASE = "flex min-h-touch flex-1 items-center justify-center text-xs";
 
-interface AppLayoutProps {
-  children: ReactNode;
-  noPadding?: boolean;
-}
+export function AppLayout({ children }: { children: ReactNode }) {
+  const { user } = useAuthContext();
+  const { pathname } = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
 
-export function AppLayout({ children, noPadding = false }: AppLayoutProps) {
-  const { user, signOut } = useAuthContext();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation();
+  useEffect(() => setMoreOpen(false), [pathname]);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
+  const moreCurrent = MOBILE_MORE_ITEMS.some((i) => isCurrent(i, pathname));
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      {/* ヘッダー（モバイル） */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-blue-600 text-white h-14 flex items-center px-4 justify-between">
-        <span className="font-bold text-lg">
-          {/* TODO: アプリ名を変更する */}
-          App
-        </span>
-        <button onClick={() => setMenuOpen((v) => !v)} className="p-2">
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </header>
-
-      {/* モバイルメニューオーバーレイ */}
-      {menuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-20 bg-black/40"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
-      {/* サイドバー */}
-      <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-blue-600 text-white z-20 flex flex-col transition-transform duration-200
-          ${menuOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
-      >
-        <div className="h-14 lg:h-16 flex items-center px-6 font-bold text-lg shrink-0">
-          {/* TODO: アプリ名を変更する */}
-          App
-        </div>
-
-        <nav className="flex-1 overflow-y-auto py-2">
-          {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-6 py-3 text-sm transition-colors ${
-                  isActive
-                    ? "bg-white/20 font-semibold"
-                    : "hover:bg-white/10"
-                }`
+    <div className="min-h-screen bg-bg text-ink">
+      {/* 上部ナビ */}
+      <header className="sticky top-0 z-30 border-b border-line bg-bg">
+        <div className="mx-auto flex h-14 max-w-screen-xl items-center gap-6 px-4">
+          <Link
+            to={ROUTES.STATS}
+            className="flex items-center gap-2 text-base font-bold"
+          >
+            <CandlestickChart size={20} className="text-profit" aria-hidden />
+            FXレビュー
+          </Link>
+          <nav
+            aria-label="メイン"
+            className="hidden flex-1 items-center gap-1 lg:flex"
+          >
+            {NAV_ITEMS.map((item) => {
+              const current = isCurrent(item, pathname);
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  aria-current={current ? "page" : undefined}
+                  className={`flex min-h-touch items-center rounded-btn px-3 text-sm ${
+                    current
+                      ? "bg-surface text-ink"
+                      : "text-ink-sub hover:bg-surface/60"
+                  }`}
+                >
+                  {item.label}
+                </NavLink>
+              );
+            })}
+          </nav>
+          <div className="ml-auto flex items-center gap-3 lg:ml-0">
+            <Link to={ROUTES.TRADE_NEW} className="btn-primary">
+              トレードを記録
+            </Link>
+            <Link
+              to={ROUTES.ACCOUNT}
+              aria-label="アカウント"
+              aria-current={
+                pathname.startsWith(ROUTES.ACCOUNT) ? "page" : undefined
               }
+              className="hidden h-11 w-11 items-center justify-center rounded-full border border-line hover:bg-surface lg:flex"
             >
-              <Icon size={18} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* ユーザー情報 */}
-        {user && (
-          <div className="border-t border-white/20 p-4 shrink-0">
-            <div className="flex items-center gap-3 mb-3">
-              {user.picture && (
+              {user?.picture ? (
                 <img
                   src={user.picture}
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full"
+                  alt=""
+                  className="h-8 w-8 rounded-full"
                 />
+              ) : (
+                <User size={18} aria-hidden />
               )}
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{user.name}</p>
-                <p className="text-xs text-white/70 truncate">{user.email}</p>
-              </div>
-            </div>
-            <button
-              onClick={signOut}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-white/10 transition-colors"
-            >
-              <LogOut size={16} />
-              ログアウト
-            </button>
+            </Link>
           </div>
-        )}
-      </aside>
+        </div>
+      </header>
 
-      {/* メインコンテンツ */}
-      <main className={`lg:ml-64 pt-14 lg:pt-0 min-h-screen ${noPadding ? "" : "p-4 lg:p-6"}`}>
+      <main className="mx-auto max-w-screen-xl px-4 pb-24 pt-6 lg:pb-8">
         {children}
       </main>
+
+      {/* スマホ下タブ */}
+      <nav
+        aria-label="メイン（スマホ）"
+        className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-line bg-bg lg:hidden"
+      >
+        {MOBILE_TABS.map((item) => {
+          const current = isCurrent(item, pathname);
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              aria-current={current ? "page" : undefined}
+              className={`${TAB_BASE} ${current ? "bg-surface text-ink" : "text-ink-sub"}`}
+            >
+              {item.label}
+            </NavLink>
+          );
+        })}
+        <button
+          aria-expanded={moreOpen}
+          onClick={() => setMoreOpen((v) => !v)}
+          className={`${TAB_BASE} ${moreCurrent || moreOpen ? "bg-surface text-ink" : "text-ink-sub"}`}
+        >
+          その他
+        </button>
+        {moreOpen && (
+          <div className="absolute bottom-full right-2 mb-2 w-48 rounded-card border border-line bg-card p-1">
+            {MOBILE_MORE_ITEMS.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={isCurrent(item, pathname) ? "page" : undefined}
+                className="flex min-h-touch items-center rounded-btn px-3 text-sm hover:bg-surface"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        )}
+      </nav>
     </div>
   );
 }
