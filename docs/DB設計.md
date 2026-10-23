@@ -106,3 +106,15 @@ export const itemStore = {
 | テーブル | 概要 |
 |---------|------|
 | `users` | ユーザー（Cognito sub が主キー） |
+
+---
+
+## FXレビュー: テーブル（P0）
+
+| マイグレーション | テーブル | メモ |
+|-----------------|---------|------|
+| `002_create_account_settings.sql` | `account_settings` | PK は `user_id`。行が無い = 未オンボーディング |
+| `003_create_currency_pairs.sql` | `currency_pairs` | `UNIQUE(user_id, symbol)` |
+| `004_create_tags.sql` | `tags` | `kind` は `rationale` / `emotion`。**`deleted_at` で論理削除**（削除してもトレードのタグを残すため。指示書§8からの追加列） |
+
+金額は `BIGINT`（円）、価格・pip幅・割合は `NUMERIC`。storeのSQLで `::float8` にキャストして返す。

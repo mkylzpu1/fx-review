@@ -4,7 +4,9 @@ import { success, errorResponse } from "../../lib/response";
 import { userStore } from "../../stores/userStore";
 import { logger } from "../../lib/logger";
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = async (
+  event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> => {
   try {
     const authUser = await verifyAuth(event);
     logger.info("GET /auth/me", { userId: authUser.userId });

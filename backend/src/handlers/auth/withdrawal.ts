@@ -4,7 +4,9 @@ import { success, errorResponse } from "../../lib/response";
 import { userStore } from "../../stores/userStore";
 import { logger } from "../../lib/logger";
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = async (
+  event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> => {
   try {
     const authUser = await verifyAuth(event);
     logger.info("DELETE /auth/me（退会）", { userId: authUser.userId });

@@ -39,7 +39,9 @@ function getVerifier() {
  * リクエストのAuthorizationヘッダーからJWTを検証し、ユーザー情報を返す。
  * IS_LOCAL=true の場合はモックユーザーを返す（ローカル開発用）。
  */
-export async function verifyAuth(event: APIGatewayProxyEvent): Promise<AuthUser> {
+export async function verifyAuth(
+  event: APIGatewayProxyEvent,
+): Promise<AuthUser> {
   if (IS_LOCAL) {
     logger.debug("IS_LOCAL=true: モックユーザーで認証をバイパス");
     return {
@@ -59,7 +61,9 @@ export async function verifyAuth(event: APIGatewayProxyEvent): Promise<AuthUser>
   const token = authHeader.slice(7);
 
   try {
-    const payload = (await getVerifier().verify(token)) as CognitoPayload;
+    const payload = (await getVerifier().verify(
+      token,
+    )) as unknown as CognitoPayload;
     return {
       userId: payload.sub,
       email: payload.email,

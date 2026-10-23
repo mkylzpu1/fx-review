@@ -32,7 +32,9 @@ const CreateItemSchema = z.object({
 // ── ハンドラー ────────────────────────────────────────────
 
 /** GET /example/:id */
-export const getHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const getHandler = async (
+  event: APIGatewayProxyEvent,
+): Promise<APIGatewayProxyResult> => {
   try {
     const authUser = await verifyAuth(event);
     const id = event.pathParameters?.id;
@@ -58,7 +60,10 @@ export const createHandler = async (
     const authUser = await verifyAuth(event);
     const body = parseBody(event.body, CreateItemSchema);
 
-    logger.info("POST /example", { userId: authUser.userId, title: body.title });
+    logger.info("POST /example", {
+      userId: authUser.userId,
+      title: body.title,
+    });
 
     // TODO: store に保存する
     // const item = await exampleStore.create({ ...body, userId: authUser.userId });

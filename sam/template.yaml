@@ -90,6 +90,187 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/auth/registrationStatus.ts]
 
+  # ─── 設定（P0） ─────────────────────────────────────────
+  SettingsGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/settings/index.getHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /settings
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/settings/index.ts]
+
+  SettingsPutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/settings/index.putHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /settings
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/settings/index.ts]
+
+  CurrencyPairsListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/currencyPairs/index.listHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /currency-pairs
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/currencyPairs/index.ts]
+
+  CurrencyPairsCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/currencyPairs/index.createHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /currency-pairs
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/currencyPairs/index.ts]
+
+  CurrencyPairsUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/currencyPairs/index.updateHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /currency-pairs/{id}
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/currencyPairs/index.ts]
+
+  CurrencyPairsDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/currencyPairs/index.deleteHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /currency-pairs/{id}
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/currencyPairs/index.ts]
+
+  TagsListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tags/index.listHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tags
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/tags/index.ts]
+
+  TagsCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tags/index.createHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tags
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/tags/index.ts]
+
+  TagsUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tags/index.updateHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tags/{id}
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/tags/index.ts]
+
+  TagsDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/tags/index.deleteHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /tags/{id}
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/tags/index.ts]
+
   # ─── TODO: 機能ハンドラーをここに追加する ───────────────
   # ExampleGetFunction:
   #   Type: AWS::Serverless::Function

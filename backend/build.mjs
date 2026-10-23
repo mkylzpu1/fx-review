@@ -8,6 +8,9 @@ const handlers = [
   "src/handlers/auth/me.ts",
   "src/handlers/auth/withdrawal.ts",
   "src/handlers/auth/registrationStatus.ts",
+  "src/handlers/settings/index.ts",
+  "src/handlers/currencyPairs/index.ts",
+  "src/handlers/tags/index.ts",
   // TODO: 機能ハンドラーをここに追加する
   // "src/handlers/example/index.ts",
 ];

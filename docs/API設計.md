@@ -139,3 +139,37 @@ export function useCreateItem() {
   });
 }
 ```
+
+---
+
+## FXレビュー: P0 エンドポイント
+
+すべて認証必須。一覧系は `{ items: [...] }` を返す。
+
+### 設定
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| `GET` | `/settings` | 口座・リスク・チャート設定。**未作成なら `404 NOT_FOUND`**（オンボーディング判定に使う） |
+| `PUT` | `/settings` | 設定の作成・更新。未作成のときは `balanceJpy` 必須。**初回作成時に通貨ペア USDJPY と既定の根拠・感情タグを投入する** |
+
+`PUT /settings` ボディ（すべて任意。初回のみ `balanceJpy` 必須）:
+`balanceJpy`(整数 >0), `maxRiskPct`(0〜100), `minRr`(>0), `timezone`, `chartDefaultTf`(`1m|5m|15m|1h|4h|1d`), `chartBarsBefore`, `chartBarsAfter`(1〜2000), `emaSettings`: `[{ period, visible }]`（最大8件、期間は重複不可）
+
+### 通貨ペア
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| `GET` | `/currency-pairs` | 一覧 |
+| `POST` | `/currency-pairs` | 追加 `{ symbol, pipSize, pipValueJpyPerLot, showInPicker }`。同じ symbol は `409` |
+| `PUT` | `/currency-pairs/{id}` | 更新（symbol は変更不可） |
+| `DELETE` | `/currency-pairs/{id}` | 削除 |
+
+### タグ
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| `GET` | `/tags?kind=rationale\|emotion` | 一覧（削除済みは含まない） |
+| `POST` | `/tags` | 追加 `{ kind, name }`。削除済みの同名タグは復活させる |
+| `PUT` | `/tags/{id}` | 名前・並び順の更新 `{ name?, sortOrder? }` |
+| `DELETE` | `/tags/{id}` | 論理削除（過去のトレードに付いたタグは残る） |
