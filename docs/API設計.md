@@ -374,3 +374,31 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 - 集計対象は決済済みで pips があるトレード。R系は R が計算できるものだけ（`rMissing` が未計算の件数）
 - `planned`（計画どおりに持っていたら）: **TPが入っていて R が計算できる手動決済**だけを、計画のリスクリワードで決済したと仮定した週の合計R。対象外の手動決済は `excludedCount` で併記。`emotions` は対象トレードの感情タグ
 - `fewTrades`: 5件未満の週。コメントは「傾向ではなく見直しの材料」と注記する
+
+### エクスポート
+
+| メソッド | パス | 説明 |
+|---|---|---|
+| `POST` | `/export` | AIに貼り付ける用などの出力を文字列で返す。認証必須 |
+
+リクエスト:
+
+```json
+{
+  "range": "all",
+  "format": "markdown",
+  "include": { "result": true, "planDiff": true, "rationale": true, "ruleChecks": true, "reflection": true, "market": true }
+}
+```
+
+- `range`: `all` / `30d`（直近30日）/ `month`（今月。表示タイムゾーンの月初から）
+- `format`: `markdown`（既定。依頼文・ルール・集計・一覧・分析の依頼）/ `csv`（トレード一覧のみ）/ `json`（全項目）
+- `include`（省略した項目はON）: 列のグループ。`id`・日時・通貨ペア・方向・エントリーは常に出す
+  - `result`: 決済価格・決済方法・pips・R・ロット・損益円・保有分・MFE・MAE・決済後最大到達
+  - `planDiff`: SL・TP・計画RR・想定リスク円/%・SL/TPの理由
+  - `rationale`: 根拠タグ・根拠メモ / `ruleChecks`: ルール逸脱 / `reflection`: 感情・確信度・気づき・次回のルール / `market`: 曜日・セッション
+- 複数タグは `|` 区切り。未入力の列は空欄。自由記述の先頭が `= + - @` のときは `'` を付ける（表計算ソフトで式として解釈されないため）
+- Markdown の冒頭の集計に「SL入力あり n件 / 全 N件」「根拠タグあり n件」「R未計算 n件」を載せる
+- **未対応**: エントリー前後のローソク足・EMA値、ボラティリティ（ATR）・上位足の向き（足の同期データが必要なため、後続で対応）
+
+レスポンス `data`: `{ "content": "…", "filename": "fx-review-2026-10-24.md", "mime": "text/markdown", "tradeCount": 120 }`

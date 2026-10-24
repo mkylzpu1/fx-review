@@ -564,6 +564,26 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/weeklyReview/index.ts]
 
+  # ─── エクスポート ───────────────────────────────────────
+  ExportPostFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/export/index.postHandler
+      Timeout: 30
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /export
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/export/index.ts]
+
   # ─── CSV取り込み ────────────────────────────────────────
   ImportsPreviewFunction:
     Type: AWS::Serverless::Function
