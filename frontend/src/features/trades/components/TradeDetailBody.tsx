@@ -66,7 +66,7 @@ export function TradeDetailBody({
   const loss = (t.pnlJpy ?? 0) < 0;
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="card flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm text-ink-sub">

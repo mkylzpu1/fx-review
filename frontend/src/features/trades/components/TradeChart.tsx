@@ -136,9 +136,15 @@ export function TradeChart({
         minMove: pipSize,
       },
     });
+    // 矢印の置き場所はあらかじめ上下に余白を確保しておく。
+    // 余白はマーカーの有無で変えない（IN/OUTの表示を切り替えても縦軸が動かないように）
+    candles.priceScale().applyOptions({
+      scaleMargins: { top: 0.2, bottom: 0.15 },
+    });
     chartRef.current = chart;
     candleRef.current = candles;
-    markersRef.current = createSeriesMarkers(candles, []);
+    // autoScale: false … マーカーの分だけ価格軸の範囲を広げる機能を切る（切らないと、表示するたびに縦軸が変わる）
+    markersRef.current = createSeriesMarkers(candles, [], { autoScale: false });
     emaRefs.current = [];
     firstTimeRef.current = null;
     resetRef.current = null;
@@ -336,13 +342,19 @@ export function TradeChart({
     side,
   ]);
 
+  // 外側の箱が大きさを決め、チャート（autoSize）は内側の箱いっぱいに描くだけにする。
+  // チャートの canvas が親の幅を押し広げないので、全画面から戻ったときに横幅が元に戻る
   return (
     <div
-      ref={ref}
-      role="img"
-      aria-label="ローソク足チャート"
-      className="w-full"
+      className="relative w-full min-w-0 overflow-hidden"
       style={{ height: fill ? "100%" : height }}
-    />
+    >
+      <div
+        ref={ref}
+        role="img"
+        aria-label="ローソク足チャート"
+        className="absolute inset-0"
+      />
+    </div>
   );
 }

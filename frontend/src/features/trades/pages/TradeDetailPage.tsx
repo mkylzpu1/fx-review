@@ -92,7 +92,8 @@ export function TradeDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
+      {/* minmax(0,1fr): 中身（チャート）の幅に引っ張られて列が広がったままにならないようにする */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
         <RecentTrades currentId={trade.id} />
         <TradeDetailBody
           trade={trade}

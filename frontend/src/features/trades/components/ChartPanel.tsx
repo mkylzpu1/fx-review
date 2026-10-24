@@ -227,7 +227,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
       className={
         fullscreen
           ? "fixed inset-0 z-[60] flex flex-col gap-3 overflow-y-auto bg-bg p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]"
-          : "card space-y-3"
+          : "card min-w-0 space-y-3"
       }
       aria-label="チャート"
     >
@@ -279,7 +279,9 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         hasSl={trade.slPrice !== null}
         hasExit={trade.exitAt !== null && trade.exitPrice !== null}
       />
-      <div className={fullscreen ? "min-h-[280px] flex-1" : ""}>{body}</div>
+      <div className={fullscreen ? "min-h-[280px] min-w-0 flex-1" : "min-w-0"}>
+        {body}
+      </div>
       <CandleSyncButton tradeId={trade.id} />
       <div className="flex flex-wrap justify-between gap-2 text-xs text-ink-mute">
         <span>
