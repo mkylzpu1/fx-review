@@ -768,6 +768,61 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/imports/index.ts]
 
+  # ─── バックアップ・全データ削除（P5） ──────────────────
+  BackupExportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/backup/index.exportHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /backup
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/backup/index.ts]
+
+  BackupRestoreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/backup/index.restoreHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /backup/restore
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/backup/index.ts]
+
+  DataDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/backup/index.deleteDataHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /data
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/backup/index.ts]
+
   # ─── TODO: 機能ハンドラーをここに追加する ───────────────
   # ExampleGetFunction:
   #   Type: AWS::Serverless::Function

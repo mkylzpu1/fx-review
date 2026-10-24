@@ -147,8 +147,9 @@ describe("CSV取り込み（実DB）", () => {
     const rows = await sql<
       { id: string; status: string; memo: string; key: string; pnl: number }[]
     >`SELECT id, status, rationale_memo AS memo, source_key AS key, pnl_jpy::int AS pnl
-      FROM trades WHERE user_id = ${USER} AND entry_at = (
-        SELECT entry_at FROM trades WHERE id = ${open.id})`;
+      FROM trades WHERE user_id = ${USER}
+        AND (id = ${open.id} OR source_key LIKE 'rakuten:9200:%')`;
+    // 未決済の行は新しく作られず、同じ行が決済済みに更新される
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
       id: open.id,
