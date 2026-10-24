@@ -263,3 +263,72 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 - `afterMaxPips`: 決済後、**決済価格からさらに有利方向へ**進んだ最大幅（0以上）。見る長さは設定の「決済後の表示本数 × 初期の時間足」
 - 該当期間の1分足が無い、または保有区間の端が10分以上欠けているとき、および未決済のときは `null`（画面は「—」）
 - 計算するタイミング: `POST /trades` / `PUT /trades/{id}` の保存後、および `npm run candles:sync` の完了後（同期した期間にエントリーした決済済みトレード）。失敗しても保存は成功する
+
+---
+
+## FXレビュー: P3 エンドポイント（CSV取り込み）
+
+楽天FX証券の約定履歴CSV（Shift_JIS）を取り込む。文字コードの変換はブラウザ（`TextDecoder("shift_jis")`）で行い、APIには変換後のテキストを送る。API Gatewayのペイロード上限（10MB）があるため、本文の合計は800万文字まで（超えると `400 VALIDATION_ERROR`）。
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| `POST` | `/imports/preview` | パース・ペアリング・重複判定だけ行い、保存せずに結果を返す。認証必須 |
+| `POST` | `/imports/commit` | 同じ入力で確定する。重複の扱いを `duplicateMode` で指定。認証必須 |
+
+リクエスト（共通）:
+
+```json
+{
+  "files": [{ "name": "execution-7.csv", "text": "\"約定No.\",\"通貨ペア\",..." }],
+  "duplicateMode": "skip"
+}
+```
+
+- `files`: 1〜20個。`name` は表示用、`text` はデコード済みのCSV本文
+- `duplicateMode`（commit のみ・必須）: `skip`（取り込み済みを除いて取り込む）/ `overwrite`（取り込み済みの価格・損益だけCSVの値で更新。根拠・メモ・SL・TPは残す）
+
+### ペアリング（`services/import/pairing.ts`）
+
+- 約定No.の昇順に並べ、新規行を売買ごとのキューに入れ、決済行は**逆の売買のキュー先頭（FIFO）**とペアにする（決済 `売` → 買いポジション）。隣の行とはペアにしない
+- 決済に対応する新規が無い／数量が一致しない → エラー行（分割決済は対象外）
+- 決済されていない新規 → `status: "open"` のトレード
+- 複数ファイルで重なる同じ約定No.は1件にする（`overlappedRows`）
+- `source_key = "rakuten:" + 新規の約定No + ":" + 決済の約定No`（未決済は決済No.が空）
+- 数量は1,000通貨（0.01 lot）単位のみ。通貨ペアは `ドル/円`（USDJPY）のみ。ほかは行ごとのエラー
+- ファイルに `約定日時` などの必須列が無い（別形式）ときは、そのファイルだけ `status: "error"`。他のファイルは取り込める
+
+### 重複判定
+
+| `importStatus` | 意味 | commit での扱い |
+|---|---|---|
+| `new` | 未取り込み | 追加する |
+| `duplicate` | 同じ `source_key` が取り込み済み（削除済みのトレードも含む） | `skip`: 何もしない / `overwrite`: 価格・損益を更新 |
+| `completes_open` | 未決済で取り込み済みだった新規が、今回のCSVで決済済みになった | どちらのモードでも決済を埋める（根拠・メモ・SL・TPは残す。保存済みのMFE/MAEは消し、次の同期で再計算） |
+
+### `POST /imports/preview` レスポンス `data`
+
+```json
+{
+  "files": [{ "name": "execution-7.csv", "status": "ok", "rowCount": 422, "message": null }],
+  "summary": {
+    "total": 211, "newCount": 200, "duplicateCount": 11, "completesOpenCount": 0,
+    "openCount": 0, "errorCount": 0, "overlappedRows": 0
+  },
+  "trades": [{ "sourceKey": "rakuten:1000:1001", "importStatus": "new", "side": "buy", "lots": 0.1, "entryAt": "2026-10-01T13:10:00Z", "entryPrice": 150.1, "exitAt": "2026-10-01T13:30:00Z", "exitPrice": 150.2, "pnlJpy": 1000, "status": "closed", "entryNo": "1000", "exitNo": "1001", "pair": "USDJPY" }],
+  "errors": [{ "file": "execution-7.csv", "line": 12, "executionNo": "1234", "message": "…" }],
+  "entryRange": { "from": "2026-10-01T13:10:00Z", "to": "2026-10-23T06:21:00Z" }
+}
+```
+
+- `summary` は全件の集計。`trades` は**エントリーが新しい順に先頭100件だけ**、`errors` は先頭200件だけ返す（`summary.errorCount` が全件数）。全件をフロントに送って絞り込まない
+- `entryRange`（UTC）: ローソク足の同期（`npm run candles:sync`）の範囲の案内に使う
+
+### `POST /imports/commit` レスポンス `data`
+
+```json
+{ "imported": 200, "skipped": 11, "overwritten": 0, "completedOpen": 0, "errorCount": 0, "files": [], "entryRange": {} }
+```
+
+- `skipped`: `skip` のとき、取り込み済みのため除いた件数
+- `overwritten`: `overwrite` のとき、更新した件数
+- 取り込み後、`npm run candles:sync -- --from <entryRange.from の日付> --to <entryRange.to の日付>` で足を同期するとチャートとMFE/MAEが出る

@@ -16,6 +16,9 @@ export const REQUIRED_COLUMNS = [
   "約定日時",
 ] as const;
 
+/** 取り込める最小の数量（0.01 lot） */
+const MIN_UNITS = 1000;
+
 /** 楽天の表記 → 内部の通貨ペア。USDJPYのみ対応（指示書 §1） */
 const PAIR_MAP: Record<string, string> = { "ドル/円": "USDJPY" };
 
@@ -146,6 +149,11 @@ export function parseRakutenFile(name: string, text: string): ParsedFile {
     const executedAt = parseJstDateTime(get("約定日時"));
     if (!no) return err("約定No.がありません");
     if (quantity === null || quantity <= 0) return err("約定数量が不正です");
+    // lots は0.01（1,000通貨）単位で保存するため、端数が出る数量は取り込めない
+    if (quantity % MIN_UNITS !== 0)
+      return err(
+        `約定数量が${MIN_UNITS.toLocaleString("en-US")}通貨単位ではありません（${quantity}）`,
+      );
     if (rate === null || rate <= 0) return err("約定レートが不正です");
     if (!executedAt) return err("約定日時の形式が不正です");
     const pnlJpy =
