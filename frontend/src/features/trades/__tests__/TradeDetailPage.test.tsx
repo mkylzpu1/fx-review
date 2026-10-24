@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom";
+import { forwardRef } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -26,7 +27,9 @@ vi.mock("@/services/apiClient", () => {
 });
 
 vi.mock("../components/TradeChart", () => ({
-  TradeChart: () => <div data-testid="trade-chart" />,
+  TradeChart: forwardRef(function MockChart(_p, _ref) {
+    return <div data-testid="trade-chart" />;
+  }),
 }));
 
 const trade = {
@@ -64,6 +67,17 @@ const trade = {
   deviation: true,
   isUnfilled: false,
   missing: [],
+} as unknown as Trade;
+
+const older = {
+  ...trade,
+  id: "t0",
+  entryAt: "2026-10-01T09:00:00Z",
+} as unknown as Trade;
+const newer = {
+  ...trade,
+  id: "t2",
+  entryAt: "2026-10-02T09:00:00Z",
 } as unknown as Trade;
 
 function setup(getTrade: () => Promise<unknown>) {
@@ -108,8 +122,14 @@ function setup(getTrade: () => Promise<unknown>) {
         hasData: true,
         mock: false,
       };
-    if (path.startsWith("/trades?"))
+    if (path.startsWith("/trades?")) {
+      // 前後のトレード（詳細画面が取りに行く）
+      if (path.includes("to=") && path.includes("sort=entry_desc"))
+        return { items: [trade, older], total: 2, page: 1, limit: 10 };
+      if (path.includes("from=") && path.includes("sort=entry_asc"))
+        return { items: [trade, newer], total: 2, page: 1, limit: 10 };
       return { items: [trade], total: 1, page: 1, limit: 6 };
+    }
     throw new Error(path);
   });
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -117,6 +137,7 @@ function setup(getTrade: () => Promise<unknown>) {
     [
       { path: "/trades/:id", element: <TradeDetailPage /> },
       { path: "/trades", element: <p>一覧ページ</p> },
+      { path: "/trades/:id/edit", element: <p>編集ページ</p> },
     ],
     { initialEntries: ["/trades/t1"] },
   );
@@ -144,6 +165,38 @@ describe("トレード詳細", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("押し目を待った")).toBeInTheDocument();
     expect(await screen.findByTestId("trade-chart")).toBeInTheDocument();
+  });
+
+  it("前（古い）・次（新しい）のトレードへ、ボタンと←/→キーで移る", async () => {
+    const router = setup(async () => trade);
+    const prev = await screen.findByRole("link", { name: "← 前" });
+    expect(prev).toHaveAttribute("href", "/trades/t0");
+    expect(screen.getByRole("link", { name: "次 →" })).toHaveAttribute(
+      "href",
+      "/trades/t2",
+    );
+    await userEvent.keyboard("{ArrowRight}");
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/trades/t2"),
+    );
+  });
+
+  it("←キーで前のトレードへ。端のトレードではボタンを押せない", async () => {
+    const router = setup(async () => trade);
+    await screen.findByRole("link", { name: "← 前" });
+    await userEvent.keyboard("{ArrowLeft}");
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/trades/t0"),
+    );
+  });
+
+  it("Eキーで編集へ", async () => {
+    const router = setup(async () => trade);
+    await screen.findByRole("link", { name: "← 前" });
+    await userEvent.keyboard("e");
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe("/trades/t1/edit"),
+    );
   });
 
   it("存在しないトレードは見つからない案内を出す", async () => {

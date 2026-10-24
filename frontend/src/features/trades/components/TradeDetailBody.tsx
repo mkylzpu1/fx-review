@@ -9,6 +9,7 @@ import {
   formatYenSigned,
 } from "@/utils/format";
 import type { RuleResult, Trade } from "../types";
+import { excursionInsight } from "../utils/excursionLevels";
 import { MissingBadges } from "./MissingBadges";
 
 const EXIT_LABEL = {
@@ -62,6 +63,7 @@ export function TradeDetailBody({
 }) {
   const rationale = t.tags.filter((x) => x.kind === "rationale");
   const emotion = t.tags.filter((x) => x.kind === "emotion");
+  const ex = excursionInsight(t, pipSize);
   const win = (t.pnlJpy ?? 0) > 0;
   const loss = (t.pnlJpy ?? 0) < 0;
 
@@ -112,6 +114,16 @@ export function TradeDetailBody({
           <Row label="保有中の最大含み益（MFE）">{formatPips(t.mfePips)}</Row>
           <Row label="保有中の最大含み損（MAE）">{formatPips(t.maePips)}</Row>
           <Row label="決済後の最大到達">{formatPips(t.afterMaxPips)}</Row>
+          {ex.slMarginPips !== null && (
+            <Row label="最大含み損の時点で、SLまで">
+              {ex.slMarginPips > 0
+                ? `あと ${ex.slMarginPips.toFixed(1)} pips`
+                : "SLに届いていた"}
+            </Row>
+          )}
+          {ex.tpReachPct !== null && (
+            <Row label="最大含み益はTPの">{ex.tpReachPct}%</Row>
+          )}
         </dl>
         {t.slReason && (
           <p className="text-sm text-ink-sub">SLの理由: {t.slReason}</p>

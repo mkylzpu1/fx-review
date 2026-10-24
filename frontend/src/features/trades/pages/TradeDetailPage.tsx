@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -9,12 +9,15 @@ import {
   usePairs,
   useSettings,
 } from "@/features/settings/hooks/useSettingsApi";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import { ApiError } from "@/services/apiClient";
 import { toast } from "@/stores/toastStore";
 import { ChartPanel } from "../components/ChartPanel";
 import { RecentTrades } from "../components/RecentTrades";
 import { TradeDetailBody } from "../components/TradeDetailBody";
+import { useChartUiStore } from "../chartUiStore";
 import {
+  useAdjacentTrades,
   useDeleteTrade,
   useRestoreTrade,
   useTrade,
@@ -29,6 +32,21 @@ export function TradeDetailPage() {
   const del = useDeleteTrade();
   const restore = useRestoreTrade();
   const [confirming, setConfirming] = useState(false);
+  const { prev, next } = useAdjacentTrades(trade);
+  const detailPath = (tid: string) => ROUTES.TRADE_DETAIL.replace(":id", tid);
+
+  // 前後のトレードへ移っても全画面のまま見返せる。詳細画面を離れるときだけ全画面を解除する
+  useEffect(() => () => useChartUiStore.getState().setFullscreen(false), []);
+
+  // ←: 前（古い） / →: 次（新しい） / E: 編集
+  useHotkeys(
+    {
+      ArrowLeft: () => prev && navigate(detailPath(prev.id)),
+      ArrowRight: () => next && navigate(detailPath(next.id)),
+      e: () => trade && navigate(ROUTES.TRADE_EDIT.replace(":id", trade.id)),
+    },
+    !!trade,
+  );
 
   if (isLoading) return <LoadingSpinner fullScreen={false} />;
   if (error instanceof ApiError && error.status === 404) {
@@ -79,7 +97,35 @@ export function TradeDetailPage() {
         <Link className="text-sm text-accent-link underline" to={ROUTES.TRADES}>
           一覧に戻る
         </Link>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {prev ? (
+            <Link
+              className="btn"
+              to={detailPath(prev.id)}
+              aria-keyshortcuts="ArrowLeft"
+              title="前（古い）のトレード（←キー）"
+            >
+              ← 前
+            </Link>
+          ) : (
+            <button className="btn" disabled>
+              ← 前
+            </button>
+          )}
+          {next ? (
+            <Link
+              className="btn"
+              to={detailPath(next.id)}
+              aria-keyshortcuts="ArrowRight"
+              title="次（新しい）のトレード（→キー）"
+            >
+              次 →
+            </Link>
+          ) : (
+            <button className="btn" disabled>
+              次 →
+            </button>
+          )}
           <Link
             className="btn-primary"
             to={ROUTES.TRADE_EDIT.replace(":id", trade.id)}
@@ -104,9 +150,8 @@ export function TradeDetailPage() {
                 <LoadingSpinner fullScreen={false} />
               </div>
             ) : (
-              // 別のトレードに移ったら、時間足・EMAの操作状態を設定の初期値に戻す
+              // 時間足・EMA・凡例などの表示設定は、別のトレードに移っても引き継ぐ
               <ChartPanel
-                key={trade.id}
                 trade={trade}
                 pipSize={pipSize}
                 settings={settings.data ?? null}

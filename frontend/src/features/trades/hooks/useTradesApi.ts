@@ -144,3 +144,46 @@ export function useQueueCounts() {
   });
   return counts;
 }
+
+const byTime = (a: Trade, b: Trade) =>
+  Date.parse(a.entryAt) - Date.parse(b.entryAt) || a.id.localeCompare(b.id);
+
+/**
+ * 時系列で前（古い）・次（新しい）のトレード。
+ * 同じ時刻のトレードがあっても順序が決まるよう、（エントリー時刻, id）の順で並べる。
+ * 取得した前後のトレードは詳細のキャッシュにも入れて、移動をすぐ表示できるようにする
+ */
+export function useAdjacentTrades(trade: Trade | undefined) {
+  const qc = useQueryClient();
+  const entryAt = trade?.entryAt;
+  const older = useQuery({
+    queryKey: ["trades", "adjacent", "older", trade?.id, entryAt],
+    queryFn: () =>
+      apiClient.get<Page<Trade>>(
+        `/trades${toQueryString({ to: entryAt, sort: "entry_desc", limit: 10 })}`,
+      ),
+    enabled: !!trade,
+  });
+  const newer = useQuery({
+    queryKey: ["trades", "adjacent", "newer", trade?.id, entryAt],
+    queryFn: () =>
+      apiClient.get<Page<Trade>>(
+        `/trades${toQueryString({ from: entryAt, sort: "entry_asc", limit: 10 })}`,
+      ),
+    enabled: !!trade,
+  });
+
+  const all = new Map<string, Trade>();
+  for (const t of [...(older.data?.items ?? []), ...(newer.data?.items ?? [])])
+    all.set(t.id, t);
+  const sorted = [...all.values()].sort(byTime);
+  const i = trade ? sorted.findIndex((t) => t.id === trade.id) : -1;
+  const prev = i > 0 ? sorted[i - 1] : null;
+  const next = i >= 0 && i < sorted.length - 1 ? sorted[i + 1] : null;
+
+  for (const n of [prev, next]) {
+    if (n && !qc.getQueryData(tradeKeys.detail(n.id)))
+      qc.setQueryData(tradeKeys.detail(n.id), n);
+  }
+  return { prev, next, isLoading: older.isLoading || newer.isLoading };
+}
