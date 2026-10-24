@@ -100,9 +100,10 @@ describe("データ設定", () => {
     expect(apiClient.delete).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole("button", { name: "削除する" }));
-    await userEvent.click(
-      screen.getByRole("button", { name: "すべて削除する" }),
-    );
+    const confirm = screen.getByRole("button", { name: "すべて削除" });
+    expect(confirm).toBeDisabled();
+    await userEvent.type(screen.getByLabelText(/確認のため/), "削除");
+    await userEvent.click(confirm);
     await waitFor(() => expect(apiClient.delete).toHaveBeenCalledWith("/data"));
   });
 

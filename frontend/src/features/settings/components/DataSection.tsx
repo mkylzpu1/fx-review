@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { TypedConfirmDialog } from "@/components/common/TypedConfirmDialog";
 import { ROUTES } from "@/constants/routes";
 import { downloadText } from "@/features/export/utils/download";
 import { toast } from "@/stores/toastStore";
@@ -186,12 +187,12 @@ export function DataSection() {
         onConfirm={onConfirmRestore}
         onCancel={() => setPending(null)}
       />
-      <ConfirmDialog
+      <TypedConfirmDialog
         open={confirmDelete}
-        title="すべてのデータを削除しますか？"
-        description="トレード・ルール・学習メモ・設定をすべて消します。元に戻せません。アカウントは残り、削除後は最初の設定からやり直せます。先にバックアップを保存することをおすすめします。"
-        confirmLabel="すべて削除する"
-        danger
+        title="すべてのデータを削除します"
+        description="トレード・ルール・学習メモ・設定がすべて消えます。元に戻せません。アカウントは残り、削除後は最初の設定からやり直せます。先にバックアップを保存することをおすすめします。"
+        keyword="削除"
+        confirmLabel="すべて削除"
         onConfirm={onConfirmDelete}
         onCancel={() => setConfirmDelete(false)}
       />
