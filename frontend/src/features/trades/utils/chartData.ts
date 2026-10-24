@@ -41,10 +41,7 @@ export interface BuildInput {
  * EMAはウォームアップ込みの全件で計算し、表示範囲の分だけ返す。
  */
 export function buildChartData(i: BuildInput): ChartData {
-  const entryTime = candleStartFor(
-    i.candles.slice(i.warmupCount),
-    i.entrySec,
-  );
+  const entryTime = candleStartFor(i.candles.slice(i.warmupCount), i.entrySec);
   const visible = i.candles
     .slice(i.warmupCount)
     .filter((c) => i.showAfter || entryTime === null || c.time <= entryTime);
