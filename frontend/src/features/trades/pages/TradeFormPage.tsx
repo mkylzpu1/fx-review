@@ -13,6 +13,11 @@ import {
 } from "@/features/settings/hooks/useSettingsApi";
 import type { AccountSettings } from "@/features/settings/types";
 import { ApiError } from "@/services/apiClient";
+import {
+  consumeLoginDraft,
+  peekLoginDraft,
+  registerDraft,
+} from "@/features/session/draftStore";
 import { toast } from "@/stores/toastStore";
 import { isoToJstInput, SIDE_LABEL, formatJst } from "@/utils/format";
 import { TradeFormBody } from "../components/TradeFormBody";
@@ -109,12 +114,26 @@ function TradeFormInner({ trade, settings, pairs, tags, rules }: InnerProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [trade?.id],
   );
-  const [form, setForm] = useState(initial);
+  const draftKey = `trade-form:${trade?.id ?? "new"}`;
+  // ログイン切れから戻ったときは、退避しておいた入力を戻す
+  const [form, setForm] = useState<TradeFormState>(
+    () => peekLoginDraft<TradeFormState>(draftKey) ?? initial,
+  );
+  useEffect(() => consumeLoginDraft(draftKey), [draftKey]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [leaveTo, setLeaveTo] = useState<string | null>(null);
   const exitOpen = useRef(isEdit || !!initial.exitAt).current;
 
   const dirty = isDirty(form, initial) && leaveTo === null;
+  const formRef = useRef({ form, dirty });
+  formRef.current = { form, dirty };
+  useEffect(
+    () =>
+      registerDraft(draftKey, () =>
+        formRef.current.dirty ? formRef.current.form : null,
+      ),
+    [draftKey],
+  );
   // 保存後の移動はガードに止められないよう、dirty が外れてから行う
   useEffect(() => {
     if (leaveTo !== null) navigate(leaveTo);

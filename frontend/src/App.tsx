@@ -23,12 +23,14 @@ import { RuleDetailPage } from "@/features/rules/pages/RuleDetailPage";
 import { RulesPage } from "@/features/rules/pages/RulesPage";
 import { AccountPage } from "@/features/account/pages/AccountPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
+import { SessionExpiredDialog } from "@/features/session/SessionExpiredDialog";
 import { ROUTES } from "@/constants/routes";
 
 export function App() {
   return (
     <AuthProvider>
       <Toaster />
+      <SessionExpiredDialog />
       <Routes>
         <Route
           path={ROUTES.LOGIN}

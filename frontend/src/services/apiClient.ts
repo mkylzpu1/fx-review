@@ -13,6 +13,13 @@ async function getAuthToken(): Promise<string | undefined> {
   }
 }
 
+let onUnauthorized: (() => void) | null = null;
+
+/** 401（ログイン切れ）を受けたときに呼ぶ処理を登録する。解除は null */
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  onUnauthorized = handler;
+}
+
 /** APIリクエストの共通処理 */
 async function request<T>(
   method: string,
@@ -33,6 +40,11 @@ async function request<T>(
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+
+  if (res.status === 401) {
+    onUnauthorized?.();
+    throw new ApiError("UNAUTHORIZED", "ログインの有効期限が切れました", 401);
+  }
 
   const json: ApiResponse<T> = await res.json();
 

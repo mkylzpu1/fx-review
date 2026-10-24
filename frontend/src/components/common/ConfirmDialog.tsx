@@ -11,6 +11,8 @@ interface ConfirmDialogProps {
   danger?: boolean;
   /** 確定ボタンを押せなくする（入力確認など） */
   confirmDisabled?: boolean;
+  /** キャンセルを出さない（閉じる選択肢が無いダイアログ。Escでも閉じない） */
+  hideCancel?: boolean;
   /** 3つ目の選択肢（例: 下書き保存） */
   extraAction?: { label: string; onClick: () => void };
   onConfirm: () => void;
@@ -26,20 +28,26 @@ export function ConfirmDialog({
   cancelLabel = "キャンセル",
   danger = false,
   confirmDisabled = false,
+  hideCancel = false,
   extraAction,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => !o && onCancel()}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(o) => !o && !hideCancel && onCancel()}
+    >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60" />
         <Dialog.Content
           onOpenAutoFocus={(e) => {
+            if (hideCancel) return;
             e.preventDefault();
             cancelRef.current?.focus();
           }}
+          onInteractOutside={(e) => hideCancel && e.preventDefault()}
           className="fixed left-1/2 top-1/2 z-50 w-[28rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-card border border-line bg-card p-6"
         >
           <Dialog.Title className="text-base font-bold">{title}</Dialog.Title>
@@ -47,9 +55,11 @@ export function ConfirmDialog({
             <div className="mt-2 text-sm text-ink-sub">{description}</div>
           </Dialog.Description>
           <div className="mt-6 flex flex-wrap justify-end gap-2">
-            <button ref={cancelRef} className="btn" onClick={onCancel}>
-              {cancelLabel}
-            </button>
+            {!hideCancel && (
+              <button ref={cancelRef} className="btn" onClick={onCancel}>
+                {cancelLabel}
+              </button>
+            )}
             {extraAction && (
               <button className="btn" onClick={extraAction.onClick}>
                 {extraAction.label}
