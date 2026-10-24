@@ -53,8 +53,8 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     settings?.emaSettings ?? FALLBACK.emas,
   );
   const [showAfter, setShowAfter] = useState(true);
-  // 縦軸: true=表示中の足に合わせて自動で追従 / false=いまの範囲で固定
-  const [autoScaleY, setAutoScaleY] = useState(true);
+  // 縦軸: false=表示中の足に合わせて自動で追従 / true=いまの範囲で固定
+  const [fixedY, setFixedY] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
 
   // 全画面中は Esc で閉じ、背面のスクロールを止める
@@ -215,7 +215,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         tpPrice={trade.tpPrice}
         exitPrice={trade.exitPrice}
         overlays={overlays}
-        autoScaleY={autoScaleY}
+        autoScaleY={!fixedY}
         resetKey={`${trade.id}|${tf}`}
         fill={fullscreen}
         onNeedMore={needMore}
@@ -264,14 +264,6 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
             />
             エントリー後の値動き
           </label>
-          <label className="flex min-h-touch items-center gap-2 text-sm text-ink-sub">
-            <input
-              type="checkbox"
-              checked={autoScaleY}
-              onChange={(e) => setAutoScaleY(e.target.checked)}
-            />
-            縦軸を自動で合わせる
-          </label>
           <button
             type="button"
             className="btn min-h-touch"
@@ -290,8 +282,23 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         hasSl={trade.slPrice !== null}
         hasExit={trade.exitAt !== null && trade.exitPrice !== null}
       />
-      <div className={fullscreen ? "min-h-[280px] min-w-0 flex-1" : "min-w-0"}>
-        {body}
+      <div
+        className={
+          fullscreen ? "flex min-h-[280px] min-w-0 flex-1 flex-col" : "min-w-0"
+        }
+      >
+        {/* 価格軸（縦軸）の真上。チェックすると、いまの縦軸の範囲で固定する */}
+        <div className="flex justify-end">
+          <label className="flex min-h-[2rem] items-center gap-2 pr-1 text-sm text-ink-sub">
+            <input
+              type="checkbox"
+              checked={fixedY}
+              onChange={(e) => setFixedY(e.target.checked)}
+            />
+            縦軸固定
+          </label>
+        </div>
+        <div className={fullscreen ? "min-h-0 flex-1" : ""}>{body}</div>
       </div>
       <CandleSyncButton tradeId={trade.id} />
       <div className="flex flex-wrap justify-between gap-2 text-xs text-ink-mute">
