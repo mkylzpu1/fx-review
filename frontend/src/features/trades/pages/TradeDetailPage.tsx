@@ -5,9 +5,13 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
-import { usePairs } from "@/features/settings/hooks/useSettingsApi";
+import {
+  usePairs,
+  useSettings,
+} from "@/features/settings/hooks/useSettingsApi";
 import { ApiError } from "@/services/apiClient";
 import { toast } from "@/stores/toastStore";
+import { ChartPanel } from "../components/ChartPanel";
 import { RecentTrades } from "../components/RecentTrades";
 import { TradeDetailBody } from "../components/TradeDetailBody";
 import {
@@ -21,6 +25,7 @@ export function TradeDetailPage() {
   const navigate = useNavigate();
   const { data: trade, isLoading, error, refetch } = useTrade(id);
   const pairs = usePairs();
+  const settings = useSettings();
   const del = useDeleteTrade();
   const restore = useRestoreTrade();
   const [confirming, setConfirming] = useState(false);
@@ -89,7 +94,25 @@ export function TradeDetailPage() {
 
       <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
         <RecentTrades currentId={trade.id} />
-        <TradeDetailBody trade={trade} pipSize={pipSize} />
+        <TradeDetailBody
+          trade={trade}
+          pipSize={pipSize}
+          chart={
+            settings.isLoading ? (
+              <div className="card grid min-h-[24rem] place-items-center">
+                <LoadingSpinner fullScreen={false} />
+              </div>
+            ) : (
+              // 別のトレードに移ったら、時間足・EMAの操作状態を設定の初期値に戻す
+              <ChartPanel
+                key={trade.id}
+                trade={trade}
+                pipSize={pipSize}
+                settings={settings.data ?? null}
+              />
+            )
+          }
+        />
       </div>
 
       <ConfirmDialog

@@ -25,6 +25,10 @@ vi.mock("@/services/apiClient", () => {
   };
 });
 
+vi.mock("../components/TradeChart", () => ({
+  TradeChart: () => <div data-testid="trade-chart" />,
+}));
+
 const trade = {
   id: "t1",
   source: "manual",
@@ -77,6 +81,33 @@ function setup(getTrade: () => Promise<unknown>) {
           },
         ],
       };
+    if (path === "/settings")
+      return {
+        balanceJpy: 1000000,
+        maxRiskPct: 1,
+        minRr: 2,
+        timezone: "Asia/Tokyo",
+        chartDefaultTf: "1h",
+        chartBarsBefore: 40,
+        chartBarsAfter: 20,
+        emaSettings: [{ period: 20, visible: true }],
+      };
+    if (path.startsWith("/candles?"))
+      return {
+        tf: "1h",
+        candles: [
+          {
+            time: 1759320000,
+            open: 150,
+            high: 150.2,
+            low: 149.9,
+            close: 150.1,
+          },
+        ],
+        warmupCount: 0,
+        hasData: true,
+        mock: false,
+      };
     if (path.startsWith("/trades?"))
       return { items: [trade], total: 1, page: 1, limit: 6 };
     throw new Error(path);
@@ -112,7 +143,7 @@ describe("トレード詳細", () => {
       screen.getByText("⚠ 守れていないルールがあります"),
     ).toBeInTheDocument();
     expect(screen.getByText("押し目を待った")).toBeInTheDocument();
-    expect(screen.getByText("チャートは準備中です")).toBeInTheDocument();
+    expect(await screen.findByTestId("trade-chart")).toBeInTheDocument();
   });
 
   it("存在しないトレードは見つからない案内を出す", async () => {

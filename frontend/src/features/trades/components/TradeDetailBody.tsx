@@ -53,9 +53,12 @@ const text = (v: string | null) =>
 export function TradeDetailBody({
   trade: t,
   pipSize,
+  chart,
 }: {
   trade: Trade;
   pipSize: number;
+  /** チャート領域（取得・状態管理は呼び出し側の ChartPanel が持つ） */
+  chart: ReactNode;
 }) {
   const rationale = t.tags.filter((x) => x.kind === "rationale");
   const emotion = t.tags.filter((x) => x.kind === "emotion");
@@ -84,9 +87,7 @@ export function TradeDetailBody({
         <MissingBadges missing={t.missing} />
       </div>
 
-      <div className="rounded-card border border-line bg-surface p-6 text-center text-sm text-ink-mute">
-        チャートは準備中です
-      </div>
+      {chart}
 
       <Block title="計画と結果">
         <dl className="divide-y divide-line">
@@ -108,6 +109,9 @@ export function TradeDetailBody({
           </Row>
           <Row label="決済の仕方">{EXIT_LABEL[t.exitMethod]}</Row>
           <Row label="保有時間">{formatHold(t.holdMinutes)}</Row>
+          <Row label="保有中の最大含み益（MFE）">{formatPips(t.mfePips)}</Row>
+          <Row label="保有中の最大含み損（MAE）">{formatPips(t.maePips)}</Row>
+          <Row label="決済後の最大到達">{formatPips(t.afterMaxPips)}</Row>
         </dl>
         {t.slReason && (
           <p className="text-sm text-ink-sub">SLの理由: {t.slReason}</p>
