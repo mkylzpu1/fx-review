@@ -63,9 +63,10 @@ export async function runSync(
 export async function runSyncForTrades(
   args: SyncArgs,
   log: (message: string) => void = () => undefined,
+  tradeId?: string,
 ): Promise<SyncSummary & { windows: number }> {
   const windows = tradeWindows(
-    await excursionStore.listTradeSpans(),
+    await excursionStore.listTradeSpans(tradeId),
     Math.floor(Date.now() / 1000),
   );
   if (windows.length === 0) {

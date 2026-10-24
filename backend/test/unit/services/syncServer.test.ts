@@ -40,14 +40,23 @@ describe("同期用ローカルサーバー", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("access-control-allow-origin")).toBe(ORIGIN);
     expect(await res.json()).toEqual({ ok: true, ...summary });
-    expect(run).toHaveBeenCalledWith(null);
+    expect(run).toHaveBeenCalledWith({ days: null, tradeId: null });
   });
 
   it("days を指定できる。範囲外は400", async () => {
     const { url, run } = await start();
     await post(url, { origin: ORIGIN, body: '{"days":30}' });
-    expect(run).toHaveBeenCalledWith(30);
+    expect(run).toHaveBeenCalledWith({ days: 30, tradeId: null });
     const bad = await post(url, { origin: ORIGIN, body: '{"days":0}' });
+    expect(bad.status).toBe(400);
+  });
+
+  it("tradeId を指定すると、そのトレードだけを依頼する。UUID以外は400", async () => {
+    const { url, run } = await start();
+    const id = "d8a980a5-a174-49b4-a8e4-b84cb52d42bb";
+    await post(url, { origin: ORIGIN, body: JSON.stringify({ tradeId: id }) });
+    expect(run).toHaveBeenCalledWith({ days: null, tradeId: id });
+    const bad = await post(url, { origin: ORIGIN, body: '{"tradeId":"x"}' });
     expect(bad.status).toBe(400);
   });
 

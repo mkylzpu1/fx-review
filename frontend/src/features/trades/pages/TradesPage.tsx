@@ -71,7 +71,6 @@ export function TradesPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">トレード</h1>
         <div className="flex flex-wrap items-start gap-2">
-          <CandleSyncButton />
           <Link className="btn" to={ROUTES.TRADE_IMPORT}>
             CSVを取り込む
           </Link>
@@ -83,6 +82,8 @@ export function TradesPage() {
           </Link>
         </div>
       </div>
+
+      <CandleSyncButton />
 
       <div className="card space-y-3">
         <div className="flex flex-wrap items-center gap-3">

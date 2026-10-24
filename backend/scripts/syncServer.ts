@@ -5,9 +5,13 @@ import { createSyncServer } from "./syncServerCore";
 
 const PORT = Number(process.env.SYNC_SERVER_PORT) || 3100;
 
-const server = createSyncServer((days) =>
+const server = createSyncServer(({ days, tradeId }) =>
   days === null
-    ? runSyncForTrades(parseSyncArgs(["--days", "1"]), console.log)
+    ? runSyncForTrades(
+        parseSyncArgs(["--days", "1"]),
+        console.log,
+        tradeId ?? undefined,
+      )
     : runSync(parseSyncArgs(["--days", String(days)]), console.log),
 );
 

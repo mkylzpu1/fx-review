@@ -43,7 +43,7 @@ describe("ローソク足の更新ボタン（トレード画面）", () => {
     vi.stubGlobal("fetch", fetchMock);
     renderIt();
     await userEvent.click(
-      screen.getByRole("button", { name: "ローソク足を更新" }),
+      screen.getByRole("button", { name: "全トレードの足を更新" }),
     );
     await waitFor(() =>
       expect(toasts().some((m) => m.includes("120本"))).toBe(true),
@@ -53,11 +53,35 @@ describe("ローソク足の更新ボタン（トレード画面）", () => {
     expect(JSON.parse(init.body)).toEqual({});
   });
 
+  it("トレードIDを渡すと、そのトレードだけを依頼する", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        ok: true,
+        fetched: 5,
+        excursion: { total: 1, withData: 1 },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <CandleSyncButton tradeId="t-1" />
+      </QueryClientProvider>,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "このトレードの足を更新" }),
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      tradeId: "t-1",
+    });
+  });
+
   it("同期サーバーに届かないときは、起動の確認を促す", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fail")));
     renderIt();
     await userEvent.click(
-      screen.getByRole("button", { name: "ローソク足を更新" }),
+      screen.getByRole("button", { name: "全トレードの足を更新" }),
     );
     await waitFor(() =>
       expect(toasts().some((m) => m.includes("make dev"))).toBe(true),

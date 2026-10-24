@@ -84,7 +84,7 @@ export const excursionStore = {
   },
 
   /** 全ユーザーの未削除トレードの、エントリー・決済時刻（UTC秒）と、1日足で見せる前後の日数（同期する範囲の計算用） */
-  async listTradeSpans(): Promise<TradeSpan[]> {
+  async listTradeSpans(tradeId?: string): Promise<TradeSpan[]> {
     return sql<TradeSpan[]>`
       SELECT EXTRACT(EPOCH FROM t.entry_at)::float8 AS "entryAt",
              EXTRACT(EPOCH FROM t.exit_at)::float8 AS "exitAt",
@@ -92,6 +92,7 @@ export const excursionStore = {
              COALESCE(s.chart_bars_after, 60) AS "daysAfter"
       ${TARGET_JOINS}
       WHERE t.deleted_at IS NULL AND t.pair = ${CANDLE_PAIR}
+        ${tradeId ? sql`AND t.id = ${tradeId}` : sql``}
     `;
   },
 };

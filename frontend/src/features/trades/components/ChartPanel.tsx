@@ -11,11 +11,8 @@ import { useCandleChunks, useCandles } from "../hooks/useCandles";
 import type { Trade } from "../types";
 import type { ChartRange } from "../utils/chartRange";
 import { buildChartData, mergeChunks } from "../utils/chartData";
-import {
-  TF_SECONDS,
-  chartRange,
-  extendRange,
-} from "../utils/chartRange";
+import { TF_SECONDS, chartRange, extendRange } from "../utils/chartRange";
+import { CandleSyncButton } from "./CandleSyncButton";
 import { ChartMessage } from "./ChartMessage";
 import { EmaControls } from "./EmaControls";
 import { TradeChart } from "./TradeChart";
@@ -224,6 +221,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
       </div>
       <EmaControls emas={emas} onChange={setEmas} />
       {body}
+      <CandleSyncButton tradeId={trade.id} />
       <div className="flex flex-wrap justify-between gap-2 text-xs text-ink-mute">
         <span>
           チャートの価格はMT5の配信値のため、楽天FXの約定価格とわずかにずれることがあります。

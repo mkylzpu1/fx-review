@@ -15,8 +15,14 @@ export const ALLOWED_ORIGINS = new Set([
 
 const MAX_BODY_BYTES = 1024;
 
-/** days を指定すると直近N日分、省略すると全トレードの時間帯分 */
-export type RunSync = (days: number | null) => Promise<SyncSummary>;
+/** days を指定すると直近N日分、tradeId を指定するとそのトレードの時間帯分、どちらも無ければ全トレードの時間帯分 */
+export type RunSync = (opts: {
+  days: number | null;
+  tradeId: string | null;
+}) => Promise<SyncSummary>;
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -72,10 +78,22 @@ export function createSyncServer(run: RunSync): http.Server {
       });
 
     let days: number | null = null;
+    let tradeId: string | null = null;
     try {
       const text = await readBody(req);
       if (text.trim()) {
-        const parsed = JSON.parse(text) as { days?: unknown };
+        const parsed = JSON.parse(text) as {
+          days?: unknown;
+          tradeId?: unknown;
+        };
+        if (parsed.tradeId !== undefined) {
+          if (
+            typeof parsed.tradeId !== "string" ||
+            !UUID_RE.test(parsed.tradeId)
+          )
+            return send(400, { ok: false, message: "tradeId が不正です" });
+          tradeId = parsed.tradeId;
+        }
         if (parsed.days !== undefined) {
           const n = Number(parsed.days);
           if (!Number.isInteger(n) || n < 1 || n > 366)
@@ -89,7 +107,7 @@ export function createSyncServer(run: RunSync): http.Server {
 
     running = true;
     try {
-      const summary = await run(days);
+      const summary = await run({ days, tradeId });
       send(200, { ok: true, ...summary });
     } catch (e) {
       send(500, {
