@@ -3,8 +3,8 @@ export interface ChartOverlays {
   entryLine: boolean;
   tpLine: boolean;
   slLine: boolean;
-  /** エントリーから決済までを結ぶ線 */
-  path: boolean;
+  /** 決済価格の点線（端から端まで） */
+  exitLine: boolean;
   /** IN / OUT の矢印 */
   markers: boolean;
 }
@@ -13,7 +13,7 @@ export const DEFAULT_OVERLAYS: ChartOverlays = {
   entryLine: true,
   tpLine: true,
   slLine: true,
-  path: true,
+  exitLine: true,
   markers: true,
 };
 

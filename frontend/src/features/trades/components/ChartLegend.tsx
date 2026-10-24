@@ -70,9 +70,9 @@ export function ChartLegend({
       show: hasSl,
     },
     {
-      key: "path",
-      label: "エントリー・決済の水平線（決済は勝ち緑・負け赤）",
-      swatch: "dashed",
+      key: "exitLine",
+      label: "決済価格（勝ち緑・負け赤）",
+      swatch: "dotted",
       color: CHART_COLORS.tp,
       show: hasExit,
     },

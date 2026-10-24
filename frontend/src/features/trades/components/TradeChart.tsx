@@ -73,7 +73,6 @@ export function TradeChart({
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const emaRefs = useRef<ISeriesApi<"Line">[]>([]);
-  const pathRef = useRef<ISeriesApi<"Line">[]>([]);
   const firstTimeRef = useRef<number | null>(null);
   const countRef = useRef(0);
   const resetRef = useRef<string | null>(null);
@@ -124,7 +123,6 @@ export function TradeChart({
     candleRef.current = candles;
     markersRef.current = createSeriesMarkers(candles, []);
     emaRefs.current = [];
-    pathRef.current = [];
     firstTimeRef.current = null;
     resetRef.current = null;
 
@@ -180,41 +178,7 @@ export function TradeChart({
       return s;
     });
 
-    // エントリー価格と決済価格の水平線（エントリーの足から決済の足まで）。
-    // 同じ足のときは、1本ぶんの幅で引く。決済の線は勝ちなら緑・負けなら赤
-    pathRef.current.forEach((l) => chart.removeSeries(l));
-    pathRef.current = [];
     const { entryTime, exitTime } = data;
-    if (
-      entryTime !== null &&
-      exitTime !== null &&
-      exitPrice !== null &&
-      overlays.path
-    ) {
-      const step =
-        data.candles.length > 1
-          ? data.candles[1].time - data.candles[0].time
-          : 60;
-      const endTime = exitTime > entryTime ? exitTime : entryTime + step;
-      const win =
-        side === "buy" ? exitPrice >= entryPrice : exitPrice <= entryPrice;
-      const hline = (price: number, color: string) => {
-        const l = chart.addSeries(LineSeries, {
-          color,
-          lineWidth: 2,
-          priceLineVisible: false,
-          lastValueVisible: false,
-          crosshairMarkerVisible: false,
-        });
-        l.setData([
-          { time: jst(entryTime), value: price },
-          { time: jst(endTime), value: price },
-        ]);
-        pathRef.current.push(l);
-      };
-      hline(entryPrice, CHART_COLORS.entry);
-      hline(exitPrice, win ? CHART_COLORS.tp : CHART_COLORS.sl);
-    }
 
     // マーカー: エントリーは買いなら足の下・売りなら上。決済はその反対側に置いて、同じ足でも重ならないようにする
     const markers: SeriesMarker<Time>[] = [];
@@ -277,11 +241,10 @@ export function TradeChart({
     resetKey,
     height,
     pipSize,
-    overlays.path,
     overlays.markers,
   ]);
 
-  // 価格線（エントリー・TP・SL）。決済価格は線ではなくマーカーで見せる
+  // 価格線（エントリー・TP・SL・決済）。端から端までの線
   useEffect(() => {
     const candles = candleRef.current;
     if (!candles) return;
@@ -301,6 +264,21 @@ export function TradeChart({
       lines.push(dashed(tpPrice, CHART_COLORS.tp, "TP"));
     if (slPrice !== null && overlays.slLine)
       lines.push(dashed(slPrice, CHART_COLORS.sl, "SL"));
+    // 決済価格: エントリーと同じく端から端までの点線。勝ちなら緑・負けなら赤
+    if (exitPrice !== null && overlays.exitLine) {
+      const win =
+        side === "buy" ? exitPrice >= entryPrice : exitPrice <= entryPrice;
+      lines.push(
+        candles.createPriceLine({
+          price: exitPrice,
+          color: win ? CHART_COLORS.tp : CHART_COLORS.sl,
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: "決済",
+        }),
+      );
+    }
     return () => {
       lines.forEach((l) => {
         try {
@@ -319,6 +297,9 @@ export function TradeChart({
     overlays.entryLine,
     overlays.tpLine,
     overlays.slLine,
+    overlays.exitLine,
+    exitPrice,
+    side,
   ]);
 
   return (
