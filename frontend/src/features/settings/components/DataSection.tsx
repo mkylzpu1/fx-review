@@ -6,6 +6,11 @@ import { ROUTES } from "@/constants/routes";
 import { downloadText } from "@/features/export/utils/download";
 import { toast } from "@/stores/toastStore";
 import {
+  CANDLE_SYNC_URL,
+  SyncServerUnreachable,
+  useCandleSync,
+} from "../hooks/useCandleSync";
+import {
   useDeleteAllData,
   useFetchBackup,
   useRestoreBackup,
@@ -51,6 +56,7 @@ export function DataSection() {
   const fetchBackup = useFetchBackup();
   const restore = useRestoreBackup();
   const deleteAll = useDeleteAllData();
+  const candleSync = useCandleSync();
 
   const onSaveBackup = () =>
     fetchBackup.mutate(undefined, {
@@ -107,6 +113,22 @@ export function DataSection() {
     });
   };
 
+  const onSyncCandles = () =>
+    candleSync.mutate(7, {
+      onSuccess: (r) =>
+        toast.success(
+          r.fetched > 0
+            ? `ローソク足を更新しました（${r.fetched}本）`
+            : "新しい足はありませんでした。MT5のボタンで書き出したか確認してください",
+        ),
+      onError: (e) =>
+        toast.error(
+          e instanceof SyncServerUnreachable
+            ? "同期サーバーに接続できません。make dev で起動しているか確認してください。"
+            : `ローソク足を更新できませんでした。${e instanceof Error ? e.message : ""}`,
+        ),
+    });
+
   return (
     <section id="data" className="card">
       <h2 className="text-base font-bold">データ</h2>
@@ -158,9 +180,20 @@ export function DataSection() {
             ファイルを選ぶ
           </button>
         </Row>
-        <Row title="MT5の履歴を取り込む" desc="準備中です。">
-          <button className="btn shrink-0" disabled>
-            準備中
+        <Row
+          title="MT5のローソク足を更新"
+          desc={
+            CANDLE_SYNC_URL
+              ? "先にMT5のチャートの「CSV書き出し」ボタンを押してから、直近7日分の1分足を取り込みます。"
+              : "この環境では使えません（手元で make dev から起動したときだけ使えます）。"
+          }
+        >
+          <button
+            className="btn shrink-0"
+            disabled={!CANDLE_SYNC_URL || candleSync.isPending}
+            onClick={onSyncCandles}
+          >
+            {candleSync.isPending ? "更新中…" : "更新"}
           </button>
         </Row>
         <Row

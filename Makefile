@@ -1,4 +1,4 @@
-.PHONY: dev setup db build api lambda front stop sync
+.PHONY: dev setup db build api lambda front stop sync sync-server
 
 # 初回だけ: 依存インストール + ローカル設定ファイルの作成（既にあれば上書きしない）
 setup:
@@ -23,14 +23,18 @@ lambda:
 front:
 	cd frontend && npm run dev
 
-# ローソク足を直近7日分だけDBに同期する（MT5が書き出したCSVを読む）。
-# CSVが無い・MT5が止まっているなどで失敗しても、起動は止めない
-sync:
-	-cd backend && npm run candles:sync -- --days 7
+# ローソク足の同期用ローカルサーバー（設定画面の「ローソク足を更新」ボタンを受ける）。
+# アプリ本体のコンテナからは手元のMT5のCSVを読めないため、Macで直接動かす
+sync-server:
+	cd backend && npm run sync:server
 
-# 毎回これだけ: DB起動 → ローソク足の同期 → ビルド → api / lambda / frontend を同時起動（止めるときは Ctrl+C）
-dev: db sync build
-	$(MAKE) -j3 api lambda front
+# ボタンを使わずに、コマンドで直近7日分を同期したいとき
+sync:
+	cd backend && npm run candles:sync -- --days 7
+
+# 毎回これだけ: DB起動 → ビルド → api / lambda / frontend / 同期サーバーを同時起動（止めるときは Ctrl+C）
+dev: db build
+	$(MAKE) -j4 api lambda front sync-server
 
 # DBコンテナを止める（データは残る）
 stop:

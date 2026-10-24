@@ -8,6 +8,7 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.mjs",
     "candles:sync": "node scripts/run.mjs syncCandles",
+    "sync:server": "node scripts/run.mjs syncServer",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.ts\"",

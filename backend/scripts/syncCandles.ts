@@ -1,54 +1,22 @@
 /**
- * USDJPY の1分足を取得して candles_1m に保存する（手元で実行する）。
+ * USDJPY の1分足を取り込んで candles_1m に保存する（手元で実行する）。
  *
+ *   npm run candles:sync -- --days 7   （今日を含む直近7日）
  *   npm run candles:sync -- --from 2026-10-01 --to 2026-10-23
- *   npm run candles:sync -- --days 7   （今日を含む直近7日。make dev から自動で実行される）
  *   npm run candles:sync -- --from 2026-10-01 --to 2026-10-23 --dir <MT5のCSVフォルダ>
  *   npm run candles:sync -- --from 2026-10-01 --to 2026-10-23 --provider mock
  *
  * 既定の取得元は MT5 が書き出した CSV（mt5/FxReviewExport.mq5）。
- *
+ * 普段は、アプリの設定画面の「ローソク足を更新」ボタンから同じ処理が動く（npm run sync:server）。
  * --from / --to は UTC の日付。--to の日の終わりまで取得する。
  * 再実行しても安全（直近48時間は上書き、それより古い実データは変更しない）。
  */
 import { sql } from "../src/lib/db";
-import type { CandleProvider } from "../src/services/candles/CandleProvider";
-import { CsvCandleProvider } from "../src/services/candles/CsvCandleProvider";
-import { MockCandleProvider } from "../src/services/candles/MockCandleProvider";
-import { syncCandles } from "../src/services/candles/syncService";
-import { excursionService } from "../src/services/trade/excursionService";
 import { parseSyncArgs } from "./syncArgs";
+import { runSync } from "./syncRunner";
 
 async function main() {
-  const args = parseSyncArgs(process.argv.slice(2));
-  // dukascopy-node は重いので、使うときだけ読み込む
-  let provider: CandleProvider;
-  if (args.provider === "mock") provider = new MockCandleProvider();
-  else if (args.provider === "mt5") {
-    if (!args.dir)
-      throw new Error(
-        "MT5のCSVフォルダを --dir か CANDLE_CSV_DIR（backend/.env.local）で指定してください",
-      );
-    provider = new CsvCandleProvider(args.dir, args.serverTime);
-  } else
-    provider = new (
-      await import("../src/services/candles/DukascopyProvider")
-    ).DukascopyProvider();
-  console.log(
-    `[sync] ${args.provider}: ${args.from.toISOString()} 〜 ${args.to.toISOString()}`,
-  );
-  const result = await syncCandles(provider, args.from, args.to, {
-    onProgress: (p) =>
-      console.log(
-        `[sync] ${p.from.toISOString().slice(0, 10)} 〜 ${p.to.toISOString().slice(0, 10)}: ${p.fetched}本`,
-      ),
-  });
-  console.log(`[sync] 完了: ${result.fetched}本（${result.chunks}区間）`);
-  // 同期した期間にエントリーしたトレードの MFE / MAE を計算し直す
-  const ex = await excursionService.refreshRange(args.from, args.to);
-  console.log(
-    `[sync] MFE/MAE: 決済済み${ex.total}件のうち${ex.withData}件を計算しました`,
-  );
+  await runSync(parseSyncArgs(process.argv.slice(2)), console.log);
 }
 
 main()
