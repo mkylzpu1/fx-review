@@ -18,6 +18,7 @@ import { DEFAULT_OVERLAYS } from "../utils/chartOverlays";
 import { excursionLevels, hasExcursion } from "../utils/excursionLevels";
 import { CandleSyncButton } from "./CandleSyncButton";
 import { ChartLegend } from "./ChartLegend";
+import { ShareHtmlButton } from "./ShareHtmlButton";
 import { ChartPane, TimeframeSelect } from "./ChartPane";
 import { EmaControls } from "./EmaControls";
 
@@ -206,6 +207,9 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
       </div>
 
       <CandleSyncButton tradeId={trade.id} />
+      {!fullscreen && (
+        <ShareHtmlButton trade={trade} pipSize={pipSize} settings={settings} />
+      )}
       <p className="text-xs text-ink-mute">
         チャートの価格はMT5の配信値のため、楽天FXの約定価格とわずかにずれることがあります。
       </p>
