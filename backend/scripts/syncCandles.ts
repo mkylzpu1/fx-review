@@ -10,6 +10,7 @@
 import { sql } from "../src/lib/db";
 import { MockCandleProvider } from "../src/services/candles/MockCandleProvider";
 import { syncCandles } from "../src/services/candles/syncService";
+import { excursionService } from "../src/services/trade/excursionService";
 import { parseSyncArgs } from "./syncArgs";
 
 async function main() {
@@ -31,6 +32,11 @@ async function main() {
       ),
   });
   console.log(`[sync] 完了: ${result.fetched}本（${result.chunks}区間）`);
+  // 同期した期間にエントリーしたトレードの MFE / MAE を計算し直す
+  const ex = await excursionService.refreshRange(args.from, args.to);
+  console.log(
+    `[sync] MFE/MAE: 決済済み${ex.total}件のうち${ex.withData}件を計算しました`,
+  );
 }
 
 main()

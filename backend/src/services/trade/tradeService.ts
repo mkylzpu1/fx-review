@@ -22,6 +22,7 @@ import type {
 import { pnlFromPips, resultPips } from "./calc";
 import { normalizeTradeInput } from "./tradeInput";
 import { buildTradeView } from "./tradeView";
+import { excursionService } from "./excursionService";
 
 const DEFAULT_MAX_RISK_PCT = 1;
 
@@ -175,6 +176,7 @@ export const tradeService = {
       source: "manual",
       sourceKey: null,
     });
+    await excursionService.refreshTrade(userId, id);
     return this.get(userId, id);
   },
 
@@ -200,6 +202,7 @@ export const tradeService = {
     );
     const ok = await tradeStore.update(userId, id, write, links);
     if (!ok) throw new NotFoundError("トレード");
+    await excursionService.refreshTrade(userId, id);
     return this.get(userId, id);
   },
 

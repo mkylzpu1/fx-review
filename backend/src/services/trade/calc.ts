@@ -4,7 +4,7 @@
  */
 import type { Side } from "../../types/trade";
 
-const round = (v: number, digits: number) => {
+export const round = (v: number, digits: number) => {
   const f = 10 ** digits;
   return Math.round(v * f) / f;
 };
