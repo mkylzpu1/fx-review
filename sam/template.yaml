@@ -525,6 +525,45 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/stats/index.ts]
 
+  # ─── 週次レビュー ───────────────────────────────────────
+  WeeklyReviewGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/weeklyReview/index.getHandler
+      Timeout: 30
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /weekly-review
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/weeklyReview/index.ts]
+
+  WeeklyReviewPutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/weeklyReview/index.putHandler
+      Timeout: 30
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /weekly-review
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/weeklyReview/index.ts]
+
   # ─── CSV取り込み ────────────────────────────────────────
   ImportsPreviewFunction:
     Type: AWS::Serverless::Function

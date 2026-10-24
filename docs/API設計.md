@@ -361,3 +361,16 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 - 根拠タグ別: 複数タグのトレードは各タグに数える。タグが無いものは「未入力」にまとめ、`insights` には含めない
 - ルール遵守別: 有効なルールに `ng` が1つでもあれば「破った」、`ok` があれば「守った」、どちらも無ければ「判定なし」
 - セッションはエントリー時刻（設定のタイムゾーン）で分類。区分は `constants/sessions.ts`（仮値）
+
+### 週次レビュー
+
+| メソッド | パス | 説明 |
+|---|---|---|
+| `GET` | `/weekly-review?weekStart=YYYY-MM-DD` | その週（月〜日・JST）の集計と、保存済みのふりかえり。`weekStart` を省くと今週。月曜でない日付は、その日を含む週の月曜にそろえる |
+| `PUT` | `/weekly-review?weekStart=YYYY-MM-DD` | ふりかえり（`memo`）と、来週守るルール（`nextRuleId` または `nextRuleText`）を保存。`weekStart` 必須 |
+
+`GET` レスポンス `data`: `weekStart` / `weekEnd`、`n`・`winRate`・`totalR`・`rCount`・`rMissing`・`totalPips`、`rule`（守った/破った/判定なしの件数）、`days`（日別の件数・R）、`planned`（計画どおりR）、`trades`（その週のトレード、新しい順）、`comments`、`fewTrades`、`review`（未保存なら `null`）、`rules`（有効なルールの候補）。
+
+- 集計対象は決済済みで pips があるトレード。R系は R が計算できるものだけ（`rMissing` が未計算の件数）
+- `planned`（計画どおりに持っていたら）: **TPが入っていて R が計算できる手動決済**だけを、計画のリスクリワードで決済したと仮定した週の合計R。対象外の手動決済は `excludedCount` で併記。`emotions` は対象トレードの感情タグ
+- `fewTrades`: 5件未満の週。コメントは「傾向ではなく見直しの材料」と注記する
