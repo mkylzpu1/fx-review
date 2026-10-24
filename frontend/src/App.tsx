@@ -5,7 +5,6 @@ import { RequireGuest } from "@/features/auth/components/RequireGuest";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Toaster } from "@/components/common/Toast";
 import { NotFoundPage } from "@/components/common/NotFoundPage";
-import { PlaceholderPage } from "@/components/common/PlaceholderPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { CallbackPage } from "@/features/auth/pages/CallbackPage";
 import { RequireOnboarded } from "@/features/onboarding/components/RequireOnboarded";
@@ -22,13 +21,9 @@ import { NoteDetailPage } from "@/features/notes/pages/NoteDetailPage";
 import { NotesPage } from "@/features/notes/pages/NotesPage";
 import { RuleDetailPage } from "@/features/rules/pages/RuleDetailPage";
 import { RulesPage } from "@/features/rules/pages/RulesPage";
+import { AccountPage } from "@/features/account/pages/AccountPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { ROUTES } from "@/constants/routes";
-
-/** 後続フェーズで実装する画面（フェーズ完了時に実ページへ差し替える） */
-const PLACEHOLDERS: { path: string; title: string }[] = [
-  { path: ROUTES.ACCOUNT, title: "アカウント" },
-];
 
 export function App() {
   return (
@@ -98,13 +93,7 @@ export function App() {
                       path="/"
                       element={<Navigate to={ROUTES.STATS} replace />}
                     />
-                    {PLACEHOLDERS.map((p) => (
-                      <Route
-                        key={p.path}
-                        path={p.path}
-                        element={<PlaceholderPage title={p.title} />}
-                      />
-                    ))}
+                    <Route path={ROUTES.ACCOUNT} element={<AccountPage />} />
                     <Route path="*" element={<NotFoundPage />} />
                   </Routes>
                 </RequireOnboarded>

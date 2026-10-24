@@ -9,6 +9,8 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   /** 危険操作は赤にする */
   danger?: boolean;
+  /** 確定ボタンを押せなくする（入力確認など） */
+  confirmDisabled?: boolean;
   /** 3つ目の選択肢（例: 下書き保存） */
   extraAction?: { label: string; onClick: () => void };
   onConfirm: () => void;
@@ -23,6 +25,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = "キャンセル",
   danger = false,
+  confirmDisabled = false,
   extraAction,
   onConfirm,
   onCancel,
@@ -54,6 +57,7 @@ export function ConfirmDialog({
             )}
             <button
               className={danger ? "btn-danger" : "btn-primary"}
+              disabled={confirmDisabled}
               onClick={onConfirm}
             >
               {confirmLabel}
