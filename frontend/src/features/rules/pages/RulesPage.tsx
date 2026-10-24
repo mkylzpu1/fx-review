@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { ROUTES } from "@/constants/routes";
 import { toast } from "@/stores/toastStore";
 import { RuleEditor } from "../components/RuleEditor";
 import { useCreateRule, useRules, useUpdateRule } from "../hooks/useRulesApi";
@@ -119,7 +121,12 @@ export function RulesPage() {
               ) : (
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">{rule.title}</p>
+                    <Link
+                      to={ROUTES.RULE_DETAIL.replace(":id", rule.id)}
+                      className="font-medium text-accent-link underline"
+                    >
+                      {rule.title}
+                    </Link>
                     {rule.description && (
                       <p className="mt-1 text-sm text-ink-sub">
                         {rule.description}

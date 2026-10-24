@@ -20,13 +20,13 @@ import { WeeklyReviewPage } from "@/features/stats/pages/WeeklyReviewPage";
 import { ExportPage } from "@/features/export/pages/ExportPage";
 import { NoteDetailPage } from "@/features/notes/pages/NoteDetailPage";
 import { NotesPage } from "@/features/notes/pages/NotesPage";
+import { RuleDetailPage } from "@/features/rules/pages/RuleDetailPage";
 import { RulesPage } from "@/features/rules/pages/RulesPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { ROUTES } from "@/constants/routes";
 
 /** 後続フェーズで実装する画面（フェーズ完了時に実ページへ差し替える） */
 const PLACEHOLDERS: { path: string; title: string }[] = [
-  { path: ROUTES.RULE_DETAIL, title: "ルール詳細" },
   { path: ROUTES.ACCOUNT, title: "アカウント" },
 ];
 
@@ -58,6 +58,10 @@ export function App() {
                     />
                     <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />
                     <Route path={ROUTES.RULES} element={<RulesPage />} />
+                    <Route
+                      path={ROUTES.RULE_DETAIL}
+                      element={<RuleDetailPage />}
+                    />
                     <Route path={ROUTES.TRADES} element={<TradesPage />} />
                     <Route
                       path={ROUTES.TRADE_DETAIL}
