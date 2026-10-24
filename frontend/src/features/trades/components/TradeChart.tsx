@@ -44,6 +44,8 @@ interface Props {
   fill?: boolean;
   /** 重ねて表示するものの表示・非表示 */
   overlays?: ChartOverlays;
+  /** true: 縦軸を表示中の足に合わせて自動で追従する / false: いまの縦軸の範囲で固定する */
+  autoScaleY?: boolean;
   /** この値が変わったときだけ、表示位置をエントリー付近に合わせ直す（足を追加しただけでは動かさない） */
   resetKey?: string;
   /** 端の近くまでスクロールされたとき、その方向の足を追加で読むよう頼む */
@@ -52,6 +54,32 @@ interface Props {
 
 const EDGE_BARS = 30;
 const jst = (t: number) => (t + JST_OFFSET_SEC) as UTCTimestamp;
+
+/**
+ * 縦軸の自動追従を切り替える。
+ * 固定にするときは、いちど自動で範囲を合わせて描画させてから固定する（描画前に固定すると範囲が空のままになるため）
+ */
+function setYMode(
+  candles: ISeriesApi<"Candlestick">,
+  auto: boolean,
+  rafRef: { current: number },
+) {
+  cancelAnimationFrame(rafRef.current);
+  try {
+    candles.priceScale().applyOptions({ autoScale: true });
+    if (!auto) {
+      rafRef.current = requestAnimationFrame(() => {
+        try {
+          candles.priceScale().applyOptions({ autoScale: false });
+        } catch {
+          // チャートごと破棄された後は何もしない
+        }
+      });
+    }
+  } catch {
+    // チャートごと破棄された後は何もしない
+  }
+}
 
 /**
  * ローソク足＋EMA＋エントリー/決済/SL/TPの描画だけを担当する。
@@ -69,6 +97,7 @@ export function TradeChart({
   height = 360,
   fill = false,
   overlays = DEFAULT_OVERLAYS,
+  autoScaleY = true,
   resetKey = "",
   onNeedMore,
 }: Props) {
@@ -85,6 +114,9 @@ export function TradeChart({
   const armedRef = useRef(false);
   const needMoreRef = useRef(onNeedMore);
   needMoreRef.current = onNeedMore;
+  const autoYRef = useRef(autoScaleY);
+  autoYRef.current = autoScaleY;
+  const rafRef = useRef(0);
 
   // チャート本体（高さと価格の桁が変わったときだけ作り直す）
   useEffect(() => {
@@ -256,6 +288,8 @@ export function TradeChart({
       else ts.fitContent();
       resetRef.current = resetKey;
       armedRef.current = false;
+      // 別のトレード・時間足に変わったときは、固定中でも縦軸を新しい足に合わせ直す
+      if (!autoYRef.current) setYMode(candles, false, rafRef);
     } else if (prevRange && prevFirst !== null && newFirst !== null) {
       // 古い足が前に足されたぶん、見ている位置を後ろへずらして、画面を動かさない
       const added = data.candles.filter((c) => c.time < prevFirst).length;
@@ -283,6 +317,13 @@ export function TradeChart({
     overlays.markers,
     overlays.afterShade,
   ]);
+
+  // 縦軸の自動追従 / 固定（足の差し替えより後に動かして、描画済みの範囲で固定する）
+  useEffect(() => {
+    const candles = candleRef.current;
+    if (!candles) return;
+    setYMode(candles, autoScaleY, rafRef);
+  }, [autoScaleY, height, pipSize]);
 
   // 価格線（エントリー・TP・SL・決済）。端から端までの線
   useEffect(() => {

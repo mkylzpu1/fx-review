@@ -53,6 +53,8 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     settings?.emaSettings ?? FALLBACK.emas,
   );
   const [showAfter, setShowAfter] = useState(true);
+  // 縦軸: true=表示中の足に合わせて自動で追従 / false=いまの範囲で固定
+  const [autoScaleY, setAutoScaleY] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
 
   // 全画面中は Esc で閉じ、背面のスクロールを止める
@@ -213,6 +215,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         tpPrice={trade.tpPrice}
         exitPrice={trade.exitPrice}
         overlays={overlays}
+        autoScaleY={autoScaleY}
         resetKey={`${trade.id}|${tf}`}
         fill={fullscreen}
         onNeedMore={needMore}
@@ -252,7 +255,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3">
           <label className="flex min-h-touch items-center gap-2 text-sm text-ink-sub">
             <input
               type="checkbox"
@@ -260,6 +263,14 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
               onChange={(e) => setShowAfter(e.target.checked)}
             />
             エントリー後の値動き
+          </label>
+          <label className="flex min-h-touch items-center gap-2 text-sm text-ink-sub">
+            <input
+              type="checkbox"
+              checked={autoScaleY}
+              onChange={(e) => setAutoScaleY(e.target.checked)}
+            />
+            縦軸を自動で合わせる
           </label>
           <button
             type="button"
