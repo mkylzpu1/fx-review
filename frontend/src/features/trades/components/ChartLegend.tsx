@@ -14,6 +14,8 @@ interface Props {
   hasTp: boolean;
   hasSl: boolean;
   hasExit: boolean;
+  /** 最大含み益・含み損などの値がある（足を同期済みの決済済みトレード） */
+  hasExcursion?: boolean;
 }
 
 function Swatch({ kind, color }: { kind: Item["swatch"]; color: string }) {
@@ -60,6 +62,7 @@ export function ChartLegend({
   hasTp,
   hasSl,
   hasExit,
+  hasExcursion = false,
 }: Props) {
   const items: (Item & { show: boolean })[] = [
     {
@@ -89,6 +92,13 @@ export function ChartLegend({
       swatch: "dotted",
       color: CHART_COLORS.tp,
       show: hasExit,
+    },
+    {
+      key: "excursion",
+      label: "最大含み益・含み損・決済後最大",
+      swatch: "dotted",
+      color: CHART_COLORS.exit,
+      show: hasExcursion,
     },
     {
       key: "afterShade",

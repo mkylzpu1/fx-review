@@ -9,6 +9,8 @@ export interface ChartOverlays {
   afterShade: boolean;
   /** IN / OUT の矢印 */
   markers: boolean;
+  /** 保有中の最大含み益・最大含み損と、決済後の最大到達の水準線 */
+  excursion: boolean;
 }
 
 export const DEFAULT_OVERLAYS: ChartOverlays = {
@@ -18,6 +20,7 @@ export const DEFAULT_OVERLAYS: ChartOverlays = {
   exitLine: true,
   afterShade: true,
   markers: true,
+  excursion: false,
 };
 
 /** 時間足を切り替えたとき、最初に見せる足の本数（どの時間足でも同じ）。エントリーの足を、左から60本目に置く */

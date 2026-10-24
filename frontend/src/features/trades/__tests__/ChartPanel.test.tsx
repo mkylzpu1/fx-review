@@ -1,9 +1,11 @@
 import "@testing-library/jest-dom";
+import { forwardRef, useImperativeHandle } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChartPanel } from "../components/ChartPanel";
+import { useChartUiStore } from "../chartUiStore";
 import { apiClient } from "@/services/apiClient";
 import type { AccountSettings } from "@/features/settings/types";
 import type { CandlesResponse, Trade } from "../types";
@@ -25,16 +27,21 @@ vi.mock("@/services/apiClient", () => {
 });
 
 const chartProps = vi.fn();
+const refit = vi.fn();
 vi.mock("../components/TradeChart", () => ({
-  TradeChart: (p: {
-    data: { candles: unknown[]; emaLines: unknown[] };
-    overlays?: Record<string, boolean>;
-    resetKey?: string;
-    fill?: boolean;
-  }) => {
+  TradeChart: forwardRef(function MockChart(
+    p: {
+      data: { candles: unknown[]; emaLines: unknown[] };
+      overlays?: Record<string, boolean>;
+      resetKey?: string;
+      fill?: boolean;
+    },
+    ref,
+  ) {
     chartProps(p);
+    useImperativeHandle(ref, () => ({ screenshot: () => null, refitY: refit }));
     return <div data-testid="trade-chart" />;
-  },
+  }),
 }));
 
 const trade = {
@@ -96,6 +103,8 @@ const lastUrl = () => {
 describe("チャート領域", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    useChartUiStore.setState({ fullscreen: false });
   });
 
   it("設定の初期時間足と、EMAのウォームアップ込みの範囲で取得する", async () => {
@@ -284,5 +293,215 @@ describe("チャート領域", () => {
     expect(fillOf()).toBe(true);
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(fillOf()).toBe(false));
+  });
+
+  const lastProps = () =>
+    chartProps.mock.calls[chartProps.mock.calls.length - 1][0];
+
+  it("表示設定（時間足）を覚えて、次に開いたときも引き継ぐ。初期値に戻せる", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    const first = renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(screen.queryByText("設定の初期値に戻す")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "15m" }));
+    expect(screen.getByText("設定の初期値に戻す")).toBeInTheDocument();
+    first.unmount();
+
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(screen.getByRole("radio", { name: "15m" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await userEvent.click(screen.getByText("設定の初期値に戻す"));
+    expect(screen.getByRole("radio", { name: "1h" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
+  it("EMA・凡例・縦軸固定も覚える", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    const first = renderPanel();
+    await screen.findByTestId("trade-chart");
+    await userEvent.click(screen.getByRole("button", { name: /SL（損切り）/ }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "縦軸固定" }));
+    await userEvent.click(screen.getByRole("button", { name: /EMA20$/ }));
+    first.unmount();
+
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(lastProps().overlays.slLine).toBe(false);
+    expect(lastProps().autoScaleY).toBe(false);
+    expect(screen.getByRole("checkbox", { name: "縦軸固定" })).toBeChecked();
+    expect(lastProps().data.emaLines).toHaveLength(0);
+  });
+
+  it("壊れた保存内容は無視して、設定の初期値で開く", async () => {
+    localStorage.setItem("fxr.chartPrefs.v1", "{not json");
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(screen.getByRole("radio", { name: "1h" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
+  it("縦軸を固定している間は状態を示し、範囲を合わせ直せる", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(screen.queryByText("縦軸を固定中")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("checkbox", { name: "縦軸固定" }));
+    expect(screen.getByText("縦軸を固定中")).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "範囲を合わせ直す" }),
+    );
+    expect(refit).toHaveBeenCalledTimes(1);
+  });
+
+  it("価格軸を直接動かして自動追従が切れたら、チェックも固定中に合わせる", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(
+      screen.getByRole("checkbox", { name: "縦軸固定" }),
+    ).not.toBeChecked();
+    act(() => lastProps().onAutoScaleChange(false));
+    expect(screen.getByRole("checkbox", { name: "縦軸固定" })).toBeChecked();
+    expect(screen.getByText("縦軸を固定中")).toBeInTheDocument();
+    // ダブルクリックなどで自動追従に戻ったときも合わせる
+    act(() => lastProps().onAutoScaleChange(true));
+    expect(
+      screen.getByRole("checkbox", { name: "縦軸固定" }),
+    ).not.toBeChecked();
+  });
+
+  it("「時間足を並べる」で2枚のチャートを出し、2枚目は別の時間足で取得する", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    await userEvent.click(
+      screen.getByRole("button", { name: "時間足を並べる" }),
+    );
+    await waitFor(() =>
+      expect(screen.getAllByTestId("trade-chart")).toHaveLength(2),
+    );
+    const second = screen.getByRole("radiogroup", { name: "時間足（画面2）" });
+    // 1画面目が1hなので、2画面目は1つ大きい4h
+    expect(within(second).getByRole("radio", { name: "4h" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    const tfs = vi
+      .mocked(apiClient.get)
+      .mock.calls.map((c) =>
+        new URL(c[0] as string, "http://x").searchParams.get("tf"),
+      );
+    expect(tfs).toContain("4h");
+
+    await userEvent.click(within(second).getByRole("radio", { name: "15m" }));
+    await waitFor(() => expect(lastUrl().searchParams.get("tf")).toBe("15m"));
+    await userEvent.click(screen.getByRole("button", { name: "1画面に戻す" }));
+    expect(screen.getAllByTestId("trade-chart")).toHaveLength(1);
+  });
+
+  it("「pipsを測る」でチャートを測定モードにし、結果（pips・本数・時間）を出す", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(lastProps().measureMode).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "pipsを測る" }));
+    expect(lastProps().measureMode).toBe(true);
+    expect(screen.getByText(/1点目をクリック/)).toBeInTheDocument();
+
+    act(() => lastProps().onMeasureChange({ step: 1, result: null }));
+    expect(screen.getByText(/2点目をクリック/)).toBeInTheDocument();
+
+    act(() =>
+      lastProps().onMeasureChange({
+        step: 2,
+        result: { pips: -12.3, bars: 8, seconds: 8 * 3600 },
+      }),
+    );
+    expect(screen.getByText("−12.3 pips")).toBeInTheDocument();
+    expect(screen.getByText("8本")).toBeInTheDocument();
+    expect(screen.getByText("8時間")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "測定を終える" }));
+    expect(lastProps().measureMode).toBe(false);
+  });
+
+  it("キーボード: Fで全画面、数字キーで時間足、Mで測定、Dで2画面", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+
+    await userEvent.keyboard("3");
+    await waitFor(() => expect(lastUrl().searchParams.get("tf")).toBe("15m"));
+
+    await userEvent.keyboard("f");
+    await waitFor(() => expect(lastProps().fill).toBe(true));
+    await userEvent.keyboard("f");
+    await waitFor(() => expect(lastProps().fill).toBe(false));
+
+    await userEvent.keyboard("m");
+    await waitFor(() => expect(lastProps().measureMode).toBe(true));
+
+    await userEvent.keyboard("d");
+    await waitFor(() =>
+      expect(screen.getAllByTestId("trade-chart")).toHaveLength(2),
+    );
+  });
+
+  it("入力欄に文字を打っている間は、ショートカットを効かせない", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    await userEvent.type(screen.getByLabelText("追加するEMAの期間"), "3f");
+    expect(lastProps().fill).toBe(false);
+    expect(screen.getByRole("radio", { name: "1h" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
+  it("最大含み益・含み損の値があるトレードだけ、凡例にその切り替えを出す", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    const { unmount } = renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(
+      screen.queryByRole("button", { name: /最大含み益・含み損/ }),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    const withExcursion = {
+      ...trade,
+      exitPrice: 150.3,
+      mfePips: 40,
+      maePips: -10,
+      afterMaxPips: 5,
+    } as unknown as Trade;
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={qc}>
+        <ChartPanel trade={withExcursion} pipSize={0.01} settings={settings} />
+      </QueryClientProvider>,
+    );
+    await screen.findByTestId("trade-chart");
+    // 買い: エントリー150の+40pips=150.4 / -10pips=149.9 / 決済150.3の+5pips=150.35
+    expect(lastProps().excursion).toEqual({
+      mfe: 150.4,
+      mae: 149.9,
+      afterMax: 150.35,
+    });
+    expect(lastProps().overlays.excursion).toBe(false);
+    await userEvent.click(
+      screen.getByRole("button", { name: /最大含み益・含み損・決済後最大/ }),
+    );
+    expect(lastProps().overlays.excursion).toBe(true);
   });
 });
