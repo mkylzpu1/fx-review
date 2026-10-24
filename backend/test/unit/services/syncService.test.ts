@@ -106,7 +106,7 @@ describe("parseSyncArgs", () => {
     const a = parseSyncArgs(["--from", "2026-10-01", "--to", "2026-10-23"]);
     expect(a.from.toISOString()).toBe("2026-10-01T00:00:00.000Z");
     expect(a.to.toISOString()).toBe("2026-10-24T00:00:00.000Z");
-    expect(a.provider).toBe("dukascopy");
+    expect(a.provider).toBe("mt5");
   });
   it("日付の形式・順序・providerの誤りを弾く", () => {
     expect(() => parseSyncArgs(["--to", "2026-10-23"])).toThrow("--from");

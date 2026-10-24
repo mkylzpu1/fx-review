@@ -43,5 +43,9 @@ export const MAX_BARS_PER_REQUEST = 2000;
 /** 集計のために読み込む1分足の行数の上限 */
 export const MAX_1M_ROWS = 300_000;
 
-export const CANDLE_SOURCE = { dukascopy: "dukascopy", mock: "mock" } as const;
+export const CANDLE_SOURCE = {
+  dukascopy: "dukascopy",
+  mock: "mock",
+  mt5: "mt5",
+} as const;
 export type CandleSource = (typeof CANDLE_SOURCE)[keyof typeof CANDLE_SOURCE];
