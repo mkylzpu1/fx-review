@@ -822,22 +822,3 @@ Resources:
         Target: es2022
         Sourcemap: true
         EntryPoints: [src/handlers/backup/index.ts]
-
-  # ─── TODO: 機能ハンドラーをここに追加する ───────────────
-  # ExampleGetFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Handler: src/handlers/example/index.getHandler
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /example/{id}
-  #           Method: GET
-  #   Metadata:
-  #     BuildMethod: esbuild
-  #     BuildProperties:
-  #       Minify: false
-  #       Target: es2022
-  #       Sourcemap: true
-  #       EntryPoints: [src/handlers/example/index.ts]

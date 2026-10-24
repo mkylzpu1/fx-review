@@ -21,7 +21,6 @@ const handlers = [
   "src/handlers/weeklyReview/index.ts",
   "src/handlers/backup/index.ts",
   // TODO: 機能ハンドラーをここに追加する
-  // "src/handlers/example/index.ts",
 ];
 
 await esbuild.build({
