@@ -72,7 +72,6 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
 
   const fullscreen = useChartUiStore((s) => s.fullscreen);
   const setFullscreen = useChartUiStore((s) => s.setFullscreen);
-  const [measureSignal, setMeasureSignal] = useState(0);
 
   // 全画面中は Esc で閉じ、背面のスクロールを止める
   useEffect(() => {
@@ -89,10 +88,9 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     };
   }, [fullscreen, setFullscreen]);
 
-  // キーボード: F=全画面 / 1〜6=時間足 / M=pipsを測る / D=2画面
+  // キーボード: F=全画面 / 1〜6=時間足 / D=2画面
   useHotkeys({
     f: () => setFullscreen(!fullscreen),
-    m: () => setMeasureSignal((n) => n + 1),
     d: () => update({ dual: !prefs.dual }),
     ...Object.fromEntries(
       TIMEFRAMES.map((t, i) => [String(i + 1), () => update({ tf: t })]),
@@ -115,7 +113,6 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     before,
     after,
     fullscreen,
-    measureToggleSignal: measureSignal,
   };
 
   return (
@@ -234,7 +231,6 @@ function SecondPane({
     <ChartPane
       {...paneProps}
       // 測定のキーボード操作は1画面目だけに効かせる
-      measureToggleSignal={0}
       tf={tf}
       onTfChange={onTfChange}
       fixedY={fixedY}

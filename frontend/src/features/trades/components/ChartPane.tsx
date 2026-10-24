@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { Lock } from "lucide-react";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { downloadBlob } from "@/features/export/utils/download";
@@ -16,7 +9,7 @@ import {
 } from "@/features/settings/types";
 import { ApiError } from "@/services/apiClient";
 import { toast } from "@/stores/toastStore";
-import { formatJst, formatPips } from "@/utils/format";
+import { formatJst } from "@/utils/format";
 import { useCandleChunks, useCandles } from "../hooks/useCandles";
 import type { Trade } from "../types";
 import type { ChartRange } from "../utils/chartRange";
@@ -28,13 +21,8 @@ import {
   type ChartOverlays,
 } from "../utils/chartOverlays";
 import { excursionLevels } from "../utils/excursionLevels";
-import { formatDuration } from "../utils/measure";
 import { ChartMessage } from "./ChartMessage";
-import {
-  TradeChart,
-  type MeasureState,
-  type TradeChartHandle,
-} from "./TradeChart";
+import { TradeChart, type TradeChartHandle } from "./TradeChart";
 
 const HEIGHT = 360;
 const DAY_MS = 86_400_000;
@@ -96,7 +84,6 @@ interface Props {
   /** 見出しの横に置く操作（2画面目の時間足の切り替えなど） */
   headerExtra?: ReactNode;
   /** 測定モードをキーボードから切り替えるための合図（値が変わるたびに切り替える） */
-  measureToggleSignal?: number;
 }
 
 const canCopyImage = () =>
@@ -123,22 +110,8 @@ export function ChartPane({
   onFixedYChange,
   title,
   headerExtra,
-  measureToggleSignal = 0,
 }: Props) {
   const chartRef = useRef<TradeChartHandle>(null);
-  const [measureMode, setMeasureMode] = useState(false);
-  const [measureState, setMeasureState] = useState<MeasureState>({
-    step: 0,
-    result: null,
-  });
-
-  // キーボードの M で測定を切り替える（合図が増えたときだけ）
-  const lastSignal = useRef(measureToggleSignal);
-  useEffect(() => {
-    if (measureToggleSignal === lastSignal.current) return;
-    lastSignal.current = measureToggleSignal;
-    setMeasureMode((v) => !v);
-  }, [measureToggleSignal]);
 
   // 設定の本数が少なくても、初期表示の本数（どの時間足でも同じ）は必ず読み込む
   const loadBefore = Math.max(before, INITIAL_BARS_BEFORE);
@@ -320,8 +293,6 @@ export function ChartPane({
         excursion={levels}
         autoScaleY={!fixedY}
         onAutoScaleChange={(auto) => onFixedYChange(!auto)}
-        measureMode={measureMode}
-        onMeasureChange={setMeasureState}
         resetKey={`${trade.id}|${tf}`}
         fill={fullscreen}
         onNeedMore={needMore}
@@ -333,7 +304,6 @@ export function ChartPane({
 
   const hasChart =
     !isLoading && !error && chartData !== null && chartData.candles.length > 0;
-  const r = measureState.result;
 
   return (
     <div
@@ -351,15 +321,6 @@ export function ChartPane({
 
       <div className="flex flex-wrap items-center justify-between gap-x-3">
         <div className="flex flex-wrap items-center gap-x-2">
-          <button
-            type="button"
-            className="btn min-h-touch text-xs"
-            aria-pressed={measureMode}
-            disabled={!hasChart}
-            onClick={() => setMeasureMode((v) => !v)}
-          >
-            {measureMode ? "測定を終える" : "pipsを測る"}
-          </button>
           <button
             type="button"
             className="btn min-h-touch text-xs"
@@ -409,33 +370,6 @@ export function ChartPane({
           </label>
         </div>
       </div>
-
-      {measureMode && (
-        <p
-          className="mb-1 text-xs text-ink-sub"
-          role="status"
-          aria-live="polite"
-        >
-          {measureState.step === 0 &&
-            "チャートの1点目をクリックしてください（高値・安値・始値・終値に吸着します）"}
-          {measureState.step === 1 && "2点目をクリックしてください"}
-          {measureState.step === 2 && r && (
-            <>
-              A→B{" "}
-              <span className="num font-medium text-ink">
-                {formatPips(r.pips)}
-              </span>
-              {" ・ "}
-              <span className="num">{r.bars}本</span>
-              {" ・ "}
-              <span className="num">{formatDuration(r.seconds)}</span>
-              <span className="text-ink-mute">
-                （もう一度クリックすると測り直します）
-              </span>
-            </>
-          )}
-        </p>
-      )}
 
       <div className={fullscreen ? "min-h-0 flex-1" : ""}>{body}</div>
 

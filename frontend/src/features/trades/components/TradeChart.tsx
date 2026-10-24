@@ -11,7 +11,6 @@ import {
   type IPriceLine,
   type ISeriesApi,
   type ISeriesMarkersPluginApi,
-  type MouseEventParams,
   type SeriesMarker,
   type Time,
   type UTCTimestamp,
@@ -31,14 +30,8 @@ import {
   type ChartOverlays,
 } from "../utils/chartOverlays";
 import type { ExcursionLevels } from "../utils/excursionLevels";
-import { measure, type MeasurePoint, type Measurement } from "../utils/measure";
 
 /** 測定の進み具合: 0=未選択 / 1=1点目まで / 2=2点で結果あり */
-export interface MeasureState {
-  step: 0 | 1 | 2;
-  result: Measurement | null;
-}
-
 /** 親から呼ぶ操作 */
 export interface TradeChartHandle {
   /** いまの表示を画像（canvas）にする。作れないときは null */
@@ -69,9 +62,6 @@ interface Props {
   onNeedMore?: (dir: "older" | "newer") => void;
   /** 保有中の最大含み益・含み損と、決済後の最大到達の水準（overlays.excursion のとき線を引く） */
   excursion?: ExcursionLevels | null;
-  /** true の間、チャートを2回クリックして2点間の pips・本数・時間を測る */
-  measureMode?: boolean;
-  onMeasureChange?: (s: MeasureState) => void;
   /**
    * 縦軸を価格軸のドラッグなどで直接動かしたとき（自動追従が切れたとき）に知らせる。
    * 親の「縦軸固定」の表示を、実際の状態に合わせるため
@@ -80,7 +70,6 @@ interface Props {
 }
 
 const EDGE_BARS = 30;
-const MAGNET_PX = 10;
 const jst = (t: number) => (t + JST_OFFSET_SEC) as UTCTimestamp;
 
 /**
@@ -114,12 +103,6 @@ function setYMode(
   }
 }
 
-/** 価格を 0.1pips 刻みに丸める */
-const snapPrice = (price: number, pipSize: number) => {
-  const step = pipSize / 10;
-  return Math.round(price / step) * step;
-};
-
 /**
  * ローソク足＋EMA＋エントリー/決済/SL/TPの描画だけを担当する。
  * チャートは作りっぱなしにして、足が増えても表示位置を保つ（スクロールで足を足していくため）。
@@ -142,8 +125,6 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
       resetKey = "",
       onNeedMore,
       excursion = null,
-      measureMode = false,
-      onMeasureChange,
       onAutoScaleChange,
     },
     handleRef,
@@ -167,8 +148,6 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
     const yBusyRef = useRef(false);
     const autoChangeRef = useRef(onAutoScaleChange);
     autoChangeRef.current = onAutoScaleChange;
-    const measureChangeRef = useRef(onMeasureChange);
-    measureChangeRef.current = onMeasureChange;
     // 足の開始時刻（UTC秒・昇順）。測定のクリック位置を足に合わせるのに使う
     const timesRef = useRef<number[]>([]);
     const candlesDataRef = useRef(data.candles);
@@ -515,117 +494,6 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
       maeLevel,
       afterMaxLevel,
     ]);
-
-    // 2点間の測定（測定モードの間だけ。1回目・2回目のクリックで点を置き、3回目で測り直す）
-    useEffect(() => {
-      const chart = chartRef.current;
-      const candles = candleRef.current;
-      if (!chart || !candles || !measureMode) return;
-
-      const segment = chart.addSeries(LineSeries, {
-        color: CHART_COLORS.entry,
-        lineWidth: 2,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      });
-      let marks: IPriceLine[] = [];
-      let first: MeasurePoint | null = null;
-
-      const clearMarks = () => {
-        marks.forEach((l) => {
-          try {
-            candles.removePriceLine(l);
-          } catch {
-            // チャートごと破棄された後は何もしない
-          }
-        });
-        marks = [];
-        try {
-          segment.setData([]);
-        } catch {
-          // チャートごと破棄された後は何もしない
-        }
-      };
-      const mark = (p: MeasurePoint, title: string) =>
-        candles.createPriceLine({
-          price: p.price,
-          color: CHART_COLORS.entry,
-          lineWidth: 1,
-          lineStyle: LineStyle.Dashed,
-          axisLabelVisible: true,
-          title,
-        });
-
-      /** クリック位置を、近い足の時刻と（4本値が近ければ）その価格に合わせる */
-      const pointAt = (p: MouseEventParams<Time>): MeasurePoint | null => {
-        if (!p.point) return null;
-        const times = timesRef.current;
-        if (times.length === 0) return null;
-        const price = candles.coordinateToPrice(p.point.y);
-        const logical = chart.timeScale().coordinateToLogical(p.point.x);
-        if (price === null || logical === null) return null;
-        const idx = Math.min(
-          times.length - 1,
-          Math.max(0, Math.round(logical)),
-        );
-        let snapped = snapPrice(price, pipSize);
-        const c = candlesDataRef.current[idx];
-        if (c) {
-          let best = MAGNET_PX + 1;
-          for (const v of [c.high, c.low, c.open, c.close]) {
-            const y = candles.priceToCoordinate(v);
-            if (y === null) continue;
-            const d = Math.abs(y - p.point.y);
-            if (d < best) {
-              best = d;
-              snapped = v;
-            }
-          }
-        }
-        return { price: snapped, logical: idx, timeSec: times[idx] };
-      };
-
-      const onClick = (p: MouseEventParams<Time>) => {
-        const pt = pointAt(p);
-        if (!pt) return;
-        if (first === null) {
-          clearMarks();
-          first = pt;
-          marks = [mark(pt, "A")];
-          measureChangeRef.current?.({ step: 1, result: null });
-          return;
-        }
-        const a = first;
-        first = null;
-        marks.push(mark(pt, "B"));
-        // 同じ足の2点は、線を引けない（時刻が同じ）ので、水準線だけにする
-        if (a.timeSec !== pt.timeSec) {
-          const [p1, p2] = a.timeSec < pt.timeSec ? [a, pt] : [pt, a];
-          segment.setData([
-            { time: jst(p1.timeSec), value: p1.price },
-            { time: jst(p2.timeSec), value: p2.price },
-          ]);
-        }
-        measureChangeRef.current?.({
-          step: 2,
-          result: measure(a, pt, pipSize),
-        });
-      };
-
-      chart.subscribeClick(onClick);
-      measureChangeRef.current?.({ step: 0, result: null });
-      return () => {
-        try {
-          chart.unsubscribeClick(onClick);
-          clearMarks();
-          chart.removeSeries(segment);
-        } catch {
-          // チャートごと破棄された後は何もしない
-        }
-        measureChangeRef.current?.({ step: 0, result: null });
-      };
-    }, [measureMode, height, pipSize]);
 
     // 外側の箱が大きさを決め、チャート（autoSize）は内側の箱いっぱいに描くだけにする。
     // チャートの canvas が親の幅を押し広げないので、全画面から戻ったときに横幅が元に戻る

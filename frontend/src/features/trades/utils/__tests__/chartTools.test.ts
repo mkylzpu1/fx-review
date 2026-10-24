@@ -3,25 +3,6 @@ import type { Trade } from "../../types";
 import { loadChartPrefs, saveChartPrefs } from "../chartPrefs";
 import { DEFAULT_OVERLAYS } from "../chartOverlays";
 import { excursionInsight, excursionLevels } from "../excursionLevels";
-import { formatDuration, measure } from "../measure";
-
-describe("measure", () => {
-  it("価格差をpipsに、足の数と時間を絶対値で返す", () => {
-    const a = { price: 150, logical: 10, timeSec: 0 };
-    const b = { price: 149.88, logical: 18, timeSec: 8 * 3600 };
-    expect(measure(a, b, 0.01)).toEqual({ pips: -12, bars: 8, seconds: 28800 });
-    expect(measure(b, a, 0.01).pips).toBe(12);
-  });
-  it("同じ価格は 0（-0 にしない）", () => {
-    const p = { price: 150, logical: 1, timeSec: 0 };
-    expect(Object.is(measure(p, p, 0.01).pips, 0)).toBe(true);
-  });
-  it("時間の表記", () => {
-    expect(formatDuration(45 * 60)).toBe("45分");
-    expect(formatDuration(2 * 3600 + 13 * 60)).toBe("2時間13分");
-    expect(formatDuration(3 * 86400 + 4 * 3600)).toBe("3日4時間");
-  });
-});
 
 const base = {
   side: "buy",

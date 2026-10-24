@@ -407,33 +407,7 @@ describe("チャート領域", () => {
     expect(screen.getAllByTestId("trade-chart")).toHaveLength(1);
   });
 
-  it("「pipsを測る」でチャートを測定モードにし、結果（pips・本数・時間）を出す", async () => {
-    vi.mocked(apiClient.get).mockResolvedValue(ok());
-    renderPanel();
-    await screen.findByTestId("trade-chart");
-    expect(lastProps().measureMode).toBe(false);
-    await userEvent.click(screen.getByRole("button", { name: "pipsを測る" }));
-    expect(lastProps().measureMode).toBe(true);
-    expect(screen.getByText(/1点目をクリック/)).toBeInTheDocument();
-
-    act(() => lastProps().onMeasureChange({ step: 1, result: null }));
-    expect(screen.getByText(/2点目をクリック/)).toBeInTheDocument();
-
-    act(() =>
-      lastProps().onMeasureChange({
-        step: 2,
-        result: { pips: -12.3, bars: 8, seconds: 8 * 3600 },
-      }),
-    );
-    expect(screen.getByText("−12.3 pips")).toBeInTheDocument();
-    expect(screen.getByText("8本")).toBeInTheDocument();
-    expect(screen.getByText("8時間")).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: "測定を終える" }));
-    expect(lastProps().measureMode).toBe(false);
-  });
-
-  it("キーボード: Fで全画面、数字キーで時間足、Mで測定、Dで2画面", async () => {
+  it("キーボード: Fで全画面、数字キーで時間足、Dで2画面", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(ok());
     renderPanel();
     await screen.findByTestId("trade-chart");
@@ -445,9 +419,6 @@ describe("チャート領域", () => {
     await waitFor(() => expect(lastProps().fill).toBe(true));
     await userEvent.keyboard("f");
     await waitFor(() => expect(lastProps().fill).toBe(false));
-
-    await userEvent.keyboard("m");
-    await waitFor(() => expect(lastProps().measureMode).toBe(true));
 
     await userEvent.keyboard("d");
     await waitFor(() =>
