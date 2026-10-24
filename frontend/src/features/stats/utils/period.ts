@@ -25,3 +25,23 @@ export function periodFrom(
   const days = key === "90d" ? 90 : 30;
   return new Date(now.getTime() - days * DAY_MS).toISOString();
 }
+
+/** 比べる相手（直前の同じ長さの期間）。「すべて」は比べられないので null */
+export function previousPeriod(
+  key: PeriodKey,
+  now: Date = new Date(),
+): { from: string; to: string } | null {
+  if (key === "all") return null;
+  const from = new Date(periodFrom(key, now) as string);
+  if (key === "month") {
+    const jst = new Date(from.getTime() + JST_OFFSET_MS);
+    const prev =
+      Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth() - 1, 1) - JST_OFFSET_MS;
+    return { from: new Date(prev).toISOString(), to: from.toISOString() };
+  }
+  const days = key === "90d" ? 90 : 30;
+  return {
+    from: new Date(from.getTime() - days * DAY_MS).toISOString(),
+    to: from.toISOString(),
+  };
+}

@@ -104,3 +104,22 @@ describe("buildStats", () => {
     expect(r.cumulative).toHaveLength(1);
   });
 });
+
+describe("buildStats 追加の切り口", () => {
+  it("曜日別・保有時間別・ロット別・時間帯別に集計する", () => {
+    // 2026-10-01 は木曜（JST）
+    const rows = Array.from({ length: 3 }, () =>
+      view({ hourJst: 10, holdMinutes: 3, lots: 0.5 } as never),
+    );
+    const r = buildStats(rows, "Asia/Tokyo");
+    expect(r.byWeekday.map((g) => g.label)).toEqual(["木曜"]);
+    expect(r.byHour[0]).toMatchObject({ label: "10時台", n: 3 });
+    expect(r.byHolding[0]).toMatchObject({ label: "5分未満", n: 3 });
+    expect(r.byLots[0]).toMatchObject({ label: "1ロット未満", n: 3 });
+  });
+
+  it("保有時間が無いトレードは保有時間別に入れない", () => {
+    const r = buildStats([view({ holdMinutes: null })], "Asia/Tokyo");
+    expect(r.byHolding).toEqual([]);
+  });
+});

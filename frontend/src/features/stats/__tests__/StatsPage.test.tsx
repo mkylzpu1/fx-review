@@ -52,6 +52,10 @@ const stats = (over: Partial<StatsResult> = {}): StatsResult => ({
     },
   ],
   byRule: [],
+  byWeekday: [],
+  byHour: [],
+  byHolding: [],
+  byLots: [],
   insights: [
     {
       kind: "needs_check",
@@ -91,7 +95,7 @@ describe("統計", () => {
   it("指標・n・R未計算の件数・最大DDの帯を出す", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();
-    expect(await screen.findByText("55.0%")).toBeInTheDocument();
+    expect((await screen.findAllByText("55.0%")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("R計算 n=10")).toHaveLength(2);
     expect(screen.getByText(/SLが入っていない30件/)).toBeInTheDocument();
     expect(screen.getByTestId("drawdown-band")).toBeInTheDocument();
@@ -114,13 +118,34 @@ describe("統計", () => {
   it("期間を切り替えると from を付けて取り直す", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();
-    await screen.findByText("55.0%");
+    await screen.findAllByText("55.0%");
     await userEvent.click(screen.getByRole("button", { name: "過去30日" }));
     const paths = vi
       .mocked(apiClient.get)
       .mock.calls.map((c) => c[0] as string);
     expect(paths.some((p) => p.startsWith("/stats?from="))).toBe(true);
     expect(paths[0]).toContain("/stats");
+  });
+
+  it("前の期間との比較を出し、期間「すべて」では出さない", async () => {
+    vi.mocked(apiClient.get).mockImplementation(async (path: string) =>
+      path.includes("to=")
+        ? stats({ summary: { ...stats().summary, winRate: 40, n: 10 } })
+        : stats(),
+    );
+    renderPage();
+    const box = within(
+      (
+        await screen.findByRole("heading", { name: "前の期間との比較" })
+      ).closest("section")!,
+    );
+    expect(box.getByText("40.0%")).toBeInTheDocument();
+    expect(box.getByText("+15.0pt")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "すべて" }));
+    await screen.findAllByText("55.0%");
+    expect(
+      screen.queryByRole("heading", { name: "前の期間との比較" }),
+    ).not.toBeInTheDocument();
   });
 
   it("0件なら空状態と取り込みへの導線", async () => {

@@ -31,6 +31,18 @@ export function hourInZone(iso: string, timezone: string): number {
   return Number(h);
 }
 
+/** 表示タイムゾーンでの曜日（0=日〜6=土） */
+export function weekdayInZone(iso: string, timezone: string): number {
+  if (timezone === "Asia/Tokyo") {
+    return new Date(Date.parse(iso) + JST_OFFSET_MS).getUTCDay();
+  }
+  const w = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone: timezone,
+  }).format(new Date(iso));
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(w);
+}
+
 export function sessionOf(hour: number): SessionDef {
   for (const s of SESSIONS) {
     const inside =

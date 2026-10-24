@@ -8,7 +8,8 @@ import { formatPips, formatR, formatYenSigned } from "@/utils/format";
 import { CumulativeChart } from "../components/CumulativeChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
-import { useStats } from "../hooks/useStats";
+import { PeriodCompare } from "../components/PeriodCompare";
+import { usePreviousStats, useStats } from "../hooks/useStats";
 import type { PeriodKey } from "../types";
 import { PERIODS } from "../utils/period";
 
@@ -34,6 +35,7 @@ function Metric({
 export function StatsPage() {
   const [period, setPeriod] = useState<PeriodKey>("90d");
   const { data, isLoading, isError, refetch } = useStats(period);
+  const prevStats = usePreviousStats(period);
 
   if (isLoading) return <LoadingSpinner fullScreen={false} />;
   if (isError || !data) return <ErrorAlert onRetry={() => void refetch()} />;
@@ -116,10 +118,18 @@ export function StatsPage() {
             )}
           </section>
 
+          {prevStats.data && prevStats.data.closedCount > 0 && (
+            <PeriodCompare now={s} prev={prevStats.data.summary} />
+          )}
+
           <div className="grid gap-4 lg:grid-cols-3">
             <GroupTable title="セッション別" groups={data.bySession} />
             <GroupTable title="根拠タグ別" groups={data.byRationale} />
             <GroupTable title="ルール遵守別" groups={data.byRule} />
+            <GroupTable title="曜日別" groups={data.byWeekday} />
+            <GroupTable title="時間帯別" groups={data.byHour} />
+            <GroupTable title="保有時間別" groups={data.byHolding} />
+            <GroupTable title="ロット別" groups={data.byLots} />
           </div>
 
           <InsightList insights={data.insights} />

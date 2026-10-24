@@ -11,6 +11,7 @@ import {
   maxDrawdown,
   sessionOf,
   summarize,
+  weekdayInZone,
   type CumulativePoint,
   type Drawdown,
   type GroupStat,
@@ -23,7 +24,8 @@ export const UNSET_KEY = "__unset__";
 export interface Insight {
   kind: "strength" | "weakness" | "needs_check";
   /** どの切り口か */
-  axis: "session" | "rationale" | "rule";
+  axis:
+    "session" | "rationale" | "rule" | "weekday" | "hour" | "holding" | "lots";
   label: string;
   n: number;
   avgR: number | null;
@@ -38,6 +40,10 @@ export interface StatsResult {
   bySession: GroupStat[];
   byRationale: GroupStat[];
   byRule: GroupStat[];
+  byWeekday: GroupStat[];
+  byHour: GroupStat[];
+  byHolding: GroupStat[];
+  byLots: GroupStat[];
   insights: Insight[];
   /** 決済済みで集計に入ったトレード数 */
   closedCount: number;
@@ -45,6 +51,9 @@ export interface StatsResult {
 
 interface Row extends StatTrade {
   hour: number;
+  weekday: number;
+  holdMinutes: number | null;
+  lots: number | null;
   rationaleTags: string[];
   ruleKey: "ok" | "ng" | "none";
 }
@@ -65,6 +74,9 @@ export function toRows(views: TradeView[], timezone: string): Row[] {
       rMultiple: v.rMultiple,
       pnlJpy: v.pnlJpy,
       hour: hourInZone(v.entryAt, timezone),
+      weekday: weekdayInZone(v.entryAt, timezone),
+      holdMinutes: v.holdMinutes ?? null,
+      lots: v.lots ?? null,
       rationaleTags: v.tags
         .filter((t) => t.kind === "rationale")
         .map((t) => t.name),
@@ -83,6 +95,34 @@ function toInsights(axis: Insight["axis"], groups: GroupStat[]): Insight[] {
       avgR: g.avgR,
       shortfall: g.shortfall,
     }));
+}
+
+const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
+/** 月〜金を先頭に、土日は後ろ */
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+const HOLDING_BANDS = [
+  { key: "lt5", label: "5分未満", max: 5 },
+  { key: "lt30", label: "5〜30分", max: 30 },
+  { key: "lt120", label: "30分〜2時間", max: 120 },
+  { key: "lt480", label: "2〜8時間", max: 480 },
+  { key: "ge480", label: "8時間以上", max: Infinity },
+];
+
+export function holdingKeyOf(minutes: number | null): string | null {
+  if (minutes === null) return null;
+  return HOLDING_BANDS.find((b) => minutes < b.max)?.key ?? null;
+}
+
+const LOT_BANDS = [
+  { key: "lt1", label: "1ロット未満", max: 1 },
+  { key: "lt3", label: "1〜3ロット未満", max: 3 },
+  { key: "ge3", label: "3ロット以上", max: Infinity },
+];
+
+export function lotKeyOf(lots: number | null): string | null {
+  if (lots === null) return null;
+  return LOT_BANDS.find((b) => lots < b.max)?.key ?? null;
 }
 
 export function buildStats(views: TradeView[], timezone: string): StatsResult {
@@ -111,6 +151,39 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     { key: "none", label: "判定なし" },
   ]);
 
+  const byWeekday = groupBy(
+    rows,
+    (r) => [String(r.weekday)],
+    WEEKDAY_ORDER.map((d) => ({
+      key: String(d),
+      label: `${WEEKDAY_LABELS[d]}曜`,
+    })),
+  );
+  const byHour = groupBy(
+    rows,
+    (r) => [String(r.hour)],
+    Array.from({ length: 24 }, (_, h) => ({
+      key: String(h),
+      label: `${h}時台`,
+    })),
+  );
+  const byHolding = groupBy(
+    rows,
+    (r) => {
+      const k = holdingKeyOf(r.holdMinutes);
+      return k === null ? [] : [k];
+    },
+    HOLDING_BANDS.map((b) => ({ key: b.key, label: b.label })),
+  );
+  const byLots = groupBy(
+    rows,
+    (r) => {
+      const k = lotKeyOf(r.lots);
+      return k === null ? [] : [k];
+    },
+    LOT_BANDS.map((b) => ({ key: b.key, label: b.label })),
+  );
+
   return {
     summary: summarize(rows),
     cumulative: points,
@@ -118,10 +191,18 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     bySession,
     byRationale,
     byRule,
+    byWeekday,
+    byHour,
+    byHolding,
+    byLots,
     insights: [
       ...toInsights("session", bySession),
       ...toInsights("rationale", byRationale),
       ...toInsights("rule", byRule),
+      ...toInsights("weekday", byWeekday),
+      ...toInsights("hour", byHour),
+      ...toInsights("holding", byHolding),
+      ...toInsights("lots", byLots),
     ],
     closedCount: rows.length,
   };

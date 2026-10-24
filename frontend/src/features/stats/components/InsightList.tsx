@@ -7,6 +7,10 @@ const AXIS = {
   session: "セッション",
   rationale: "根拠",
   rule: "ルール",
+  weekday: "曜日",
+  hour: "時間帯",
+  holding: "保有時間",
+  lots: "ロット",
 } as const;
 
 function line(i: Insight): string {

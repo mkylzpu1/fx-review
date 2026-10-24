@@ -38,7 +38,8 @@ export interface GroupStat {
 
 export interface Insight {
   kind: Verdict;
-  axis: "session" | "rationale" | "rule";
+  axis:
+    "session" | "rationale" | "rule" | "weekday" | "hour" | "holding" | "lots";
   label: string;
   n: number;
   avgR: number | null;
@@ -52,6 +53,10 @@ export interface StatsResult {
   bySession: GroupStat[];
   byRationale: GroupStat[];
   byRule: GroupStat[];
+  byWeekday: GroupStat[];
+  byHour: GroupStat[];
+  byHolding: GroupStat[];
+  byLots: GroupStat[];
   insights: Insight[];
   closedCount: number;
 }
