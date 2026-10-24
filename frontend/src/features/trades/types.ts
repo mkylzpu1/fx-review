@@ -1,4 +1,5 @@
 /** バックエンド types/trade.ts（GET /trades などのレスポンス）と対応 */
+import type { Timeframe } from "@/features/settings/types";
 export type Side = "buy" | "sell";
 export type ExitMethod = "open" | "tp" | "sl" | "manual" | "breakeven";
 export type TradeStatus = "draft" | "open" | "closed";
@@ -92,4 +93,21 @@ export interface TradePayload {
   draft: boolean;
   tagIds: string[];
   ruleChecks: { ruleId: string; result: RuleResult }[];
+}
+
+/** GET /candles（time は足の開始時刻・UTC秒） */
+export interface Candle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface CandlesResponse {
+  tf: Timeframe;
+  candles: Candle[];
+  warmupCount: number;
+  hasData: boolean;
+  mock: boolean;
 }
