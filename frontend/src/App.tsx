@@ -17,6 +17,8 @@ import { TradeDetailPage } from "@/features/trades/pages/TradeDetailPage";
 import { ImportPage } from "@/features/imports/pages/ImportPage";
 import { StatsPage } from "@/features/stats/pages/StatsPage";
 import { ExportPage } from "@/features/export/pages/ExportPage";
+import { NoteDetailPage } from "@/features/notes/pages/NoteDetailPage";
+import { NotesPage } from "@/features/notes/pages/NotesPage";
 import { RulesPage } from "@/features/rules/pages/RulesPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { ROUTES } from "@/constants/routes";
@@ -25,8 +27,6 @@ import { ROUTES } from "@/constants/routes";
 const PLACEHOLDERS: { path: string; title: string }[] = [
   { path: ROUTES.STATS_WEEKLY, title: "週次レビュー" },
   { path: ROUTES.RULE_DETAIL, title: "ルール詳細" },
-  { path: ROUTES.NOTES, title: "学習メモ" },
-  { path: ROUTES.NOTE_DETAIL, title: "AI分析の結果" },
   { path: ROUTES.ACCOUNT, title: "アカウント" },
 ];
 
@@ -64,6 +64,11 @@ export function App() {
                       element={<TradeDetailPage />}
                     />
                     <Route path={ROUTES.STATS} element={<StatsPage />} />
+                    <Route path={ROUTES.NOTES} element={<NotesPage />} />
+                    <Route
+                      path={ROUTES.NOTE_DETAIL}
+                      element={<NoteDetailPage />}
+                    />
                     <Route path={ROUTES.EXPORT} element={<ExportPage />} />
                     <Route
                       path={ROUTES.TRADE_IMPORT}
