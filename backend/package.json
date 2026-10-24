@@ -7,10 +7,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.mjs",
+    "candles:sync": "node scripts/run.mjs syncCandles",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.ts\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts/tsconfig.json",
     "quality": "npm run lint:fix && npm run format && npm run typecheck"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.6.0",
     "@typescript-eslint/parser": "^8.6.0",
+    "dukascopy-node": "^1.51.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.10.0",
     "eslint-config-prettier": "^9.1.0",

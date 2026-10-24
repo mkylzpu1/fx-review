@@ -6,7 +6,18 @@ export const CANDLE_PAIR = "USDJPY";
  * 取得元から取る価格の種類（既定は bid）。
  * 楽天FXのチャートと値がずれるため、確定したら持ち主がここを直せるようにしている
  */
-export const CANDLE_PRICE_TYPE: "bid" | "ask" | "mid" = "bid";
+export const CANDLE_PRICE_TYPE: "bid" | "ask" = "bid";
+
+/** dukascopy-node に渡す銘柄名と時刻のオフセット（時間。0 = UTC） */
+export const DUKASCOPY_INSTRUMENT = "usdjpy";
+export const DUKASCOPY_UTC_OFFSET = 0;
+
+/** 同期スクリプトが1回に取得する日数と、DBへ1回に書き込む行数 */
+export const SYNC_CHUNK_DAYS = 7;
+export const SYNC_UPSERT_BATCH = 1000;
+
+/** EMAのウォームアップとして追加で返せる足の本数の上限 */
+export const MAX_WARMUP_BARS = 2000;
 
 export const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1d"] as const;
 export type Timeframe = (typeof TIMEFRAMES)[number];

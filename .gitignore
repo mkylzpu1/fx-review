@@ -22,3 +22,4 @@ sam/.aws-sam
 sam/local-env.json
 backend/.env.local
 frontend/.env.local
+backend/.tmp-scripts/

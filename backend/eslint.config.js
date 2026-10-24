@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 import prettierConfig from "eslint-config-prettier";
 
 export default tseslint.config(
-  { ignores: ["dist", "node_modules"] },
+  { ignores: ["dist", "node_modules", ".tmp-scripts"] },
 
   js.configs.recommended,
 
@@ -16,6 +16,14 @@ export default tseslint.config(
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
+
+  {
+    // 手元で実行する .mjs スクリプトは Node のグローバルを使う
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: { process: "readonly", console: "readonly" },
     },
   },
 
