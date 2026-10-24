@@ -108,6 +108,14 @@ describe("parseSyncArgs", () => {
     expect(a.to.toISOString()).toBe("2026-10-24T00:00:00.000Z");
     expect(a.provider).toBe("mt5");
   });
+  it("--days は今日（UTC）を含む直近N日にする", () => {
+    const a = parseSyncArgs(["--days", "7"], {
+      now: new Date("2026-10-24T08:00:00Z"),
+    });
+    expect(a.from.toISOString()).toBe("2026-10-18T00:00:00.000Z");
+    expect(a.to.toISOString()).toBe("2026-10-25T00:00:00.000Z");
+    expect(() => parseSyncArgs(["--days", "0"])).toThrow();
+  });
   it("日付の形式・順序・providerの誤りを弾く", () => {
     expect(() => parseSyncArgs(["--to", "2026-10-23"])).toThrow("--from");
     expect(() =>

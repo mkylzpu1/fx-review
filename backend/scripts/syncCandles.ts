@@ -2,6 +2,7 @@
  * USDJPY の1分足を取得して candles_1m に保存する（手元で実行する）。
  *
  *   npm run candles:sync -- --from 2026-10-01 --to 2026-10-23
+ *   npm run candles:sync -- --days 7   （今日を含む直近7日。make dev から自動で実行される）
  *   npm run candles:sync -- --from 2026-10-01 --to 2026-10-23 --dir <MT5のCSVフォルダ>
  *   npm run candles:sync -- --from 2026-10-01 --to 2026-10-23 --provider mock
  *

@@ -26,14 +26,32 @@ function parseServerTime(value: string): "ny-close" | number {
   return n;
 }
 
-/** --from 2026-10-01 --to 2026-10-23 [--provider mt5|mock|dukascopy] [--dir ...] [--server-time ny-close]。to の日の終わり（翌日0時 UTC）までを範囲にする */
-export function parseSyncArgs(argv: string[]): SyncArgs {
+/** --from 2026-10-01 --to 2026-10-23（または --days 7）[--provider mt5|mock|dukascopy] [--dir ...] [--server-time ny-close]。to の日の終わり（翌日0時 UTC）までを範囲にする */
+export function parseSyncArgs(
+  argv: string[],
+  opts: { now?: Date } = {},
+): SyncArgs {
   const get = (name: string) => {
     const i = argv.indexOf(`--${name}`);
     return i >= 0 ? argv[i + 1] : undefined;
   };
-  const from = parseDate("--from", get("from"));
-  const toDay = parseDate("--to", get("to"));
+  const days = get("days");
+  let from: Date;
+  let toDay: Date;
+  if (days !== undefined) {
+    // --days N: 今日（UTC）を含む直近 N 日
+    const n = Number(days);
+    if (!Number.isInteger(n) || n < 1 || n > 366)
+      throw new Error("--days は 1〜366 の整数で指定してください");
+    const today = new Date(
+      `${(opts.now ?? new Date()).toISOString().slice(0, 10)}T00:00:00Z`,
+    );
+    toDay = today;
+    from = new Date(today.getTime() - (n - 1) * 86_400_000);
+  } else {
+    from = parseDate("--from", get("from"));
+    toDay = parseDate("--to", get("to"));
+  }
   if (toDay < from) throw new Error("--to は --from 以降にしてください");
   const provider = get("provider") ?? "mt5";
   if (provider !== "mt5" && provider !== "dukascopy" && provider !== "mock")

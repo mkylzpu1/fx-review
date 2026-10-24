@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
 //| FxReviewExport.mq5                                               |
-//| 1分足を一定間隔で CSV に書き出す EA（fx-review の candles:sync 用）  |
+//| 1分足を CSV に書き出す EA（チャートに付けた時と、その後は1日1回）（fx-review の candles:sync 用）  |
 //| 出力: Common\Files\fx-review\<銘柄>_M1.csv                          |
 //| 形式: サーバー時刻のepoch秒,open,high,low,close（確定した足のみ）    |
 //+------------------------------------------------------------------+
@@ -8,8 +8,8 @@
 #property version "1.00"
 
 input string InpSymbol      = "USDJPY";           // 書き出す銘柄（ブローカーの表記に合わせる）
-input int    InpDays        = 30;                 // 何日分を書き出すか
-input int    InpIntervalMin = 5;                  // 書き出し間隔（分）
+input int    InpDays        = 60;                 // 何日分を書き出すか
+input int    InpIntervalMin = 1440;               // 書き出し間隔（分）。1440 = 1日1回
 input string InpFileName    = "fx-review\\USDJPY_M1.csv";
 
 int OnInit()
