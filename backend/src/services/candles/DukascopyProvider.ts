@@ -27,6 +27,9 @@ export type FetchRates = (config: {
   ignoreFlats: true;
   useCache: false;
   retryCount: number;
+  wafMode: "auto";
+  chromePath: string;
+  wafTimeoutMs: number;
 }) => Promise<DukascopyRow[]>;
 
 const defaultFetch: FetchRates = async (config) =>
@@ -55,11 +58,16 @@ export class DukascopyProvider implements CandleProvider {
         ignoreFlats: true,
         useCache: false,
         retryCount: 3,
+        // WAF（ボット対策）の確認は、ヘッドレスのChrome/Chromiumで自動突破する。
+        // Chromeが見つからないときは DUKASCOPY_CHROME_PATH で実行ファイルを指定する
+        wafMode: "auto",
+        chromePath: process.env.DUKASCOPY_CHROME_PATH ?? "",
+        wafTimeoutMs: Number(process.env.DUKASCOPY_WAF_TIMEOUT_MS) || 60_000,
       });
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e);
       throw new Error(
-        `Dukascopyから1分足を取得できませんでした（${reason}）。ネットワーク接続と、datafeed.dukascopy.com への通信が許可されているか確認してください`,
+        `Dukascopyから1分足を取得できませんでした（${reason}）。ネットワーク接続と、dukascopy.com への通信が許可されているか確認してください。WAFのエラーの場合は、Google Chromeを入れたうえで DUKASCOPY_CHROME_PATH にChromeの実行ファイルのパスを指定してください（例: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"）`,
       );
     }
     return toCandles(rows, from, to);
