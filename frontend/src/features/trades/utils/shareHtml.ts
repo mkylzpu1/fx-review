@@ -3,7 +3,7 @@
  * アプリ（認証・サーバー）に依存せず、ファイルを開くだけで、時間足とEMAを自由に切り替えられる。
  * 含めるのは相場の情報とトレード計画だけ。損益額・口座・感情タグ・振り返りの記述は含めない。
  */
-import { CHART_COLORS, EMA_COLORS } from "@/constants/chartTheme";
+import { CHART_COLORS, EMA_COLORS, SIDE_COLORS } from "@/constants/chartTheme";
 import type { EmaSetting, Timeframe } from "@/features/settings/types";
 import { SIDE_LABEL, formatJst, formatPips, formatPrice } from "@/utils/format";
 import type { Candle, Trade } from "../types";
@@ -108,7 +108,8 @@ export function buildShareHtml(i: ShareInput): string {
     slPrice: t.slPrice,
     tpPrice: t.tpPrice,
     exitPrice: t.exitPrice,
-    colors: CHART_COLORS,
+    colors: { ...CHART_COLORS, sideColor: SIDE_COLORS[t.side] },
+    sideLabel: SIDE_LABEL[t.side],
     emas: i.emas.map((e, idx) => ({
       period: e.period,
       on: e.visible,
@@ -135,6 +136,9 @@ body{margin:0;background:#0D1117;color:#E6EBF2;font:14px/1.6 system-ui,-apple-sy
 main{max-width:960px;margin:0 auto;padding:16px}
 h1{font-size:18px;margin:0 0 4px}
 h2{font-size:14px;margin:0 0 4px}
+.side{color:${SIDE_COLORS[t.side]};border:1px solid ${SIDE_COLORS[t.side]};border-radius:999px;padding:0 10px;font-size:15px}
+#chartbox{position:relative}
+#badge{position:absolute;left:8px;top:8px;z-index:5;pointer-events:none;background:${c.background};color:${SIDE_COLORS[t.side]};border:1px solid ${SIDE_COLORS[t.side]};border-radius:999px;padding:0 10px;font-size:13px;font-weight:700}
 .note{color:#8B95A5;font-size:12px;margin:0 0 12px}
 .card{background:${c.background};border:1px solid ${c.grid};border-radius:12px;padding:12px;margin-bottom:12px}
 .bar{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin-bottom:8px}
@@ -155,7 +159,7 @@ body:not(.show-after) .after{display:none}
 </head>
 <body>
 <main>
-<h1>${escapeHtml(t.pair)} ${SIDE_LABEL[t.side]}のトレード</h1>
+<h1>${escapeHtml(t.pair)} <span class="side">${t.side === "buy" ? "▲ 買い" : "▼ 売り"}</span>のトレード</h1>
 <p class="note">評価用の閲覧専用ファイルです。時間足とEMAは自由に切り替えられます。エントリー後の値動きと結果は、初期状態では隠しています（「エントリー後を表示」で見られます）。チャートはドラッグで動かし、ホイールで拡大・縮小できます。表示は日本時間です。</p>
 <div class="card">
   <div class="bar" id="tfs" role="group" aria-label="時間足"></div>
@@ -164,9 +168,9 @@ body:not(.show-after) .after{display:none}
     <label><input type="checkbox" id="showAfter"> エントリー後を表示</label>
     <label><input type="checkbox" id="fixY"> 縦軸固定</label>
   </div>
-  <div id="chart" role="img" aria-label="ローソク足チャート"></div>
+  <div id="chartbox"><div id="chart" role="img" aria-label="ローソク足チャート"></div><span id="badge">${t.side === "buy" ? "▲ 買い" : "▼ 売り"}</span></div>
   <div class="key">
-    <span><i style="color:${c.entry}"></i>エントリー</span>
+    <span><i style="color:${SIDE_COLORS[t.side]}"></i>${SIDE_LABEL[t.side]}エントリー</span>
     <span><i style="color:${c.sl}"></i>損切り</span>
     <span><i style="color:${c.tp}"></i>利確</span>
     <span class="after"><i style="color:${c.exit}"></i>決済</span>
@@ -200,7 +204,7 @@ function line(price,color,title){
   if(price===null||price===undefined)return;
   candles.createPriceLine({price:price,color:color,lineWidth:1,lineStyle:LC.LineStyle.Dashed,axisLabelVisible:true,title:title});
 }
-line(D.entryPrice,D.colors.entry,"IN");
+line(D.entryPrice,D.colors.sideColor,D.sideLabel+"エントリー");
 line(D.slPrice,D.colors.sl,"SL");
 line(D.tpPrice,D.colors.tp,"TP");
 var exitLine=null;
@@ -243,7 +247,7 @@ function show(fr){
   D.emas.forEach(function(e,n){emaSeries[n].setData(ema(cs,e.period));});
   var xi=(!showAfter||D.exitSec===null)?-1:indexAt(cs,D.exitSec),m=[];
   var buy=D.side==="buy";
-  if(ei>=0)m.push({time:cs[ei][0]+OFF,position:buy?"belowBar":"aboveBar",shape:buy?"arrowUp":"arrowDown",color:D.colors.entry,text:"IN"});
+  if(ei>=0)m.push({time:cs[ei][0]+OFF,position:buy?"belowBar":"aboveBar",shape:buy?"arrowUp":"arrowDown",color:D.colors.sideColor,text:D.sideLabel+" IN"});
   if(xi>=0)m.push({time:cs[xi][0]+OFF,position:buy?"aboveBar":"belowBar",shape:buy?"arrowDown":"arrowUp",color:D.colors.exit,text:"OUT"});
   m.sort(function(a,b){return a.time-b.time;});
   markers.setMarkers(m);

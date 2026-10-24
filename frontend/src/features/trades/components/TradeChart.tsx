@@ -19,6 +19,8 @@ import {
   CHART_COLORS,
   EMA_COLORS,
   JST_OFFSET_SEC,
+  SIDE_COLORS,
+  SIDE_LABEL_JA,
 } from "@/constants/chartTheme";
 import { priceDigits } from "@/utils/format";
 import type { Side } from "../types";
@@ -342,8 +344,8 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
           time: jst(entryTime),
           position: inBelow ? "belowBar" : "aboveBar",
           shape: inBelow ? "arrowUp" : "arrowDown",
-          color: CHART_COLORS.entry,
-          text: `IN ${entryPrice}`,
+          color: SIDE_COLORS[side],
+          text: `${SIDE_LABEL_JA[side]} IN ${entryPrice}`,
         });
       }
       if (exitTime !== null && overlays.markers) {
@@ -429,7 +431,13 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
         });
       const lines: IPriceLine[] = [];
       if (overlays.entryLine)
-        lines.push(dashed(entryPrice, CHART_COLORS.entry, "エントリー"));
+        lines.push(
+          dashed(
+            entryPrice,
+            SIDE_COLORS[side],
+            `${SIDE_LABEL_JA[side]}エントリー`,
+          ),
+        );
       if (tpPrice !== null && overlays.tpLine)
         lines.push(dashed(tpPrice, CHART_COLORS.tp, "TP"));
       if (slPrice !== null && overlays.slLine)
@@ -477,6 +485,7 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
         });
       };
     }, [
+      side,
       entryPrice,
       tpPrice,
       slPrice,
@@ -508,6 +517,17 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
           aria-label="ローソク足チャート"
           className="absolute inset-0"
         />
+        <span
+          data-testid="side-badge"
+          className="pointer-events-none absolute left-2 top-2 z-10 rounded-chip border px-2 py-0.5 text-xs font-bold"
+          style={{
+            color: SIDE_COLORS[side],
+            borderColor: SIDE_COLORS[side],
+            background: CHART_COLORS.background,
+          }}
+        >
+          {side === "buy" ? "▲ 買い" : "▼ 売り"}
+        </span>
       </div>
     );
   },

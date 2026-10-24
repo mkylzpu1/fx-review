@@ -93,6 +93,21 @@ describe("buildShareHtml: エントリー後・縦軸固定", () => {
   });
 });
 
+describe("buildShareHtml: 売買の向き", () => {
+  it("買い・売りを見出し・チャート上のバッジ・凡例に文字で出す", () => {
+    const buy = buildShareHtml(input());
+    expect(buy).toContain("▲ 買い");
+    expect(buy).not.toContain("▼ 売り");
+    const sell = buildShareHtml({
+      ...input(),
+      trade: { ...trade, side: "sell" } as Trade,
+    });
+    expect(sell).toContain("▼ 売り");
+    expect(sell).toContain("売りエントリー");
+    expect(sell).not.toContain("▲ 買い");
+  });
+});
+
 describe("escape", () => {
   it("escapeHtml / safeJson", () => {
     expect(escapeHtml('<a href="x">&')).toBe(

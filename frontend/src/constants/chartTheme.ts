@@ -14,6 +14,14 @@ export const CHART_COLORS = {
   exit: "#F5B94A",
 } as const;
 
+/** 売買の向きの色（買い=青緑寄り・売り=紫寄り）。SL/TP/決済の色と区別する。文字（買い・売り）も必ず併記する */
+export const SIDE_COLORS = {
+  buy: "#7DCFFF",
+  sell: "#C792EA",
+} as const;
+
+export const SIDE_LABEL_JA = { buy: "買い", sell: "売り" } as const;
+
 /** EMAの線の色（追加した順に割り当てる） */
 export const EMA_COLORS = [
   "#F5B94A",
