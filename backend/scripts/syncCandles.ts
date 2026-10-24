@@ -41,7 +41,13 @@ async function main() {
 
 main()
   .catch((e: unknown) => {
-    console.error("[sync] 失敗:", e instanceof Error ? e.message : e);
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[sync] 失敗:", message);
+    if (message.includes("TLS") || message.includes("ECONNREFUSED")) {
+      console.error(
+        "[sync] ヒント: DB に接続できていない可能性があります。docker compose up -d でPostgreSQLを起動し、backend/.env.local に DATABASE_URL と IS_LOCAL=true があるか確認してください",
+      );
+    }
     process.exitCode = 1;
   })
   .finally(() => sql.end());
