@@ -73,7 +73,7 @@ export function TradeChart({
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const emaRefs = useRef<ISeriesApi<"Line">[]>([]);
-  const pathRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const pathRef = useRef<ISeriesApi<"Line">[]>([]);
   const firstTimeRef = useRef<number | null>(null);
   const countRef = useRef(0);
   const resetRef = useRef<string | null>(null);
@@ -109,6 +109,9 @@ export function TradeChart({
       upColor: CHART_COLORS.up,
       downColor: CHART_COLORS.down,
       borderVisible: false,
+      // 最新の足の終値に自動で引かれる線とラベルは出さない（右外に読み込み済みの足があると、関係ない位置に線が出るため）
+      priceLineVisible: false,
+      lastValueVisible: false,
       wickUpColor: CHART_COLORS.up,
       wickDownColor: CHART_COLORS.down,
       priceFormat: {
@@ -121,7 +124,7 @@ export function TradeChart({
     candleRef.current = candles;
     markersRef.current = createSeriesMarkers(candles, []);
     emaRefs.current = [];
-    pathRef.current = null;
+    pathRef.current = [];
     firstTimeRef.current = null;
     resetRef.current = null;
 
@@ -177,34 +180,40 @@ export function TradeChart({
       return s;
     });
 
-    // エントリー→決済を結ぶ線（別の足のときだけ。同じ足は矢印の上下分けで見せる）
-    if (pathRef.current) {
-      chart.removeSeries(pathRef.current);
-      pathRef.current = null;
-    }
+    // エントリー価格と決済価格の水平線（エントリーの足から決済の足まで）。
+    // 同じ足のときは、1本ぶんの幅で引く。決済の線は勝ちなら緑・負けなら赤
+    pathRef.current.forEach((l) => chart.removeSeries(l));
+    pathRef.current = [];
     const { entryTime, exitTime } = data;
     if (
       entryTime !== null &&
       exitTime !== null &&
-      exitTime > entryTime &&
       exitPrice !== null &&
       overlays.path
     ) {
+      const step =
+        data.candles.length > 1
+          ? data.candles[1].time - data.candles[0].time
+          : 60;
+      const endTime = exitTime > entryTime ? exitTime : entryTime + step;
       const win =
         side === "buy" ? exitPrice >= entryPrice : exitPrice <= entryPrice;
-      const path = chart.addSeries(LineSeries, {
-        color: win ? CHART_COLORS.tp : CHART_COLORS.sl,
-        lineWidth: 2,
-        lineStyle: LineStyle.Dotted,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      });
-      path.setData([
-        { time: jst(entryTime), value: entryPrice },
-        { time: jst(exitTime), value: exitPrice },
-      ]);
-      pathRef.current = path;
+      const hline = (price: number, color: string) => {
+        const l = chart.addSeries(LineSeries, {
+          color,
+          lineWidth: 2,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        l.setData([
+          { time: jst(entryTime), value: price },
+          { time: jst(endTime), value: price },
+        ]);
+        pathRef.current.push(l);
+      };
+      hline(entryPrice, CHART_COLORS.entry);
+      hline(exitPrice, win ? CHART_COLORS.tp : CHART_COLORS.sl);
     }
 
     // マーカー: エントリーは買いなら足の下・売りなら上。決済はその反対側に置いて、同じ足でも重ならないようにする

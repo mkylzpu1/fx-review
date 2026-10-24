@@ -71,8 +71,8 @@ export function ChartLegend({
     },
     {
       key: "path",
-      label: "エントリー→決済（勝ち緑・負け赤）",
-      swatch: "dotted",
+      label: "エントリー・決済の水平線（決済は勝ち緑・負け赤）",
+      swatch: "dashed",
       color: CHART_COLORS.tp,
       show: hasExit,
     },
