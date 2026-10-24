@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import type { Timeframe } from "@/features/settings/types";
 import { apiClient } from "@/services/apiClient";
 import type { CandlesResponse } from "../types";
@@ -22,5 +22,20 @@ export function useCandles(tf: Timeframe, range: ChartRange | null) {
       apiClient.get<CandlesResponse>(
         `/candles${toQueryString({ tf, ...range })}`,
       ),
+  });
+}
+
+/** スクロールで追加した範囲を、まとめて取得する（範囲ごとに別のリクエストにして、1回の上限を超えない） */
+export function useCandleChunks(tf: Timeframe, ranges: ChartRange[]) {
+  return useQueries({
+    queries: ranges.map((r) => ({
+      queryKey: candleKeys.range(tf, r),
+      retry: false,
+      staleTime: 5 * 60 * 1000,
+      queryFn: () =>
+        apiClient.get<CandlesResponse>(
+          `/candles${toQueryString({ tf, ...r })}`,
+        ),
+    })),
   });
 }

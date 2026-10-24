@@ -11,6 +11,8 @@ export interface ChartData {
   emaLines: EmaLine[];
   /** エントリー時刻を含む足の開始時刻（UTC秒）。範囲内に無ければ null */
   entryTime: number | null;
+  /** 決済時刻を含む足の開始時刻（UTC秒）。「エントリー後の値動き」がOFF・範囲外・未決済なら null */
+  exitTime: number | null;
 }
 
 /** ts（UTC秒）を含む足の開始時刻。最初の足より前なら null */
@@ -32,6 +34,8 @@ export interface BuildInput {
   warmupCount: number;
   emaPeriods: number[];
   entrySec: number;
+  /** 決済時刻（UTC秒）。未決済は null / 省略 */
+  exitSec?: number | null;
   /** false のとき、エントリーの足より後を隠す */
   showAfter: boolean;
 }
@@ -45,7 +49,8 @@ export function buildChartData(i: BuildInput): ChartData {
   const visible = i.candles
     .slice(i.warmupCount)
     .filter((c) => i.showAfter || entryTime === null || c.time <= entryTime);
-  if (visible.length === 0) return { candles: [], emaLines: [], entryTime };
+  if (visible.length === 0)
+    return { candles: [], emaLines: [], entryTime, exitTime: null };
 
   const first = visible[0].time;
   const last = visible[visible.length - 1].time;
@@ -55,5 +60,32 @@ export function buildChartData(i: BuildInput): ChartData {
       (p) => p.time >= first && p.time <= last,
     ),
   }));
-  return { candles: visible, emaLines, entryTime };
+  const exitTime =
+    i.showAfter && i.exitSec != null && i.exitSec >= first
+      ? candleStartFor(visible, i.exitSec)
+      : null;
+  return { candles: visible, emaLines, entryTime, exitTime };
+}
+
+export interface CandleChunk {
+  candles: Candle[];
+  warmupCount: number;
+}
+
+/**
+ * 範囲の違う複数の取得結果を、1本の時系列にまとめる（同じ時刻の足は1本に）。
+ * 表示の先頭は、各結果の「ウォームアップを除いた最初の足」のうち最も古いもの。
+ * それより前の足は、EMAの助走として扱う。
+ */
+export function mergeChunks(chunks: CandleChunk[]): CandleChunk {
+  const byTime = new Map<number, Candle>();
+  let displayStart = Infinity;
+  for (const ch of chunks) {
+    for (const c of ch.candles) byTime.set(c.time, c);
+    const first = ch.candles[ch.warmupCount];
+    if (first) displayStart = Math.min(displayStart, first.time);
+  }
+  const candles = [...byTime.values()].sort((a, b) => a.time - b.time);
+  const warmupCount = candles.filter((c) => c.time < displayStart).length;
+  return { candles, warmupCount };
 }

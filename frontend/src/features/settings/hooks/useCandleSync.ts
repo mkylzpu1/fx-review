@@ -10,19 +10,22 @@ export const CANDLE_SYNC_URL: string =
 
 export interface CandleSyncResult {
   fetched: number;
+  /** 取り込んだ範囲の数（トレードの時間帯をまとめたもの） */
+  windows?: number;
   excursion: { total: number; withData: number };
 }
 
 /** サーバーに届かなかった（起動していない・ネットワークの問題）ときのエラー */
 export class SyncServerUnreachable extends Error {}
 
-async function requestSync(days: number): Promise<CandleSyncResult> {
+/** days を省略すると、全トレードの時間帯分を取り込む */
+async function requestSync(days?: number): Promise<CandleSyncResult> {
   let res: Response;
   try {
     res = await fetch(`${CANDLE_SYNC_URL}/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ days }),
+      body: JSON.stringify(days === undefined ? {} : { days }),
     });
   } catch {
     throw new SyncServerUnreachable();
@@ -40,7 +43,7 @@ async function requestSync(days: number): Promise<CandleSyncResult> {
 export function useCandleSync() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (days: number) => requestSync(days),
+    mutationFn: (days?: number) => requestSync(days),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["candles"] }),
   });
 }

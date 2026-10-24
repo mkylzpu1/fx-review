@@ -1,5 +1,5 @@
 import { sql } from "../lib/db";
-import type { Timeframe } from "../constants/candles";
+import { CANDLE_PAIR, type Timeframe } from "../constants/candles";
 import type { Side } from "../types/trade";
 
 /** MFE/MAE の計算に必要な、トレードと設定の値 */
@@ -34,6 +34,13 @@ const TARGET_JOINS = sql`
   LEFT JOIN currency_pairs cp ON cp.user_id = t.user_id AND cp.symbol = t.pair
   LEFT JOIN account_settings s ON s.user_id = t.user_id
 `;
+
+export interface TradeSpan {
+  entryAt: number;
+  exitAt: number | null;
+  daysBefore: number;
+  daysAfter: number;
+}
 
 export interface ExcursionValues {
   mfePips: number | null;
@@ -73,6 +80,18 @@ export const excursionStore = {
         mfe_pips = ${v.mfePips}, mae_pips = ${v.maePips},
         after_max_pips = ${v.afterMaxPips}
       WHERE id = ${id}
+    `;
+  },
+
+  /** 全ユーザーの未削除トレードの、エントリー・決済時刻（UTC秒）と、1日足で見せる前後の日数（同期する範囲の計算用） */
+  async listTradeSpans(): Promise<TradeSpan[]> {
+    return sql<TradeSpan[]>`
+      SELECT EXTRACT(EPOCH FROM t.entry_at)::float8 AS "entryAt",
+             EXTRACT(EPOCH FROM t.exit_at)::float8 AS "exitAt",
+             COALESCE(s.chart_bars_before, 40) AS "daysBefore",
+             COALESCE(s.chart_bars_after, 60) AS "daysAfter"
+      ${TARGET_JOINS}
+      WHERE t.deleted_at IS NULL AND t.pair = ${CANDLE_PAIR}
     `;
   },
 };

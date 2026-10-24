@@ -72,3 +72,53 @@ describe("buildChartData", () => {
     expect(r.emaLines[0].points).toEqual([]);
   });
 });
+
+import { mergeChunks } from "../chartData";
+
+describe("決済マーカーと足の結合", () => {
+  const bar = (t: number) => ({ time: t, open: 1, high: 2, low: 0, close: 1 });
+  const bars = [0, 60, 120, 180].map(bar);
+
+  it("エントリー後の値動きがONなら、決済の足を返す。OFFなら返さない", () => {
+    const on = buildChartData({
+      candles: bars,
+      warmupCount: 0,
+      emaPeriods: [],
+      entrySec: 70,
+      exitSec: 130,
+      showAfter: true,
+    });
+    expect(on.entryTime).toBe(60);
+    expect(on.exitTime).toBe(120);
+    const off = buildChartData({
+      candles: bars,
+      warmupCount: 0,
+      emaPeriods: [],
+      entrySec: 70,
+      exitSec: 130,
+      showAfter: false,
+    });
+    expect(off.exitTime).toBeNull();
+  });
+
+  it("エントリーと決済が同じ足なら、同じ時刻を返す", () => {
+    const d = buildChartData({
+      candles: bars,
+      warmupCount: 0,
+      emaPeriods: [],
+      entrySec: 65,
+      exitSec: 100,
+      showAfter: true,
+    });
+    expect(d.exitTime).toBe(d.entryTime);
+  });
+
+  it("範囲の違う結果を重複なく時系列にまとめ、表示の先頭より前を助走にする", () => {
+    const m = mergeChunks([
+      { candles: [120, 180, 240].map(bar), warmupCount: 1 },
+      { candles: [0, 60, 120, 180].map(bar), warmupCount: 1 },
+    ]);
+    expect(m.candles.map((c) => c.time)).toEqual([0, 60, 120, 180, 240]);
+    expect(m.warmupCount).toBe(1);
+  });
+});

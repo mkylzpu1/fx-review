@@ -11,6 +11,7 @@ export const CHART_COLORS = {
   entry: "#9DB4FF",
   sl: "#FF7A8A",
   tp: "#6EE7C8",
+  exit: "#F5B94A",
 } as const;
 
 /** EMAの線の色（追加した順に割り当てる） */

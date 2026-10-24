@@ -23,12 +23,12 @@ lambda:
 front:
 	cd frontend && npm run dev
 
-# ローソク足の同期用ローカルサーバー（設定画面の「ローソク足を更新」ボタンを受ける）。
+# ローソク足の同期用ローカルサーバー（トレード画面の「ローソク足を更新」ボタンを受ける）。
 # アプリ本体のコンテナからは手元のMT5のCSVを読めないため、Macで直接動かす
 sync-server:
 	cd backend && npm run sync:server
 
-# ボタンを使わずに、コマンドで直近7日分を同期したいとき
+# ボタンを使わずに、コマンドで直近7日分を同期したいとき（ボタンは登録済みトレードの時間帯だけを取り込む）
 sync:
 	cd backend && npm run candles:sync -- --days 7
 

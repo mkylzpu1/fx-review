@@ -9,7 +9,7 @@
 #property version "2.00"
 
 input string InpSymbol   = "USDJPY";                 // 書き出す銘柄（ブローカーの表記に合わせる）
-input int    InpDays     = 60;                       // 何日分を書き出すか
+input int    InpDays     = 180;                      // 何日分を書き出すか
 input string InpFileName = "fx-review\\USDJPY_M1.csv";
 
 const string BTN_NAME = "FxReviewExportButton";

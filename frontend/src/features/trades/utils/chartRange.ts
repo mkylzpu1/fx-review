@@ -51,3 +51,16 @@ export function chartRange(i: ChartRangeInput): ChartRange {
     warmup: warmupBars(i.emaPeriods),
   };
 }
+
+/** スクロールで足す範囲（ミリ秒で受ける）。ウォームアップは先頭側の追加でだけ使う */
+export function extendRange(
+  fromMs: number,
+  toMs: number,
+  warmup: number,
+): ChartRange {
+  return {
+    from: new Date(fromMs).toISOString(),
+    to: new Date(toMs).toISOString(),
+    warmup,
+  };
+}

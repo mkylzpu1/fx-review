@@ -5,6 +5,7 @@ import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { formatPips, formatR } from "@/utils/format";
+import { CandleSyncButton } from "../components/CandleSyncButton";
 import { Pagination } from "../components/Pagination";
 import { TradeTable } from "../components/TradeTable";
 import { useTrades, type TradeListQuery } from "../hooks/useTradesApi";
@@ -69,7 +70,8 @@ export function TradesPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">トレード</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-start gap-2">
+          <CandleSyncButton />
           <Link className="btn" to={ROUTES.TRADE_IMPORT}>
             CSVを取り込む
           </Link>

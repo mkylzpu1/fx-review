@@ -12,10 +12,6 @@ vi.mock("@/services/apiClient", () => ({
   apiClient: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
   ApiError: class extends Error {},
 }));
-vi.mock("../hooks/useCandleSync", async (orig) => ({
-  ...(await orig<typeof import("../hooks/useCandleSync")>()),
-  CANDLE_SYNC_URL: "http://localhost:3100",
-}));
 const download = vi.hoisted(() => vi.fn());
 vi.mock("@/features/export/utils/download", () => ({ downloadText: download }));
 
@@ -122,35 +118,5 @@ describe("データ設定", () => {
       await screen.findByRole("button", { name: "復元する" }),
     );
     await waitFor(() => expect(toasts()).toHaveLength(1));
-  });
-
-  it("ローソク足の更新ボタンは、同期サーバーに直近7日を依頼して結果を知らせる", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      json: async () => ({
-        ok: true,
-        fetched: 120,
-        excursion: { total: 2, withData: 2 },
-      }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    renderIt();
-    await userEvent.click(screen.getByRole("button", { name: "更新" }));
-    await waitFor(() =>
-      expect(toasts().some((m) => m.includes("120本"))).toBe(true),
-    );
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:3100/sync");
-    expect(JSON.parse(init.body)).toEqual({ days: 7 });
-    vi.unstubAllGlobals();
-  });
-
-  it("同期サーバーに届かないときは、起動の確認を促す", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fail")));
-    renderIt();
-    await userEvent.click(screen.getByRole("button", { name: "更新" }));
-    await waitFor(() =>
-      expect(toasts().some((m) => m.includes("make dev"))).toBe(true),
-    );
-    vi.unstubAllGlobals();
   });
 });

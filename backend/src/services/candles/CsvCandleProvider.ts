@@ -71,7 +71,11 @@ export class CsvCandleProvider implements CandleProvider {
     private readonly serverTime: ServerTime = "ny-close",
   ) {}
 
-  async fetch1m(_pair: "USDJPY", from: Date, to: Date): Promise<Candle[]> {
+  /** 同じ同期の中で何度も全行を読み直さないよう、最初に1回だけ読んで持つ */
+  private loaded: Candle[] | null = null;
+
+  private async loadAll(): Promise<Candle[]> {
+    if (this.loaded) return this.loaded;
     let files: string[];
     try {
       files = (await readdir(this.dir)).filter((f) => f.endsWith(".csv"));
@@ -84,16 +88,21 @@ export class CsvCandleProvider implements CandleProvider {
       throw new Error(
         `${this.dir} に .csv がありません。MT5のEAが動いているか確認してください`,
       );
-    const lo = Math.floor(from.getTime() / 1000);
-    const hi = Math.floor(to.getTime() / 1000);
     const byTime = new Map<number, Candle>();
     for (const f of files) {
       const text = await readFile(path.join(this.dir, f), "utf8");
       for (const line of text.split("\n")) {
         const c = parseCsvLine(line, this.serverTime);
-        if (c && c.time >= lo && c.time < hi) byTime.set(c.time, c);
+        if (c) byTime.set(c.time, c);
       }
     }
-    return [...byTime.values()].sort((a, b) => a.time - b.time);
+    this.loaded = [...byTime.values()].sort((a, b) => a.time - b.time);
+    return this.loaded;
+  }
+
+  async fetch1m(_pair: "USDJPY", from: Date, to: Date): Promise<Candle[]> {
+    const lo = Math.floor(from.getTime() / 1000);
+    const hi = Math.floor(to.getTime() / 1000);
+    return (await this.loadAll()).filter((c) => c.time >= lo && c.time < hi);
   }
 }

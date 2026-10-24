@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import {
   TIMEFRAMES,
@@ -7,15 +7,25 @@ import {
   type Timeframe,
 } from "@/features/settings/types";
 import { ApiError } from "@/services/apiClient";
-import { useCandles } from "../hooks/useCandles";
+import { useCandleChunks, useCandles } from "../hooks/useCandles";
 import type { Trade } from "../types";
-import { buildChartData } from "../utils/chartData";
-import { chartRange } from "../utils/chartRange";
+import type { ChartRange } from "../utils/chartRange";
+import { buildChartData, mergeChunks } from "../utils/chartData";
+import {
+  TF_SECONDS,
+  chartRange,
+  extendRange,
+} from "../utils/chartRange";
 import { ChartMessage } from "./ChartMessage";
 import { EmaControls } from "./EmaControls";
 import { TradeChart } from "./TradeChart";
 
 const HEIGHT = 360;
+const DAY_MS = 86_400_000;
+// スクロールで1回に追加する足の本数と、そのEMAウォームアップ（1回のAPI上限2000本に収める）
+const CHUNK_BARS = 1000;
+const CHUNK_WARMUP_MAX = 500;
+const NO_RANGES: ChartRange[] = [];
 // 設定が未作成（オンボーディング前）のときの表示
 const FALLBACK = {
   tf: "1h" as Timeframe,
@@ -58,16 +68,75 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
   );
   const { data, error, isLoading, isFetching, refetch } = useCandles(tf, range);
 
+  // スクロールで足していく範囲。上限は「1日足で見せる範囲」（エントリーの前後 before / after 日）
+  const key = `${tf}|${trade.entryAt}|${trade.exitAt}|${before}|${after}|${periodKey}`;
+  const [ext, setExt] = useState<{
+    key: string;
+    older: ChartRange[];
+    newer: ChartRange[];
+  }>({ key, older: [], newer: [] });
+  const older = ext.key === key ? ext.older : NO_RANGES;
+  const newer = ext.key === key ? ext.newer : NO_RANGES;
+  const entryMs = Date.parse(trade.entryAt);
+  const endMs = trade.exitAt
+    ? Math.max(Date.parse(trade.exitAt), entryMs)
+    : entryMs;
+  const capFrom = entryMs - before * DAY_MS;
+  const capTo = endMs + after * DAY_MS;
+  const loadedFrom = Date.parse((older[older.length - 1] ?? range).from);
+  const loadedTo = Date.parse((newer[newer.length - 1] ?? range).to);
+
+  const chunkRanges = useMemo(() => [...older, ...newer], [older, newer]);
+  const chunks = useCandleChunks(tf, chunkRanges);
+  const chunkBusy = chunks.some((c) => c.isFetching);
+
+  const needMore = useCallback(
+    (dir: "older" | "newer") => {
+      if (chunkBusy || !data) return;
+      const stepMs = TF_SECONDS[tf] * 1000 * CHUNK_BARS;
+      const warmup = Math.min(range.warmup, CHUNK_WARMUP_MAX);
+      if (dir === "older" && loadedFrom > capFrom) {
+        const r = extendRange(
+          Math.max(capFrom, loadedFrom - stepMs),
+          loadedFrom,
+          warmup,
+        );
+        setExt({ key, older: [...older, r], newer });
+      } else if (dir === "newer" && loadedTo < capTo) {
+        const r = extendRange(loadedTo, Math.min(capTo, loadedTo + stepMs), 0);
+        setExt({ key, older, newer: [...newer, r] });
+      }
+    },
+    [
+      chunkBusy,
+      data,
+      tf,
+      range.warmup,
+      loadedFrom,
+      loadedTo,
+      capFrom,
+      capTo,
+      key,
+      older,
+      newer,
+    ],
+  );
+
   const chartData = useMemo(() => {
     if (!data?.hasData) return null;
+    const merged = mergeChunks([
+      data,
+      ...chunks.flatMap((c) => (c.data ? [c.data] : [])),
+    ]);
     return buildChartData({
-      candles: data.candles,
-      warmupCount: data.warmupCount,
+      candles: merged.candles,
+      warmupCount: merged.warmupCount,
       emaPeriods: emas.filter((e) => e.visible).map((e) => e.period),
       entrySec: Date.parse(trade.entryAt) / 1000,
+      exitSec: trade.exitAt ? Date.parse(trade.exitAt) / 1000 : null,
       showAfter,
     });
-  }, [data, emas, showAfter, trade.entryAt]);
+  }, [data, chunks, emas, showAfter, trade.entryAt, trade.exitAt]);
 
   const nextTf = () =>
     setTf(TIMEFRAMES[(TIMEFRAMES.indexOf(tf) + 1) % TIMEFRAMES.length]);
@@ -112,6 +181,9 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         entryPrice={trade.entryPrice}
         slPrice={trade.slPrice}
         tpPrice={trade.tpPrice}
+        exitPrice={trade.exitPrice}
+        resetKey={`${trade.id}|${tf}|${showAfter}`}
+        onNeedMore={needMore}
         pipSize={pipSize}
         height={HEIGHT}
       />
@@ -154,7 +226,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
       {body}
       <div className="flex flex-wrap justify-between gap-2 text-xs text-ink-mute">
         <span>
-          チャートの価格は取得元（Dukascopy）の配信値のため、楽天FXの約定価格とわずかにずれることがあります。
+          チャートの価格はMT5の配信値のため、楽天FXの約定価格とわずかにずれることがあります。
         </span>
         <span className="flex gap-3">
           {isFetching && !isLoading && <span>更新中…</span>}

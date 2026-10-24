@@ -7,7 +7,7 @@
  *   npm run candles:sync -- --from 2026-10-01 --to 2026-10-23 --provider mock
  *
  * 既定の取得元は MT5 が書き出した CSV（mt5/FxReviewExport.mq5）。
- * 普段は、アプリの設定画面の「ローソク足を更新」ボタンから同じ処理が動く（npm run sync:server）。
+ * 普段は、アプリのトレード画面の「ローソク足を更新」ボタンから同じ処理が動く（npm run sync:server）。
  * --from / --to は UTC の日付。--to の日の終わりまで取得する。
  * 再実行しても安全（直近48時間は上書き、それより古い実データは変更しない）。
  */

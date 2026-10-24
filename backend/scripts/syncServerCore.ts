@@ -1,5 +1,5 @@
 /**
- * 設定画面の「ローソク足を更新」ボタンを受ける、手元専用の小さなHTTPサーバー。
+ * トレード画面の「ローソク足を更新」ボタンを受ける、手元専用の小さなHTTPサーバー。
  * アプリ本体（Lambda相当のコンテナ）は手元のMT5のCSVを読めないため、Macで直接動かす。
  *
  * 守りは3つ: 127.0.0.1 にだけ待ち受ける / 許可したオリジン（ローカルの画面）からだけ受ける /
@@ -13,10 +13,10 @@ export const ALLOWED_ORIGINS = new Set([
   "http://127.0.0.1:5173",
 ]);
 
-const DEFAULT_DAYS = 7;
 const MAX_BODY_BYTES = 1024;
 
-export type RunSync = (days: number) => Promise<SyncSummary>;
+/** days を指定すると直近N日分、省略すると全トレードの時間帯分 */
+export type RunSync = (days: number | null) => Promise<SyncSummary>;
 
 function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -71,7 +71,7 @@ export function createSyncServer(run: RunSync): http.Server {
         message: "更新中です。終わるまで待ってください",
       });
 
-    let days = DEFAULT_DAYS;
+    let days: number | null = null;
     try {
       const text = await readBody(req);
       if (text.trim()) {

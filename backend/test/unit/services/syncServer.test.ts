@@ -34,13 +34,13 @@ const post = (url: string, init: RequestInit & { origin?: string } = {}) =>
   });
 
 describe("同期用ローカルサーバー", () => {
-  it("許可したオリジンからのPOSTで同期し、結果を返す（既定は7日）", async () => {
+  it("許可したオリジンからのPOSTで同期し、結果を返す（日数を省略すると全トレードの時間帯）", async () => {
     const { url, run } = await start();
     const res = await post(url, { origin: ORIGIN });
     expect(res.status).toBe(200);
     expect(res.headers.get("access-control-allow-origin")).toBe(ORIGIN);
     expect(await res.json()).toEqual({ ok: true, ...summary });
-    expect(run).toHaveBeenCalledWith(7);
+    expect(run).toHaveBeenCalledWith(null);
   });
 
   it("days を指定できる。範囲外は400", async () => {
