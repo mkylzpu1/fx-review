@@ -2,6 +2,8 @@ import { ReactNode, useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { CandlestickChart, User } from "lucide-react";
 import { useAuthContext } from "@/features/auth/components/AuthProvider";
+import { Banner } from "@/components/common/Banner";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { ROUTES } from "@/constants/routes";
 import {
   NAV_ITEMS,
@@ -16,6 +18,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { user } = useAuthContext();
   const { pathname } = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const online = useOnlineStatus();
 
   useEffect(() => setMoreOpen(false), [pathname]);
 
@@ -80,6 +83,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+
+      {!online && (
+        <Banner tone="caution">
+          オフラインです。通信が戻るまで保存できません。入力した内容は画面に残ります。
+        </Banner>
+      )}
 
       <main className="mx-auto max-w-screen-xl px-4 pb-24 pt-6 lg:pb-8">
         {children}
