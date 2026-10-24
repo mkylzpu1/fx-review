@@ -5,6 +5,8 @@ export interface ChartOverlays {
   slLine: boolean;
   /** 決済価格の点線（端から端まで） */
   exitLine: boolean;
+  /** エントリー以降の足の背景色（どこからが「エントリー後」かを示す） */
+  afterShade: boolean;
   /** IN / OUT の矢印 */
   markers: boolean;
 }
@@ -14,6 +16,7 @@ export const DEFAULT_OVERLAYS: ChartOverlays = {
   tpLine: true,
   slLine: true,
   exitLine: true,
+  afterShade: true,
   markers: true,
 };
 

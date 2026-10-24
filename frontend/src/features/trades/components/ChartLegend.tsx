@@ -4,7 +4,7 @@ import type { ChartOverlays } from "../utils/chartOverlays";
 interface Item {
   key: keyof ChartOverlays;
   label: string;
-  swatch: "dashed" | "dotted" | "arrow";
+  swatch: "dashed" | "dotted" | "arrow" | "shade";
   color: string;
 }
 
@@ -17,6 +17,20 @@ interface Props {
 }
 
 function Swatch({ kind, color }: { kind: Item["swatch"]; color: string }) {
+  if (kind === "shade")
+    return (
+      <svg aria-hidden="true" width="18" height="12" viewBox="0 0 18 12">
+        <rect
+          x="1"
+          y="1"
+          width="16"
+          height="10"
+          rx="2"
+          fill={color}
+          fillOpacity="0.35"
+        />
+      </svg>
+    );
   if (kind === "arrow")
     return (
       <svg aria-hidden="true" width="18" height="12" viewBox="0 0 18 12">
@@ -75,6 +89,13 @@ export function ChartLegend({
       swatch: "dotted",
       color: CHART_COLORS.tp,
       show: hasExit,
+    },
+    {
+      key: "afterShade",
+      label: "エントリー以降の背景",
+      swatch: "shade",
+      color: CHART_COLORS.entry,
+      show: true,
     },
     {
       key: "markers",

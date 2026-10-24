@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import {
   CandlestickSeries,
+  HistogramSeries,
   ColorType,
   LineSeries,
   LineStyle,
@@ -39,6 +40,8 @@ interface Props {
   exitPrice?: number | null;
   pipSize: number;
   height?: number;
+  /** true のとき、親の高さいっぱいに広げる（全画面表示）。チャートは作り直さない */
+  fill?: boolean;
   /** 重ねて表示するものの表示・非表示 */
   overlays?: ChartOverlays;
   /** この値が変わったときだけ、表示位置をエントリー付近に合わせ直す（足を追加しただけでは動かさない） */
@@ -64,6 +67,7 @@ export function TradeChart({
   exitPrice = null,
   pipSize,
   height = 360,
+  fill = false,
   overlays = DEFAULT_OVERLAYS,
   resetKey = "",
   onNeedMore,
@@ -72,6 +76,7 @@ export function TradeChart({
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const markersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const shadeRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const emaRefs = useRef<ISeriesApi<"Line">[]>([]);
   const firstTimeRef = useRef<number | null>(null);
   const countRef = useRef(0);
@@ -104,6 +109,18 @@ export function TradeChart({
         secondsVisible: false,
       },
     });
+    // エントリー以降の背景。専用の価格軸に全高で描くので、ローソク足の縦の範囲には影響しない
+    const shade = chart.addSeries(HistogramSeries, {
+      priceScaleId: "after-shade",
+      priceLineVisible: false,
+      lastValueVisible: false,
+      base: 0,
+    });
+    shade.priceScale().applyOptions({
+      scaleMargins: { top: 0, bottom: 0 },
+      visible: false,
+    });
+    shadeRef.current = shade;
     const candles = chart.addSeries(CandlestickSeries, {
       upColor: CHART_COLORS.up,
       downColor: CHART_COLORS.down,
@@ -144,6 +161,7 @@ export function TradeChart({
       chart.remove();
       chartRef.current = null;
       candleRef.current = null;
+      shadeRef.current = null;
       markersRef.current = null;
     };
   }, [height, pipSize]);
@@ -162,6 +180,21 @@ export function TradeChart({
 
     candles.setData(data.candles.map((c) => ({ ...c, time: jst(c.time) })));
     countRef.current = data.candles.length;
+    // エントリーの足から右を薄く塗る（エントリー後の足が無いときは塗らない）
+    const entryT = data.entryTime;
+    const hasAfter =
+      entryT !== null && data.candles.some((c) => c.time > entryT);
+    shadeRef.current?.setData(
+      overlays.afterShade && hasAfter
+        ? data.candles
+            .filter((c) => c.time >= entryT)
+            .map((c) => ({
+              time: jst(c.time),
+              value: 1,
+              color: "rgba(157, 180, 255, 0.10)",
+            }))
+        : [],
+    );
     const newFirst = data.candles[0]?.time ?? null;
 
     // EMAは本数が変わりうるので、作り直す
@@ -242,6 +275,7 @@ export function TradeChart({
     height,
     pipSize,
     overlays.markers,
+    overlays.afterShade,
   ]);
 
   // 価格線（エントリー・TP・SL・決済）。端から端までの線
@@ -308,7 +342,7 @@ export function TradeChart({
       role="img"
       aria-label="ローソク足チャート"
       className="w-full"
-      style={{ height }}
+      style={{ height: fill ? "100%" : height }}
     />
   );
 }

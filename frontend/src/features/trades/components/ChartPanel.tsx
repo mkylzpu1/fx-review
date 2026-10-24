@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import {
   TIMEFRAMES,
@@ -53,6 +53,22 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     settings?.emaSettings ?? FALLBACK.emas,
   );
   const [showAfter, setShowAfter] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  // 全画面中は Esc で閉じ、背面のスクロールを止める
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [fullscreen]);
   const [overlays, setOverlays] = useState<ChartOverlays>(DEFAULT_OVERLAYS);
   // 設定の本数が少なくても、初期表示の本数（どの時間足でも同じ）は必ず読み込む
   const before = settings?.chartBarsBefore ?? FALLBACK.before;
@@ -197,7 +213,8 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         tpPrice={trade.tpPrice}
         exitPrice={trade.exitPrice}
         overlays={overlays}
-        resetKey={`${trade.id}|${tf}|${showAfter}`}
+        resetKey={`${trade.id}|${tf}`}
+        fill={fullscreen}
         onNeedMore={needMore}
         pipSize={pipSize}
         height={HEIGHT}
@@ -206,7 +223,14 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
   }
 
   return (
-    <section className="card space-y-3" aria-label="チャート">
+    <section
+      className={
+        fullscreen
+          ? "fixed inset-0 z-[60] flex flex-col gap-3 overflow-y-auto bg-bg p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]"
+          : "card space-y-3"
+      }
+      aria-label="チャート"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div
           role="radiogroup"
@@ -228,14 +252,24 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
             </button>
           ))}
         </div>
-        <label className="flex min-h-touch items-center gap-2 text-sm text-ink-sub">
-          <input
-            type="checkbox"
-            checked={showAfter}
-            onChange={(e) => setShowAfter(e.target.checked)}
-          />
-          エントリー後の値動き
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex min-h-touch items-center gap-2 text-sm text-ink-sub">
+            <input
+              type="checkbox"
+              checked={showAfter}
+              onChange={(e) => setShowAfter(e.target.checked)}
+            />
+            エントリー後の値動き
+          </label>
+          <button
+            type="button"
+            className="btn min-h-touch"
+            aria-pressed={fullscreen}
+            onClick={() => setFullscreen((v) => !v)}
+          >
+            {fullscreen ? "全画面を閉じる" : "全画面"}
+          </button>
+        </div>
       </div>
       <EmaControls emas={emas} onChange={setEmas} />
       <ChartLegend
@@ -245,7 +279,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         hasSl={trade.slPrice !== null}
         hasExit={trade.exitAt !== null && trade.exitPrice !== null}
       />
-      {body}
+      <div className={fullscreen ? "min-h-[280px] flex-1" : ""}>{body}</div>
       <CandleSyncButton tradeId={trade.id} />
       <div className="flex flex-wrap justify-between gap-2 text-xs text-ink-mute">
         <span>

@@ -30,6 +30,7 @@ vi.mock("../components/TradeChart", () => ({
     data: { candles: unknown[]; emaLines: unknown[] };
     overlays?: Record<string, boolean>;
     resetKey?: string;
+    fill?: boolean;
   }) => {
     chartProps(p);
     return <div data-testid="trade-chart" />;
@@ -259,5 +260,29 @@ describe("チャート領域", () => {
       ).toBeInTheDocument(),
     );
     expect(keyOf()).toBe(before);
+  });
+
+  it("「エントリー後の値動き」を切り替えても、チャートの位置を戻す合図は変わらない", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    const keyOf = () =>
+      chartProps.mock.calls[chartProps.mock.calls.length - 1][0].resetKey;
+    const before = keyOf();
+    await userEvent.click(screen.getByLabelText("エントリー後の値動き"));
+    expect(keyOf()).toBe(before);
+  });
+
+  it("全画面に切り替えられ、Escで閉じる。チャートは作り直さず広げるだけ", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    const fillOf = () =>
+      chartProps.mock.calls[chartProps.mock.calls.length - 1][0].fill;
+    expect(fillOf()).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "全画面" }));
+    expect(fillOf()).toBe(true);
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(fillOf()).toBe(false));
   });
 });
