@@ -56,6 +56,11 @@ function row(label: string, value: string): string {
   return `<div class="row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
 }
 
+/** 「エントリー後を表示」にチェックを入れるまで隠す行 */
+function afterRow(label: string, value: string): string {
+  return `<div class="row after"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+}
+
 function reasonBlock(title: string, text: string | null): string {
   return text
     ? `<section><h2>${escapeHtml(title)}</h2><p class="memo">${escapeHtml(text)}</p></section>`
@@ -75,11 +80,11 @@ export function buildShareHtml(i: ShareInput): string {
     row("利確(TP)", t.tpPrice === null ? "未設定" : p(t.tpPrice)),
     ...(t.exitAt && t.exitPrice !== null
       ? [
-          row("決済", `${formatJst(t.exitAt)}  @ ${p(t.exitPrice)}`),
-          row("決済の種類", EXIT_LABEL[t.exitMethod]),
-          row("結果", formatPips(t.pips)),
+          afterRow("決済", `${formatJst(t.exitAt)}  @ ${p(t.exitPrice)}`),
+          afterRow("決済の種類", EXIT_LABEL[t.exitMethod]),
+          afterRow("結果", formatPips(t.pips)),
         ]
-      : [row("決済", "未決済")]),
+      : [afterRow("決済", "未決済")]),
   ].join("");
 
   const reasons = i.includeReasons
@@ -143,6 +148,7 @@ dl{margin:0}
 .tag{display:inline-block;border:1px solid #3A4352;border-radius:999px;padding:0 10px;font-size:12px}
 .memo{white-space:pre-wrap;margin:0}
 section{margin-top:12px}
+body:not(.show-after) .after{display:none}
 .key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:#B4BDCA;margin-top:6px}
 .key i{display:inline-block;width:14px;height:0;border-top:2px dashed;vertical-align:middle;margin-right:4px}
 </style>
@@ -150,16 +156,20 @@ section{margin-top:12px}
 <body>
 <main>
 <h1>${escapeHtml(t.pair)} ${SIDE_LABEL[t.side]}のトレード</h1>
-<p class="note">評価用の閲覧専用ファイルです。時間足とEMAは自由に切り替えられます。チャートはドラッグで動かし、ホイールで拡大・縮小できます。表示は日本時間です。</p>
+<p class="note">評価用の閲覧専用ファイルです。時間足とEMAは自由に切り替えられます。エントリー後の値動きと結果は、初期状態では隠しています（「エントリー後を表示」で見られます）。チャートはドラッグで動かし、ホイールで拡大・縮小できます。表示は日本時間です。</p>
 <div class="card">
   <div class="bar" id="tfs" role="group" aria-label="時間足"></div>
   <div class="bar" id="emas" role="group" aria-label="EMA"></div>
+  <div class="bar">
+    <label><input type="checkbox" id="showAfter"> エントリー後を表示</label>
+    <label><input type="checkbox" id="fixY"> 縦軸固定</label>
+  </div>
   <div id="chart" role="img" aria-label="ローソク足チャート"></div>
   <div class="key">
     <span><i style="color:${c.entry}"></i>エントリー</span>
     <span><i style="color:${c.sl}"></i>損切り</span>
     <span><i style="color:${c.tp}"></i>利確</span>
-    <span><i style="color:${c.exit}"></i>決済</span>
+    <span class="after"><i style="color:${c.exit}"></i>決済</span>
   </div>
 </div>
 <div class="card">
@@ -193,7 +203,17 @@ function line(price,color,title){
 line(D.entryPrice,D.colors.entry,"IN");
 line(D.slPrice,D.colors.sl,"SL");
 line(D.tpPrice,D.colors.tp,"TP");
-line(D.exitPrice,D.colors.exit,"OUT");
+var exitLine=null;
+function setExitLine(on){
+  if(exitLine){candles.removePriceLine(exitLine);exitLine=null;}
+  if(on&&D.exitPrice!==null&&D.exitPrice!==undefined)
+    exitLine=candles.createPriceLine({price:D.exitPrice,color:D.colors.exit,lineWidth:1,lineStyle:LC.LineStyle.Dashed,axisLabelVisible:true,title:"OUT"});
+}
+var fixed=null;
+candles.applyOptions({autoscaleInfoProvider:function(orig){
+  if(fixed)return{priceRange:{minValue:fixed.min,maxValue:fixed.max}};
+  return orig();
+}});
 var emaSeries=D.emas.map(function(e){
   return chart.addSeries(LC.LineSeries,{color:e.color,lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,visible:e.on});
 });
@@ -212,20 +232,23 @@ function indexAt(cs,ts){
   for(var i=0;i<cs.length;i++){if(cs[i][0]<=ts)f=i;else break;}
   return f;
 }
+var showAfter=false;
 var tfBox=document.getElementById("tfs"),emaBox=document.getElementById("emas"),current=null;
 function show(fr){
   current=fr;
-  var cs=fr.c;
+  var all=fr.c;
+  var ei=indexAt(all,D.entrySec);
+  var cs=(showAfter||ei<0)?all:all.slice(0,ei+1);
   candles.setData(cs.map(function(c){return{time:c[0]+OFF,open:c[1],high:c[2],low:c[3],close:c[4]};}));
   D.emas.forEach(function(e,n){emaSeries[n].setData(ema(cs,e.period));});
-  var ei=indexAt(cs,D.entrySec),xi=D.exitSec===null?-1:indexAt(cs,D.exitSec),m=[];
+  var xi=(!showAfter||D.exitSec===null)?-1:indexAt(cs,D.exitSec),m=[];
   var buy=D.side==="buy";
   if(ei>=0)m.push({time:cs[ei][0]+OFF,position:buy?"belowBar":"aboveBar",shape:buy?"arrowUp":"arrowDown",color:D.colors.entry,text:"IN"});
   if(xi>=0)m.push({time:cs[xi][0]+OFF,position:buy?"aboveBar":"belowBar",shape:buy?"arrowDown":"arrowUp",color:D.colors.exit,text:"OUT"});
   m.sort(function(a,b){return a.time-b.time;});
   markers.setMarkers(m);
   if(ei>=0){
-    var from=Math.max(0,ei-60),to=Math.min(cs.length-1,(xi>=0?xi:ei)+40);
+    var from=Math.max(0,ei-60),to=Math.min(cs.length-1,showAfter?(xi>=0?xi:ei)+40:ei);
     chart.timeScale().setVisibleLogicalRange({from:from,to:to+3});
   }else{chart.timeScale().fitContent();}
   Array.prototype.forEach.call(tfBox.children,function(b){b.setAttribute("aria-pressed",String(b.dataset.tf===fr.tf));});
@@ -244,6 +267,24 @@ D.emas.forEach(function(e,n){
   sp.textContent="EMA"+e.period;sp.style.color=e.color;
   l.appendChild(cb);l.appendChild(sp);emaBox.appendChild(l);
 });
+document.getElementById("showAfter").onchange=function(e){
+  showAfter=e.target.checked;
+  document.body.classList.toggle("show-after",showAfter);
+  setExitLine(showAfter);
+  if(current)show(current);
+};
+document.getElementById("fixY").onchange=function(e){
+  if(e.target.checked){
+    var h=chart.paneSize().height,hi=candles.coordinateToPrice(0),lo=candles.coordinateToPrice(h);
+    if(hi===null||lo===null){e.target.checked=false;return;}
+    fixed={min:Math.min(hi,lo),max:Math.max(hi,lo)};
+  }else{
+    fixed=null;
+    chart.priceScale("right").applyOptions({autoScale:true});
+  }
+  chart.priceScale("right").applyOptions({autoScale:true});
+  candles.applyOptions({});
+};
 if(D.frames.length>0){
   var pick=D.frames.filter(function(f){return f.tf===D.defaultTf;})[0]||D.frames[0];
   show(pick);

@@ -79,6 +79,20 @@ describe("buildShareHtml", () => {
   });
 });
 
+describe("buildShareHtml: エントリー後・縦軸固定", () => {
+  it("決済・結果の行は隠す指定（after）になり、チェックボックスで表示できる", () => {
+    const html = buildShareHtml(input());
+    expect(html).toContain("body:not(.show-after) .after{display:none}");
+    expect(html).toContain('id="showAfter"');
+    expect(html).toContain('id="fixY"');
+    for (const label of ["決済", "決済の種類", "結果"]) {
+      expect(html).toContain(`<div class="row after"><dt>${label}</dt>`);
+    }
+    // エントリー前の情報は隠さない
+    expect(html).not.toContain('<div class="row after"><dt>損切り');
+  });
+});
+
 describe("escape", () => {
   it("escapeHtml / safeJson", () => {
     expect(escapeHtml('<a href="x">&')).toBe(
