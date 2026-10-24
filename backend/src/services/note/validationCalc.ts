@@ -26,7 +26,7 @@ export interface RuleValidation {
   broken: Avg;
 }
 
-function avg(views: TradeView[]): Avg {
+export function avg(views: TradeView[]): Avg {
   const rs = views.flatMap((v) => (v.rMultiple === null ? [] : [v.rMultiple]));
   return {
     n: rs.length,

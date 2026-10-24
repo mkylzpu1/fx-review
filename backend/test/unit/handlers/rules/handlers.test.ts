@@ -8,6 +8,7 @@ vi.mock("../../../../src/services/rule/ruleService", () => ({
   ruleService: {
     list: vi.fn(),
     get: vi.fn(),
+    detail: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -34,6 +35,24 @@ describe("rules handlers", () => {
     const res = await rules.listHandler(ev());
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body).data.items).toEqual([]);
+  });
+
+  it("GET /rules/{id}: 詳細（遵守率の推移など）を返す", async () => {
+    vi.mocked(ruleService.detail).mockResolvedValue({ kept: 3 } as never);
+    const res = await rules.getHandler(ev({ pathParameters: { id: "r1" } }));
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body).data.kept).toBe(3);
+    expect(ruleService.detail).toHaveBeenCalledWith("u", "r1");
+  });
+
+  it("GET /rules/{id}: 無ければ404、idが無ければ400", async () => {
+    vi.mocked(ruleService.detail).mockRejectedValue(
+      new NotFoundError("ルール"),
+    );
+    expect(
+      (await rules.getHandler(ev({ pathParameters: { id: "x" } }))).statusCode,
+    ).toBe(404);
+    expect((await rules.getHandler(ev())).statusCode).toBe(400);
   });
 
   it("POST /rules: 既定値を補って作成する", async () => {

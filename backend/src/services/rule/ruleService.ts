@@ -5,6 +5,9 @@ import {
   type RulePatch,
 } from "../../stores/ruleStore";
 import type { Rule } from "../../types/trade";
+import { tradeService } from "../trade/tradeService";
+import { todayJst } from "../weekly/weeklyCalc";
+import { buildRuleDetail, type RuleDetail } from "./ruleDetailCalc";
 
 export const ruleService = {
   list: (userId: string) => ruleStore.list(userId),
@@ -13,6 +16,13 @@ export const ruleService = {
     const rule = await ruleStore.findById(userId, id);
     if (!rule) throw new NotFoundError("ルール");
     return rule;
+  },
+
+  /** 遵守率の推移・破ったトレード・守った/破った時の平均R（ルール詳細画面用） */
+  async detail(userId: string, id: string): Promise<RuleDetail> {
+    const rule = await this.get(userId, id);
+    const views = await tradeService.listAll(userId, {});
+    return buildRuleDetail(rule, views, todayJst());
   },
 
   /** 並び順は常に末尾に追加する */

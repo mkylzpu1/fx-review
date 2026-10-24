@@ -37,7 +37,7 @@ export function addDays(date: string, days: number): string {
 }
 
 /** JSTの暦日 */
-function jstDate(iso: string): string {
+export function jstDate(iso: string): string {
   return ymd(new Date(Date.parse(iso) + JST_OFFSET_MS));
 }
 

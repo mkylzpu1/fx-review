@@ -52,7 +52,7 @@ export const getHandler = async (
 ): Promise<APIGatewayProxyResult> => {
   try {
     const { userId } = await verifyAuth(event);
-    return success(await ruleService.get(userId, getId(event)));
+    return success(await ruleService.detail(userId, getId(event)));
   } catch (e) {
     return errorResponse(e);
   }

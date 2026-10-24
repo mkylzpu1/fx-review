@@ -185,10 +185,21 @@ export function useCreateItem() {
 | メソッド | パス | 説明 |
 |---------|------|------|
 | `GET` | `/rules` | 一覧（並び順どおり。無効なルールも含む） |
-| `GET` | `/rules/{id}` | 1件取得（遵守率の推移・破ったトレードはP4で追加） |
+| `GET` | `/rules/{id}` | ルール詳細（遵守率の推移・破ったトレード・守った/破った時の平均R）。レスポンスは下記 |
 | `POST` | `/rules` | 追加 `{ title, description?, autoKey?, isActive? }`。並び順は末尾 |
 | `PUT` | `/rules/{id}` | 更新 `{ title?, description?, isActive?, sortOrder?, autoKey? }`。無効化しても過去の判定は残る |
 | `DELETE` | `/rules/{id}` | 削除（そのルールの過去の判定も消える。通常は無効化を使う） |
+
+`GET /rules/{id}` レスポンス `data`:
+
+- `rule`: ルール本体（一覧と同じ項目）
+- `kept` / `broke`: 判定のあるトレード（決済済み）の守った件数 / 破った件数。判定なし（`na`・未入力）は数えない
+- `recent`: 直近4週（今週を含む）の `kept` / `broke` / `rate`（遵守率%。判定が無ければ `null`）
+- `weekly`: 直近8週（古い順・今週を含む。月〜日・JST）の `weekStart` / `kept` / `broke` / `rate`
+- `avgKept` / `avgBroken`: 守った時・破った時の平均R（`{ n, avgR }`。Rが計算できるトレードだけ）
+- `brokenTrades`: 破ったトレード（新しい順・最大20件）と、全件数 `brokenTotal`
+- `validation`: 学習メモからルール化した「検証中」のルールなら前後の成績比較（それ以外は `null`）
+- 遵守率 = 守った ÷（守った + 破った）。無効化したルールの過去の判定も集計に残る
 
 `autoKey`: `sl_set` / `risk_within_limit` / `hold_to_tp` / `null`（手動チェック）
 
