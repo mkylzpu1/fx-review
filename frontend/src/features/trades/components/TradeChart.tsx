@@ -7,6 +7,7 @@ import {
   createChart,
   createSeriesMarkers,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
   type ISeriesMarkersPluginApi,
   type SeriesMarker,
@@ -21,6 +22,12 @@ import {
 import { priceDigits } from "@/utils/format";
 import type { Side } from "../types";
 import type { ChartData } from "../utils/chartData";
+import {
+  DEFAULT_OVERLAYS,
+  INITIAL_BARS_AFTER,
+  INITIAL_BARS_BEFORE,
+  type ChartOverlays,
+} from "../utils/chartOverlays";
 
 interface Props {
   data: ChartData;
@@ -32,6 +39,8 @@ interface Props {
   exitPrice?: number | null;
   pipSize: number;
   height?: number;
+  /** 重ねて表示するものの表示・非表示 */
+  overlays?: ChartOverlays;
   /** この値が変わったときだけ、表示位置をエントリー付近に合わせ直す（足を追加しただけでは動かさない） */
   resetKey?: string;
   /** 端の近くまでスクロールされたとき、その方向の足を追加で読むよう頼む */
@@ -55,6 +64,7 @@ export function TradeChart({
   exitPrice = null,
   pipSize,
   height = 360,
+  overlays = DEFAULT_OVERLAYS,
   resetKey = "",
   onNeedMore,
 }: Props) {
@@ -177,7 +187,8 @@ export function TradeChart({
       entryTime !== null &&
       exitTime !== null &&
       exitTime > entryTime &&
-      exitPrice !== null
+      exitPrice !== null &&
+      overlays.path
     ) {
       const win =
         side === "buy" ? exitPrice >= entryPrice : exitPrice <= entryPrice;
@@ -199,7 +210,7 @@ export function TradeChart({
     // マーカー: エントリーは買いなら足の下・売りなら上。決済はその反対側に置いて、同じ足でも重ならないようにする
     const markers: SeriesMarker<Time>[] = [];
     const inBelow = side === "buy";
-    if (entryTime !== null) {
+    if (entryTime !== null && overlays.markers) {
       markers.push({
         time: jst(entryTime),
         position: inBelow ? "belowBar" : "aboveBar",
@@ -208,7 +219,7 @@ export function TradeChart({
         text: `IN ${entryPrice}`,
       });
     }
-    if (exitTime !== null) {
+    if (exitTime !== null && overlays.markers) {
       markers.push({
         time: jst(exitTime),
         position: inBelow ? "aboveBar" : "belowBar",
@@ -220,7 +231,17 @@ export function TradeChart({
     markersRef.current?.setMarkers(markers);
 
     if (isReset) {
-      ts.fitContent();
+      // どの時間足でも同じ本数（エントリーの足の前後）を見せる。エントリーが範囲外なら全体を見せる
+      const idx =
+        data.entryTime === null
+          ? -1
+          : data.candles.findIndex((c) => c.time === data.entryTime);
+      if (idx >= 0)
+        ts.setVisibleLogicalRange({
+          from: idx - INITIAL_BARS_BEFORE,
+          to: idx + INITIAL_BARS_AFTER,
+        });
+      else ts.fitContent();
       resetRef.current = resetKey;
       armedRef.current = false;
     } else if (prevRange && prevFirst !== null && newFirst !== null) {
@@ -239,7 +260,17 @@ export function TradeChart({
       }
     }
     firstTimeRef.current = newFirst;
-  }, [data, side, entryPrice, exitPrice, resetKey, height, pipSize]);
+  }, [
+    data,
+    side,
+    entryPrice,
+    exitPrice,
+    resetKey,
+    height,
+    pipSize,
+    overlays.path,
+    overlays.markers,
+  ]);
 
   // 価格線（エントリー・TP・SL）。決済価格は線ではなくマーカーで見せる
   useEffect(() => {
@@ -254,9 +285,13 @@ export function TradeChart({
         axisLabelVisible: true,
         title,
       });
-    const lines = [dashed(entryPrice, CHART_COLORS.entry, "エントリー")];
-    if (tpPrice !== null) lines.push(dashed(tpPrice, CHART_COLORS.tp, "TP"));
-    if (slPrice !== null) lines.push(dashed(slPrice, CHART_COLORS.sl, "SL"));
+    const lines: IPriceLine[] = [];
+    if (overlays.entryLine)
+      lines.push(dashed(entryPrice, CHART_COLORS.entry, "エントリー"));
+    if (tpPrice !== null && overlays.tpLine)
+      lines.push(dashed(tpPrice, CHART_COLORS.tp, "TP"));
+    if (slPrice !== null && overlays.slLine)
+      lines.push(dashed(slPrice, CHART_COLORS.sl, "SL"));
     return () => {
       lines.forEach((l) => {
         try {
@@ -266,7 +301,16 @@ export function TradeChart({
         }
       });
     };
-  }, [entryPrice, tpPrice, slPrice, height, pipSize]);
+  }, [
+    entryPrice,
+    tpPrice,
+    slPrice,
+    height,
+    pipSize,
+    overlays.entryLine,
+    overlays.tpLine,
+    overlays.slLine,
+  ]);
 
   return (
     <div

@@ -12,7 +12,14 @@ import type { Trade } from "../types";
 import type { ChartRange } from "../utils/chartRange";
 import { buildChartData, mergeChunks } from "../utils/chartData";
 import { TF_SECONDS, chartRange, extendRange } from "../utils/chartRange";
+import {
+  DEFAULT_OVERLAYS,
+  INITIAL_BARS_AFTER,
+  INITIAL_BARS_BEFORE,
+  type ChartOverlays,
+} from "../utils/chartOverlays";
 import { CandleSyncButton } from "./CandleSyncButton";
+import { ChartLegend } from "./ChartLegend";
 import { ChartMessage } from "./ChartMessage";
 import { EmaControls } from "./EmaControls";
 import { TradeChart } from "./TradeChart";
@@ -46,8 +53,12 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     settings?.emaSettings ?? FALLBACK.emas,
   );
   const [showAfter, setShowAfter] = useState(true);
+  const [overlays, setOverlays] = useState<ChartOverlays>(DEFAULT_OVERLAYS);
+  // 設定の本数が少なくても、初期表示の本数（どの時間足でも同じ）は必ず読み込む
   const before = settings?.chartBarsBefore ?? FALLBACK.before;
   const after = settings?.chartBarsAfter ?? FALLBACK.after;
+  const loadBefore = Math.max(before, INITIAL_BARS_BEFORE);
+  const loadAfter = Math.max(after, INITIAL_BARS_AFTER);
 
   // 非表示のEMAも含めた最長期間で取る（ON/OFFの切り替えで取り直さない）
   const periodKey = emas.map((e) => e.period).join(",");
@@ -57,16 +68,16 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         entryAt: trade.entryAt,
         exitAt: trade.exitAt,
         tf,
-        barsBefore: before,
-        barsAfter: after,
+        barsBefore: loadBefore,
+        barsAfter: loadAfter,
         emaPeriods: periodKey ? periodKey.split(",").map(Number) : [],
       }),
-    [trade.entryAt, trade.exitAt, tf, before, after, periodKey],
+    [trade.entryAt, trade.exitAt, tf, loadBefore, loadAfter, periodKey],
   );
   const { data, error, isLoading, isFetching, refetch } = useCandles(tf, range);
 
   // スクロールで足していく範囲。上限は「1日足で見せる範囲」（エントリーの前後 before / after 日）
-  const key = `${tf}|${trade.entryAt}|${trade.exitAt}|${before}|${after}|${periodKey}`;
+  const key = `${tf}|${trade.entryAt}|${trade.exitAt}|${before}|${after}`;
   const [ext, setExt] = useState<{
     key: string;
     older: ChartRange[];
@@ -83,7 +94,15 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
   const loadedFrom = Date.parse((older[older.length - 1] ?? range).from);
   const loadedTo = Date.parse((newer[newer.length - 1] ?? range).to);
 
-  const chunkRanges = useMemo(() => [...older, ...newer], [older, newer]);
+  // 追加した範囲のEMA助走は、いまのEMA設定から付ける（EMAを足しても、読み込み済みの範囲は捨てない）
+  const chunkWarmup = Math.min(range.warmup, CHUNK_WARMUP_MAX);
+  const chunkRanges = useMemo(
+    () => [
+      ...older.map((r) => ({ ...r, warmup: chunkWarmup })),
+      ...newer.map((r) => ({ ...r, warmup: 0 })),
+    ],
+    [older, newer, chunkWarmup],
+  );
   const chunks = useCandleChunks(tf, chunkRanges);
   const chunkBusy = chunks.some((c) => c.isFetching);
 
@@ -91,12 +110,11 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     (dir: "older" | "newer") => {
       if (chunkBusy || !data) return;
       const stepMs = TF_SECONDS[tf] * 1000 * CHUNK_BARS;
-      const warmup = Math.min(range.warmup, CHUNK_WARMUP_MAX);
       if (dir === "older" && loadedFrom > capFrom) {
         const r = extendRange(
           Math.max(capFrom, loadedFrom - stepMs),
           loadedFrom,
-          warmup,
+          0,
         );
         setExt({ key, older: [...older, r], newer });
       } else if (dir === "newer" && loadedTo < capTo) {
@@ -108,7 +126,6 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
       chunkBusy,
       data,
       tf,
-      range.warmup,
       loadedFrom,
       loadedTo,
       capFrom,
@@ -179,6 +196,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         slPrice={trade.slPrice}
         tpPrice={trade.tpPrice}
         exitPrice={trade.exitPrice}
+        overlays={overlays}
         resetKey={`${trade.id}|${tf}|${showAfter}`}
         onNeedMore={needMore}
         pipSize={pipSize}
@@ -220,6 +238,13 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         </label>
       </div>
       <EmaControls emas={emas} onChange={setEmas} />
+      <ChartLegend
+        overlays={overlays}
+        onChange={setOverlays}
+        hasTp={trade.tpPrice !== null}
+        hasSl={trade.slPrice !== null}
+        hasExit={trade.exitAt !== null && trade.exitPrice !== null}
+      />
       {body}
       <CandleSyncButton tradeId={trade.id} />
       <div className="flex flex-wrap justify-between gap-2 text-xs text-ink-mute">

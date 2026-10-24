@@ -32,6 +32,8 @@ export function useCandleChunks(tf: Timeframe, ranges: ChartRange[]) {
       queryKey: candleKeys.range(tf, r),
       retry: false,
       staleTime: 5 * 60 * 1000,
+      // EMAを足して取り直す間も、読み込み済みの足を消さない（チャートの位置が飛ばないように）
+      placeholderData: keepPreviousData,
       queryFn: () =>
         apiClient.get<CandlesResponse>(
           `/candles${toQueryString({ tf, ...r })}`,

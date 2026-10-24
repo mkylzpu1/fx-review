@@ -26,7 +26,11 @@ vi.mock("@/services/apiClient", () => {
 
 const chartProps = vi.fn();
 vi.mock("../components/TradeChart", () => ({
-  TradeChart: (p: { data: { candles: unknown[]; emaLines: unknown[] } }) => {
+  TradeChart: (p: {
+    data: { candles: unknown[]; emaLines: unknown[] };
+    overlays?: Record<string, boolean>;
+    resetKey?: string;
+  }) => {
     chartProps(p);
     return <div data-testid="trade-chart" />;
   },
@@ -214,5 +218,46 @@ describe("チャート領域", () => {
         before,
       ),
     );
+  });
+
+  it("設定の本数が少なくても、初期表示に必要な本数（前60本・後40本）は読み込む", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel(); // 設定は前40本・後20本
+    await screen.findByTestId("trade-chart");
+    const u = lastUrl();
+    const hours = (iso: string) => Date.parse(iso) / 3_600_000;
+    expect(hours(trade.entryAt) - hours(u.searchParams.get("from")!)).toBe(60);
+    expect(hours(u.searchParams.get("to")!) - hours(trade.exitAt!)).toBe(40);
+  });
+
+  it("凡例で、線や矢印の表示・非表示を切り替えられる", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    const last = () =>
+      chartProps.mock.calls[chartProps.mock.calls.length - 1][0];
+    expect(last().overlays.slLine).toBe(true);
+    await userEvent.click(screen.getByRole("button", { name: /SL（損切り）/ }));
+    expect(last().overlays.slLine).toBe(false);
+    expect(
+      screen.getByRole("button", { name: /SL（損切り）/ }),
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("EMAを追加しても、チャートの位置を戻す合図（resetKey）は変わらない", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    const keyOf = () =>
+      chartProps.mock.calls[chartProps.mock.calls.length - 1][0].resetKey;
+    const before = keyOf();
+    await userEvent.type(screen.getByRole("spinbutton"), "50");
+    await userEvent.click(screen.getByRole("button", { name: /追加/ }));
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("button", { name: /EMA50/ })[0],
+      ).toBeInTheDocument(),
+    );
+    expect(keyOf()).toBe(before);
   });
 });
