@@ -584,6 +584,151 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/export/index.ts]
 
+  # ─── 学習メモ ───────────────────────────────────────────
+  NotesValidationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.validationsHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes/validations
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
+  NotesListFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.listHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
+  NotesCreateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.createHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
+  NotesCreateAiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.createAiHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes/ai
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
+  NotesGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.getHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes/{id}
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
+  NotesUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.updateHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes/{id}
+            Method: PUT
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
+  NotesDeleteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.deleteHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes/{id}
+            Method: DELETE
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
+  NotesToRuleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/notes/index.toRuleHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /notes/{id}/improvements/{improvementId}/to-rule
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/notes/index.ts]
+
   # ─── CSV取り込み ────────────────────────────────────────
   ImportsPreviewFunction:
     Type: AWS::Serverless::Function

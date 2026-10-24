@@ -17,6 +17,7 @@ const handlers = [
   "src/handlers/imports/index.ts",
   "src/handlers/stats/index.ts",
   "src/handlers/export/index.ts",
+  "src/handlers/notes/index.ts",
   "src/handlers/weeklyReview/index.ts",
   // TODO: 機能ハンドラーをここに追加する
   // "src/handlers/example/index.ts",

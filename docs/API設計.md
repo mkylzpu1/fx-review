@@ -402,3 +402,23 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 - **未対応**: エントリー前後のローソク足・EMA値、ボラティリティ（ATR）・上位足の向き（足の同期データが必要なため、後続で対応）
 
 レスポンス `data`: `{ "content": "…", "filename": "fx-review-2026-10-24.md", "mime": "text/markdown", "tradeCount": 120 }`
+
+### 学習メモ
+
+| メソッド | パス | 説明 |
+|---|---|---|
+| `GET` | `/notes?kind=&validating=&page=&limit=` | 一覧。`kind`: `ai` / `self`。`validating=true` はルール化した改善案を含むメモだけ。新しい順 |
+| `GET` | `/notes/{id}` | 詳細（改善案・AI回答の見出し分け `sections` つき） |
+| `POST` | `/notes` | 自分の気づきを作る（`title`, `body`, `emotionTags`, `nextRule`, `sourceTradeId`） |
+| `POST` | `/notes/ai` | AIの回答を貼り付けて保存。改善案を簡易パースで取り出す |
+| `PUT` / `DELETE` | `/notes/{id}` | 更新 / 削除（改善案も消える。作成済みのルールは残る） |
+| `POST` | `/notes/{id}/improvements/{improvementId}/to-rule` | 改善案をルールにする（検証中として始まる）。ルール化済みなら `409` |
+| `GET` | `/notes/validations` | 検証中の改善ルール（ルール化後の件数 / 目標、前後の平均R、守った時・破った時の平均R） |
+
+`POST /notes/ai` リクエスト: `{ "aiName": "Claude", "dataRangeLabel": "直近30日", "rawResponse": "…", "title": null }`
+
+- `aiName`: `Claude` / `ChatGPT` / `Gemini` / `その他`。`rawResponse` は10万文字まで
+- **簡易パース**（LLMは呼ばない）: 番号付き行（`1.` `1)` `①`）と箇条書き（`-` `*` `・`）を1行ずつ改善案にする。「改善」「ルール」「提案」などの見出しの節があればそこだけから拾い、無ければ全体から拾う。同じ行は1つにまとめ、300文字で切り、30件まで。`n=12` / `（12件）` があれば `sampleN` にする
+- パースできない回答は、改善案も `sections` も空で、原文（`rawResponse`）だけを返す。画面は原文表示にフォールバックする
+- 改善案の `status`: `needs_check`（要検証）/ `ruled`（ルール化済み）。`ruled` のときは `validation: { count, target }`（ルール化後の件数 / 目標）が付く
+- ルール化: ルール作成と改善案の更新は同じトランザクション。作成時に `validation_started_at` を記録する
