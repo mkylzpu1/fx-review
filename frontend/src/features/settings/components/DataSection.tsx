@@ -16,8 +16,8 @@ export function DataSection() {
     },
     {
       title: "MT5の履歴を取り込む",
-      desc: "約定データから、トレードをまとめて登録します。",
-      label: "取り込み画面へ",
+      desc: "準備中です。",
+      label: "準備中",
     },
   ];
   return (
@@ -31,6 +31,17 @@ export function DataSection() {
         から行います。
       </p>
       <ul className="mt-3 divide-y divide-line">
+        <li className="flex items-center justify-between gap-4 py-3">
+          <div>
+            <p className="text-sm font-bold">楽天FX証券のCSVを取り込む</p>
+            <p className="text-xs text-ink-mute">
+              約定履歴から、トレードをまとめて登録します。
+            </p>
+          </div>
+          <Link className="btn shrink-0" to={ROUTES.TRADE_IMPORT}>
+            取り込み画面へ
+          </Link>
+        </li>
         {rows.map((r) => (
           <li
             key={r.title}

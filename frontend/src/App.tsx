@@ -14,6 +14,7 @@ import { TradeFormPage } from "@/features/trades/pages/TradeFormPage";
 import { TradesPage } from "@/features/trades/pages/TradesPage";
 import { TradeQueuePage } from "@/features/trades/pages/TradeQueuePage";
 import { TradeDetailPage } from "@/features/trades/pages/TradeDetailPage";
+import { ImportPage } from "@/features/imports/pages/ImportPage";
 import { RulesPage } from "@/features/rules/pages/RulesPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
 import { ROUTES } from "@/constants/routes";
@@ -22,7 +23,6 @@ import { ROUTES } from "@/constants/routes";
 const PLACEHOLDERS: { path: string; title: string }[] = [
   { path: ROUTES.STATS, title: "統計" },
   { path: ROUTES.STATS_WEEKLY, title: "週次レビュー" },
-  { path: ROUTES.TRADE_IMPORT, title: "CSV取り込み" },
   { path: ROUTES.RULE_DETAIL, title: "ルール詳細" },
   { path: ROUTES.NOTES, title: "学習メモ" },
   { path: ROUTES.NOTE_DETAIL, title: "AI分析の結果" },
@@ -62,6 +62,10 @@ export function App() {
                     <Route
                       path={ROUTES.TRADE_DETAIL}
                       element={<TradeDetailPage />}
+                    />
+                    <Route
+                      path={ROUTES.TRADE_IMPORT}
+                      element={<ImportPage />}
                     />
                     <Route
                       path={ROUTES.TRADE_QUEUE}

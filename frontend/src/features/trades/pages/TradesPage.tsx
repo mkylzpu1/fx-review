@@ -70,6 +70,9 @@ export function TradesPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">トレード</h1>
         <div className="flex gap-2">
+          <Link className="btn" to={ROUTES.TRADE_IMPORT}>
+            CSVを取り込む
+          </Link>
           <Link className="btn" to={ROUTES.TRADE_QUEUE}>
             未入力キュー
           </Link>
