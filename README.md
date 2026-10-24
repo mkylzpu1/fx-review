@@ -99,6 +99,21 @@ features/
 | Docker | 24.x 以上 |
 | AWS SAM CLI | 1.x 以上 |
 
+### 一括起動（make）
+
+前提ツールを入れたあと、次の2コマンドで起動できる。
+
+```bash
+make setup   # 初回だけ: 依存インストール + sam/local-env.json と frontend/.env.local の作成
+make dev     # 毎回: DB起動 → sam build → API(:3000) / Lambda / Frontend(:5173) を同時起動
+```
+
+止めるときは `Ctrl+C`（API・Lambda・Frontend）、DBは `make stop`。
+個別に動かす場合は `make db` / `make build` / `make api` / `make lambda` / `make front`。
+Backendのコードを変えたら、`make dev` を起動し直す（`sam build` が走る）。
+
+以下は、makeを使わず手動で行う場合の手順。
+
 ### 1. PostgreSQLを起動
 
 ```bash
