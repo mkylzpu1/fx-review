@@ -8,7 +8,7 @@ services:
   # ─── PostgreSQL（Supabase 相当） ─────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: app-postgres
+    container_name: fx-review-postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
