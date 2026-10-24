@@ -129,10 +129,10 @@ export function StatsPage() {
             <GroupTable title="セッション別" groups={data.bySession} />
             <GroupTable title="根拠タグ別" groups={data.byRationale} />
             <GroupTable title="ルール遵守別" groups={data.byRule} />
-            <GroupTable title="曜日別" groups={data.byWeekday} />
-            <GroupTable title="時間帯別" groups={data.byHour} />
-            <GroupTable title="保有時間別" groups={data.byHolding} />
-            <GroupTable title="ロット別" groups={data.byLots} />
+            <GroupTable title="曜日別" groups={data.byWeekday ?? []} />
+            <GroupTable title="時間帯別" groups={data.byHour ?? []} />
+            <GroupTable title="保有時間別" groups={data.byHolding ?? []} />
+            <GroupTable title="ロット別" groups={data.byLots ?? []} />
           </div>
 
           <InsightList insights={data.insights} />

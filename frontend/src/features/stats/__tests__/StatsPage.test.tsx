@@ -170,3 +170,16 @@ describe("統計", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("統計 古いAPI", () => {
+  it("新しい切り口が無い応答でも画面が落ちない", async () => {
+    const old = stats() as Partial<StatsResult>;
+    delete old.byWeekday;
+    delete old.byHour;
+    delete old.byHolding;
+    delete old.byLots;
+    vi.mocked(apiClient.get).mockResolvedValue(old);
+    renderPage();
+    expect(await screen.findByText("曜日別")).toBeInTheDocument();
+  });
+});
