@@ -259,6 +259,21 @@ export const tradeService = {
     };
   },
 
+  /** 期間・通貨ペアで絞った全件（古い順）。統計・週次レビュー・エクスポート用（ページングしない） */
+  async listAll(
+    userId: string,
+    q: { from?: string; to?: string; pair?: string },
+  ): Promise<TradeView[]> {
+    const viewer = await loadViewer(userId);
+    const { rows } = await tradeListStore.list(userId, {
+      from: q.from,
+      to: q.to,
+      pair: q.pair,
+      sort: "entry_asc",
+    });
+    return rows.map(viewer.toView);
+  },
+
   /** 未入力キュー。件数の強調はしない（入力は任意）ので、数値だけを返す */
   async queue(userId: string, q: QueueQuery): Promise<QueueResult> {
     const viewer = await loadViewer(userId);

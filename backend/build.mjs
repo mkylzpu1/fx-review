@@ -15,6 +15,7 @@ const handlers = [
   "src/handlers/trades/index.ts",
   "src/handlers/candles/index.ts",
   "src/handlers/imports/index.ts",
+  "src/handlers/stats/index.ts",
   // TODO: 機能ハンドラーをここに追加する
   // "src/handlers/example/index.ts",
 ];

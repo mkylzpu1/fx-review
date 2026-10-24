@@ -196,9 +196,9 @@ export function judgeGroup(
 }
 
 /** 区分キーの配列（トレードごと。無ければ空配列）で集計する。キーの出現順は labels の順 */
-export function groupBy(
-  trades: StatTrade[],
-  keysOf: (t: StatTrade) => string[],
+export function groupBy<T extends StatTrade>(
+  trades: T[],
+  keysOf: (t: T) => string[],
   labels: { key: string; label: string }[],
 ): GroupStat[] {
   const bucket = new Map<string, number[]>();

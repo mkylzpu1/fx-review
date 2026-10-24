@@ -332,3 +332,32 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 - `skipped`: `skip` のとき、取り込み済みのため除いた件数
 - `overwritten`: `overwrite` のとき、更新した件数
 - 取り込み後、`npm run candles:sync -- --from <entryRange.from の日付> --to <entryRange.to の日付>` で足を同期するとチャートとMFE/MAEが出る
+
+## FXレビュー: P4 エンドポイント（分析）
+
+### 統計
+
+| メソッド | パス | 説明 |
+|---|---|---|
+| `GET` | `/stats?from=&to=&pair=` | 期間・通貨ペアで絞った統計。認証必須。`from` / `to` はISO日時（任意） |
+
+レスポンス `data`:
+
+```json
+{
+  "summary": { "n": 120, "winRate": 55.0, "totalPips": 310.5, "totalPnlJpy": 31000, "rCount": 40, "rMissing": 80, "avgR": 0.31, "totalR": 12.4, "profitFactor": 1.4, "maxLossStreak": 5 },
+  "cumulative": [{ "index": 1, "entryAt": "…", "r": 1.2, "cumulative": 1.2 }],
+  "drawdown": { "depth": 3.1, "peakIndex": 10, "troughIndex": 18 },
+  "bySession": [{ "key": "tokyo", "label": "東京", "n": 20, "avgR": 0.4, "verdict": "strength", "shortfall": 0 }],
+  "byRationale": [], "byRule": [],
+  "insights": [{ "kind": "needs_check", "axis": "session", "label": "NY", "n": 6, "avgR": -0.2, "shortfall": 9 }],
+  "closedCount": 120
+}
+```
+
+- 集計対象は**決済済みで pips が計算できるトレード**。勝率・pips・円損益は全件、R系（累積R・平均R・PF・最大DD）は **R が計算できるトレードだけ**。`rMissing` が「R未計算」の件数
+- `drawdown`: 累積Rのピークからの最大下落。`peakIndex` / `troughIndex` は累積Rのトレード番号（0は開始時点）。下落が無ければ `null`
+- `verdict`: `n ≥ 15` なら平均Rの符号で `strength` / `weakness`、それ未満は `needs_check`（`shortfall` はあと何件ほどで判断できるか）。閾値は `constants/stats.ts`
+- 根拠タグ別: 複数タグのトレードは各タグに数える。タグが無いものは「未入力」にまとめ、`insights` には含めない
+- ルール遵守別: 有効なルールに `ng` が1つでもあれば「破った」、`ok` があれば「守った」、どちらも無ければ「判定なし」
+- セッションはエントリー時刻（設定のタイムゾーン）で分類。区分は `constants/sessions.ts`（仮値）

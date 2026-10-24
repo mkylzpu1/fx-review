@@ -505,6 +505,26 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/candles/index.ts]
 
+  # ─── 統計 ───────────────────────────────────────────────
+  StatsGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/stats/index.getHandler
+      Timeout: 30
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /stats
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/stats/index.ts]
+
   # ─── CSV取り込み ────────────────────────────────────────
   ImportsPreviewFunction:
     Type: AWS::Serverless::Function
