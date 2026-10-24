@@ -42,18 +42,26 @@ export class DukascopyProvider implements CandleProvider {
   constructor(private readonly fetchRates: FetchRates = defaultFetch) {}
 
   async fetch1m(_pair: "USDJPY", from: Date, to: Date): Promise<Candle[]> {
-    const rows = await this.fetchRates({
-      instrument: DUKASCOPY_INSTRUMENT,
-      dates: { from, to },
-      timeframe: "m1",
-      format: "json",
-      priceType: CANDLE_PRICE_TYPE,
-      utcOffset: DUKASCOPY_UTC_OFFSET,
-      volumes: false,
-      ignoreFlats: true,
-      useCache: false,
-      retryCount: 3,
-    });
+    let rows: DukascopyRow[];
+    try {
+      rows = await this.fetchRates({
+        instrument: DUKASCOPY_INSTRUMENT,
+        dates: { from, to },
+        timeframe: "m1",
+        format: "json",
+        priceType: CANDLE_PRICE_TYPE,
+        utcOffset: DUKASCOPY_UTC_OFFSET,
+        volumes: false,
+        ignoreFlats: true,
+        useCache: false,
+        retryCount: 3,
+      });
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Dukascopyから1分足を取得できませんでした（${reason}）。ネットワーク接続と、datafeed.dukascopy.com への通信が許可されているか確認してください`,
+      );
+    }
     return toCandles(rows, from, to);
   }
 }

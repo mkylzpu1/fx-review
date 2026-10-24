@@ -27,7 +27,8 @@ await esbuild.build({
   format: "cjs",
   outfile,
   sourcemap: false,
-  external: ["@aws-sdk/*"],
+  // dukascopy-node は playwright-core などを含むため、まとめずに実行時に node_modules から読む
+  external: ["@aws-sdk/*", "dukascopy-node"],
 });
 
 // DB接続などの設定は backend/.env.local から読む（無ければ環境変数をそのまま使う）

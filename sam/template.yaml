@@ -487,6 +487,24 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/trades/index.ts]
 
+  CandlesGetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/candles/index.getHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /candles
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/candles/index.ts]
+
   # ─── TODO: 機能ハンドラーをここに追加する ───────────────
   # ExampleGetFunction:
   #   Type: AWS::Serverless::Function

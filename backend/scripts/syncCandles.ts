@@ -8,17 +8,19 @@
  * 再実行しても安全（直近48時間は上書き、それより古い実データは変更しない）。
  */
 import { sql } from "../src/lib/db";
-import { DukascopyProvider } from "../src/services/candles/DukascopyProvider";
 import { MockCandleProvider } from "../src/services/candles/MockCandleProvider";
 import { syncCandles } from "../src/services/candles/syncService";
 import { parseSyncArgs } from "./syncArgs";
 
 async function main() {
   const args = parseSyncArgs(process.argv.slice(2));
+  // dukascopy-node は重いので、使うときだけ読み込む
   const provider =
     args.provider === "mock"
       ? new MockCandleProvider()
-      : new DukascopyProvider();
+      : new (
+          await import("../src/services/candles/DukascopyProvider")
+        ).DukascopyProvider();
   console.log(
     `[sync] ${args.provider}: ${args.from.toISOString()} 〜 ${args.to.toISOString()}`,
   );

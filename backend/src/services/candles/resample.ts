@@ -61,7 +61,7 @@ export function sessionStart(utcSec: number): number {
 }
 
 /** 足を含む区間の開始時刻（UTC秒） */
-function bucketStart(utcSec: number, tf: Timeframe): number {
+export function bucketStart(utcSec: number, tf: Timeframe): number {
   if (tf === "1d") return sessionStart(utcSec);
   if (tf === "4h") {
     const start = sessionStart(utcSec);
