@@ -16,6 +16,7 @@ import { TradeQueuePage } from "@/features/trades/pages/TradeQueuePage";
 import { TradeDetailPage } from "@/features/trades/pages/TradeDetailPage";
 import { ImportPage } from "@/features/imports/pages/ImportPage";
 import { StatsPage } from "@/features/stats/pages/StatsPage";
+import { WeeklyReviewPage } from "@/features/stats/pages/WeeklyReviewPage";
 import { ExportPage } from "@/features/export/pages/ExportPage";
 import { NoteDetailPage } from "@/features/notes/pages/NoteDetailPage";
 import { NotesPage } from "@/features/notes/pages/NotesPage";
@@ -25,7 +26,6 @@ import { ROUTES } from "@/constants/routes";
 
 /** 後続フェーズで実装する画面（フェーズ完了時に実ページへ差し替える） */
 const PLACEHOLDERS: { path: string; title: string }[] = [
-  { path: ROUTES.STATS_WEEKLY, title: "週次レビュー" },
   { path: ROUTES.RULE_DETAIL, title: "ルール詳細" },
   { path: ROUTES.ACCOUNT, title: "アカウント" },
 ];
@@ -64,6 +64,10 @@ export function App() {
                       element={<TradeDetailPage />}
                     />
                     <Route path={ROUTES.STATS} element={<StatsPage />} />
+                    <Route
+                      path={ROUTES.STATS_WEEKLY}
+                      element={<WeeklyReviewPage />}
+                    />
                     <Route path={ROUTES.NOTES} element={<NotesPage />} />
                     <Route
                       path={ROUTES.NOTE_DETAIL}
