@@ -497,7 +497,6 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
       overlays.exitLine,
       overlays.excursion,
       exitPrice,
-      side,
       excursion,
       mfeLevel,
       maeLevel,

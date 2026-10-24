@@ -84,7 +84,8 @@ describe("buildShareHtml: エントリー後・縦軸固定", () => {
     const html = buildShareHtml(input());
     expect(html).toContain("body:not(.show-after) .after{display:none}");
     expect(html).toContain('id="showAfter"');
-    expect(html).toContain('id="fixY"');
+    expect(html).toContain("縦軸固定");
+    expect(html).toContain("エントリー後の値動き");
     for (const label of ["決済", "決済の種類", "結果"]) {
       expect(html).toContain(`<div class="row after"><dt>${label}</dt>`);
     }
@@ -94,17 +95,57 @@ describe("buildShareHtml: エントリー後・縦軸固定", () => {
 });
 
 describe("buildShareHtml: 売買の向き", () => {
-  it("買い・売りを見出し・チャート上のバッジ・凡例に文字で出す", () => {
+  const h1 = (html: string) => html.match(/<h1>.*?<\/h1>/s)?.[0] ?? "";
+  const data = (html: string) =>
+    JSON.parse(html.split('id="d">')[1].split("</script>")[0]);
+
+  it("買い・売りを見出しに文字で出し、チャートへ渡す色と名前も向きに合わせる", () => {
     const buy = buildShareHtml(input());
-    expect(buy).toContain("▲ 買い");
-    expect(buy).not.toContain("▼ 売り");
+    expect(h1(buy)).toContain("▲ 買い");
+    expect(data(buy)).toMatchObject({ sideLabel: "買い" });
     const sell = buildShareHtml({
       ...input(),
       trade: { ...trade, side: "sell" } as Trade,
     });
-    expect(sell).toContain("▼ 売り");
-    expect(sell).toContain("売りエントリー");
-    expect(sell).not.toContain("▲ 買い");
+    expect(h1(sell)).toContain("▼ 売り");
+    expect(data(sell)).toMatchObject({ sideLabel: "売り" });
+    expect(data(sell).colors.sideColor).not.toBe(data(buy).colors.sideColor);
+  });
+});
+
+describe("buildShareHtml: アプリのチャートと同じ仕様", () => {
+  it("凡例・EMA・2画面・全画面・画像保存・縦軸固定の部品を含む", () => {
+    const html = buildShareHtml(input());
+    for (const w of [
+      "エントリー価格",
+      "TP（利確）",
+      "SL（損切り）",
+      "決済価格（勝ち緑・負け赤）",
+      "最大含み益・含み損・決済後最大",
+      "エントリー以降の背景",
+      "IN / OUT の矢印",
+      "時間足を並べる",
+      "全画面",
+      "画像を保存",
+      "範囲を合わせ直す",
+    ]) {
+      expect(html).toContain(w);
+    }
+  });
+
+  it("決済価格・最大含み益などの水準と勝ち負けを渡す", () => {
+    const d = JSON.parse(
+      buildShareHtml(
+        input({
+          trade: { ...trade, mfePips: 40, maePips: -10, afterMaxPips: 5 },
+        }),
+      )
+        .split('id="d">')[1]
+        .split("</script>")[0],
+    );
+    expect(d.exitWin).toBe(true);
+    expect(d.excursion).toMatchObject({ mfe: 150.4, mae: 149.9 });
+    expect(d.digits).toBe(3);
   });
 });
 

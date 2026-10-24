@@ -166,6 +166,7 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         hasSl={trade.slPrice !== null}
         hasExit={trade.exitAt !== null && trade.exitPrice !== null}
         hasExcursion={hasExcursion(levels)}
+        side={trade.side}
       />
       {hasSaved && (
         <p className="text-xs text-ink-mute">
