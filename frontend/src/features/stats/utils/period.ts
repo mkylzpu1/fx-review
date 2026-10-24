@@ -45,3 +45,12 @@ export function previousPeriod(
     to: from.toISOString(),
   };
 }
+
+/** 今日（JST）の0時 */
+export function todayStartJst(now: Date = new Date()): string {
+  const jst = new Date(now.getTime() + JST_OFFSET_MS);
+  const start =
+    Date.UTC(jst.getUTCFullYear(), jst.getUTCMonth(), jst.getUTCDate()) -
+    JST_OFFSET_MS;
+  return new Date(start).toISOString();
+}

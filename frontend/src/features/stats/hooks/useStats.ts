@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
 import { toQueryString } from "@/features/trades/hooks/useTradesApi";
 import type { PeriodKey, StatsResult } from "../types";
-import { periodFrom, previousPeriod } from "../utils/period";
+import { periodFrom, previousPeriod, todayStartJst } from "../utils/period";
 
 export function useStats(period: PeriodKey, pair?: string) {
   return useQuery({
@@ -23,5 +23,16 @@ export function usePreviousStats(period: PeriodKey) {
     enabled: prev !== null,
     queryFn: () =>
       apiClient.get<StatsResult>(`/stats${toQueryString(prev ?? {})}`),
+  });
+}
+
+/** 今日（JST）の統計。トップ画面の「今日の状況」用 */
+export function useTodayStats() {
+  return useQuery({
+    queryKey: ["stats", "today"],
+    queryFn: () =>
+      apiClient.get<StatsResult>(
+        `/stats${toQueryString({ from: todayStartJst() })}`,
+      ),
   });
 }

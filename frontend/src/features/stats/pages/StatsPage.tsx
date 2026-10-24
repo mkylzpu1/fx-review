@@ -8,6 +8,7 @@ import { formatPips, formatR, formatYenSigned } from "@/utils/format";
 import { CumulativeChart } from "../components/CumulativeChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
+import { TodayStatus } from "../components/TodayStatus";
 import { PeriodCompare } from "../components/PeriodCompare";
 import { usePreviousStats, useStats } from "../hooks/useStats";
 import type { PeriodKey } from "../types";
@@ -49,6 +50,8 @@ export function StatsPage() {
           週次レビュー
         </Link>
       </div>
+
+      <TodayStatus />
 
       <div role="group" aria-label="期間" className="flex flex-wrap gap-2">
         {PERIODS.map((p) => (
