@@ -149,6 +149,16 @@ describe("buildShareHtml: アプリのチャートと同じ仕様", () => {
   });
 });
 
+describe("buildShareHtml: 表示位置", () => {
+  it("リセット以外の再描画では、見ている範囲を控えて戻す", () => {
+    const html = buildShareHtml(input());
+    expect(html).toContain("getVisibleLogicalRange()");
+    expect(html).toMatch(
+      /if\(prevRange\)chart\.timeScale\(\)\.setVisibleLogicalRange\(prevRange\)/,
+    );
+  });
+});
+
 describe("escape", () => {
   it("escapeHtml / safeJson", () => {
     expect(escapeHtml('<a href="x">&')).toBe(

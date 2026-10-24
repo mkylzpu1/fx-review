@@ -190,6 +190,8 @@ function Pane(title,tf,withTitle){
     var fr=frameFor(p.tf);
     p.msg.hidden=fr!==null&&fr.c.length>0;
     if(!fr||fr.c.length===0){candles.setData([]);shade.setData([]);markers.setMarkers([]);p.emaSeries.forEach(function(s){chart.removeSeries(s);});p.emaSeries=[];return;}
+    /* 足の数が変わる（エントリー後の表示を切り替える）ときも、見ている範囲を動かさない */
+    var prevRange=reset?null:chart.timeScale().getVisibleLogicalRange();
     var all=fr.c,ei=indexAt(all,D.entrySec);
     var cs=(state.showAfter||ei<0)?all:all.slice(0,ei+1);
     candles.setData(cs.map(function(c){return{time:c[0]+OFF,open:c[1],high:c[2],low:c[3],close:c[4]};}));
@@ -214,6 +216,7 @@ function Pane(title,tf,withTitle){
     m.sort(function(a,b){return a.time-b.time;});
     markers.setMarkers(m);
     lines();
+    if(prevRange)chart.timeScale().setVisibleLogicalRange(prevRange);
     if(reset){
       /* どの時間足でも同じ本数（エントリーの足の前後）を見せる */
       if(ei>=0)chart.timeScale().setVisibleLogicalRange({from:ei-BEFORE,to:ei+AFTER});
