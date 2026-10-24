@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-PGCONN="postgresql://postgres:postgres@localhost:5432/postgres"
+PGCONN="postgresql://postgres:postgres@localhost:5433/postgres"
 
 echo "PostgreSQL にマイグレーションを適用中..."
 for f in $(ls backend/db/migrations/*.sql | sort); do

@@ -1,6 +1,6 @@
 {
   "Parameters": {
-    "DatabaseUrl": "postgresql://postgres:postgres@host.docker.internal:5432/postgres",
+    "DatabaseUrl": "postgresql://postgres:postgres@host.docker.internal:5433/postgres",
     "IsLocal": "true",
     "CognitoUserPoolId": ""
   }

@@ -26,7 +26,7 @@ Globals:
 Parameters:
   DatabaseUrl:
     Type: String
-    Default: "postgresql://postgres:postgres@host.docker.internal:5432/postgres"
+    Default: "postgresql://postgres:postgres@host.docker.internal:5433/postgres"
   IsLocal:
     Type: String
     Default: "true"

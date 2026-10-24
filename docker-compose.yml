@@ -11,7 +11,8 @@ services:
     container_name: fx-review-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      # ホスト側は5433（他プロジェクトのPostgreSQLが5432を使っていても衝突しないように）
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
