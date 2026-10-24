@@ -58,38 +58,43 @@ export function CurrencyPairsSection() {
       {isLoading && <LoadingSpinner fullScreen={false} />}
       {isError && <ErrorAlert onRetry={() => void refetch()} />}
       {pairs && (
-        <table className="mt-4 w-full text-sm">
-          <thead className="text-left text-xs text-ink-mute">
-            <tr>
-              <th className="py-2 font-normal">通貨ペア</th>
-              <th className="font-normal">1 pip の価格幅</th>
-              <th className="font-normal">1 lot・1 pip あたり（円）</th>
-              <th className="text-right font-normal">記録画面の候補</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pairs.map((p) => (
-              <tr key={p.id} className="border-t border-line">
-                <td className="py-3 font-bold">{p.symbol}</td>
-                <td className="num">{p.pipSize}</td>
-                <td className="num">
-                  {p.pipValueJpyPerLot.toLocaleString("ja-JP")}
-                </td>
-                <td className="text-right">
-                  <button
-                    className="btn min-h-touch"
-                    aria-pressed={p.showInPicker}
-                    onClick={() =>
-                      update.mutate({ id: p.id, showInPicker: !p.showInPicker })
-                    }
-                  >
-                    {p.showInPicker ? "表示" : "非表示"}
-                  </button>
-                </td>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[32rem] text-sm">
+            <thead className="text-left text-xs text-ink-mute">
+              <tr>
+                <th className="py-2 font-normal">通貨ペア</th>
+                <th className="font-normal">1 pip の価格幅</th>
+                <th className="font-normal">1 lot・1 pip あたり（円）</th>
+                <th className="text-right font-normal">記録画面の候補</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {pairs.map((p) => (
+                <tr key={p.id} className="border-t border-line">
+                  <td className="py-3 font-bold">{p.symbol}</td>
+                  <td className="num">{p.pipSize}</td>
+                  <td className="num">
+                    {p.pipValueJpyPerLot.toLocaleString("ja-JP")}
+                  </td>
+                  <td className="text-right">
+                    <button
+                      className="btn min-h-touch"
+                      aria-pressed={p.showInPicker}
+                      onClick={() =>
+                        update.mutate({
+                          id: p.id,
+                          showInPicker: !p.showInPicker,
+                        })
+                      }
+                    >
+                      {p.showInPicker ? "表示" : "非表示"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {adding ? (
         <div className="mt-3 grid items-start gap-3 sm:grid-cols-4">

@@ -23,29 +23,31 @@ export function GroupTable({
           Rが計算できるトレードがまだありません。
         </p>
       ) : (
-        <table className="w-full text-sm">
-          <caption className="sr-only">{title}</caption>
-          <thead>
-            <tr className="border-b border-line text-left text-xs text-ink-mute">
-              <th className="py-2">区分</th>
-              <th className="text-right">平均R</th>
-              <th className="text-right">n</th>
-              <th className="pl-3">判定</th>
-            </tr>
-          </thead>
-          <tbody>
-            {groups.map((g) => (
-              <tr key={g.key} className="border-b border-line">
-                <td className="py-2">{g.label}</td>
-                <td className="num text-right">{formatR(g.avgR)}</td>
-                <td className="num text-right">n={g.n}</td>
-                <td className="pl-3 text-xs text-ink-sub">
-                  {VERDICT[g.verdict]}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[20rem] text-sm">
+            <caption className="sr-only">{title}</caption>
+            <thead>
+              <tr className="border-b border-line text-left text-xs text-ink-mute">
+                <th className="py-2">区分</th>
+                <th className="text-right">平均R</th>
+                <th className="text-right">n</th>
+                <th className="pl-3">判定</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {groups.map((g) => (
+                <tr key={g.key} className="border-b border-line">
+                  <td className="py-2">{g.label}</td>
+                  <td className="num text-right">{formatR(g.avgR)}</td>
+                  <td className="num text-right">n={g.n}</td>
+                  <td className="pl-3 text-xs text-ink-sub">
+                    {VERDICT[g.verdict]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
