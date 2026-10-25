@@ -292,7 +292,12 @@ export function ChartPane({
         slPrice={trade.slPrice}
         tpPrice={trade.tpPrice}
         exitPrice={trade.exitPrice}
-        overlays={overlays}
+        // 「エントリー後の値動き」を切っている間は、結果が分かる線（決済・最大含み益など）も出さない
+        overlays={
+          showAfter
+            ? overlays
+            : { ...overlays, exitLine: false, excursion: false }
+        }
         excursion={levels}
         autoScaleY={!fixedY}
         onAutoScaleChange={(auto) => onFixedYChange(!auto)}

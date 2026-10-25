@@ -129,11 +129,14 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
       aria-label="チャート"
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <TimeframeSelect
-          value={prefs.tf}
-          onChange={(tf) => update({ tf })}
-          label="時間足"
-        />
+        {/* 2画面のときは、各画面の見出しの横に時間足を置く（高さをそろえるため、ここは出さない） */}
+        {!prefs.dual && (
+          <TimeframeSelect
+            value={prefs.tf}
+            onChange={(tf) => update({ tf })}
+            label="時間足"
+          />
+        )}
         <EmaControls emas={prefs.emas} onChange={(emas) => update({ emas })} />
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">
@@ -167,8 +170,12 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
               onChange={(overlays) => update({ overlays })}
               hasTp={trade.tpPrice !== null}
               hasSl={trade.slPrice !== null}
-              hasExit={trade.exitAt !== null && trade.exitPrice !== null}
-              hasExcursion={hasExcursion(levels)}
+              hasExit={
+                prefs.showAfter &&
+                trade.exitAt !== null &&
+                trade.exitPrice !== null
+              }
+              hasExcursion={prefs.showAfter && hasExcursion(levels)}
               side={trade.side}
             />
             {hasSaved && (
@@ -219,6 +226,15 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
           fixedY={prefs.fixedY}
           onFixedYChange={(fixedY) => update({ fixedY })}
           title={prefs.dual ? "画面1" : undefined}
+          headerExtra={
+            prefs.dual ? (
+              <TimeframeSelect
+                value={prefs.tf}
+                onChange={(tf) => update({ tf })}
+                label="時間足（画面1）"
+              />
+            ) : undefined
+          }
         />
         {prefs.dual && (
           <SecondPane

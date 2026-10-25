@@ -426,6 +426,44 @@ describe("チャート領域", () => {
     );
   });
 
+  it("「エントリー後の値動き」を切ると、決済・最大含み益などの線を出さない（凡例にも出さない）", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(lastProps().overlays.exitLine).toBe(true);
+    await userEvent.click(
+      screen.getByRole("checkbox", { name: "エントリー後の値動き" }),
+    );
+    await waitFor(() => {
+      expect(lastProps().overlays.exitLine).toBe(false);
+      expect(lastProps().overlays.excursion).toBe(false);
+    });
+    expect(
+      screen.queryByRole("button", { name: /決済価格/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("2画面のとき、時間足の切り替えは各画面の見出しの横に並び、上の1つは出さない", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    expect(
+      screen.getByRole("radiogroup", { name: "時間足" }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "時間足を並べる" }),
+    );
+    expect(
+      screen.queryByRole("radiogroup", { name: "時間足" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("radiogroup", { name: "時間足（画面1）" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("radiogroup", { name: "時間足（画面2）" }),
+    ).toBeInTheDocument();
+  });
+
   it("キーボード: Aでエントリー後の値動きを切り替える", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(ok());
     renderPanel();
