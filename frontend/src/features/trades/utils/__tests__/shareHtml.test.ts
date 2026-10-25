@@ -83,7 +83,7 @@ describe("buildShareHtml: エントリー後・縦軸固定", () => {
   it("決済・結果の行は隠す指定（after）になり、チェックボックスで表示できる", () => {
     const html = buildShareHtml(input());
     expect(html).toContain("body:not(.show-after) .after{display:none}");
-    expect(html).toContain('id="showAfter"');
+    expect(html).toContain("エントリー後");
     expect(html).toContain("縦軸固定");
     expect(html).toContain("エントリー後の値動き");
     for (const label of ["決済", "決済の種類", "結果"]) {
@@ -95,7 +95,7 @@ describe("buildShareHtml: エントリー後・縦軸固定", () => {
 });
 
 describe("buildShareHtml: 売買の向き", () => {
-  const h1 = (html: string) => html.match(/<h1>.*?<\/h1>/s)?.[0] ?? "";
+  const h1 = (html: string) => html.match(/class="ttl">.*?<\/div>/s)?.[0] ?? "";
   const data = (html: string) =>
     JSON.parse(html.split('id="d">')[1].split("</script>")[0]);
 
@@ -120,14 +120,17 @@ describe("buildShareHtml: アプリのチャートと同じ仕様", () => {
       "エントリー価格",
       "TP（利確）",
       "SL（損切り）",
-      "決済価格（勝ち緑・負け赤）",
-      "最大含み益・含み損・決済後最大",
+      "決済価格",
+      "最大含み益・含み損ほか",
       "エントリー以降の背景",
       "IN / OUT の矢印",
-      "時間足を並べる",
+      "2画面",
       "全画面",
       "画像を保存",
-      "範囲を合わせ直す",
+      "合わせ直す",
+      "テクニカル",
+      "線の表示",
+      "計画",
     ]) {
       expect(html).toContain(w);
     }
@@ -156,6 +159,22 @@ describe("buildShareHtml: 表示位置", () => {
     expect(html).toMatch(
       /if\(prevRange\)chart\.timeScale\(\)\.setVisibleLogicalRange\(prevRange\)/,
     );
+  });
+});
+
+describe("buildShareHtml: 計画パネル", () => {
+  it("SL・TPのpipsとRRを計画に出し、スマホ用の帯にも出す", () => {
+    const html = buildShareHtml(input());
+    expect(html).toContain("149.800");
+    expect(html).toContain("（−20.0）");
+    expect(html).toContain("（+50.0）");
+    expect(html).toContain('<div class="row"><dt>RR</dt><dd>2.5</dd></div>');
+    expect(html).toContain('id="strip"');
+  });
+  it("チャートが画面いっぱいになる作り（カードや説明文をやめる）", () => {
+    const html = buildShareHtml(input());
+    expect(html).toContain('id="cvwrap"');
+    expect(html).not.toContain("評価用の閲覧専用ファイルです。時間足とEMAは");
   });
 });
 

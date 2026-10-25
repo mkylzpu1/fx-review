@@ -85,30 +85,53 @@ export function buildShareHtml(i: ShareInput): string {
   const p = (v: number | null) => formatPrice(v, i.pipSize);
   const tags = t.tags.filter((x) => x.kind === "rationale").map((x) => x.name);
 
+  const slPips =
+    t.slPrice === null ? null : Math.abs(t.entryPrice - t.slPrice) / i.pipSize;
+  const tpPips =
+    t.tpPrice === null ? null : Math.abs(t.tpPrice - t.entryPrice) / i.pipSize;
+  const pipsText = (v: number | null, sign: "+" | "−") =>
+    v === null ? "" : `（${sign}${v.toFixed(1)}）`;
+  const rr =
+    slPips !== null && tpPips !== null && slPips > 0
+      ? (tpPips / slPips).toFixed(1)
+      : null;
+
   const info = [
-    row("通貨ペア", t.pair),
-    row("売買", SIDE_LABEL[t.side]),
-    row("エントリー", `${formatJst(t.entryAt)}  @ ${p(t.entryPrice)}`),
-    row("損切り(SL)", t.slPrice === null ? "未設定" : p(t.slPrice)),
-    row("利確(TP)", t.tpPrice === null ? "未設定" : p(t.tpPrice)),
+    row("エントリー", p(t.entryPrice)),
+    row(
+      "SL",
+      t.slPrice === null
+        ? "未設定"
+        : `${p(t.slPrice)} ${pipsText(slPips, "−")}`.trim(),
+    ),
+    row(
+      "TP",
+      t.tpPrice === null
+        ? "未設定"
+        : `${p(t.tpPrice)} ${pipsText(tpPips, "+")}`.trim(),
+    ),
+    ...(rr === null ? [] : [row("RR", rr)]),
     ...(t.exitAt && t.exitPrice !== null
       ? [
-          afterRow("決済", `${formatJst(t.exitAt)}  @ ${p(t.exitPrice)}`),
+          afterRow("決済", `${p(t.exitPrice)}  ${formatJst(t.exitAt)}`),
           afterRow("決済の種類", EXIT_LABEL[t.exitMethod]),
           afterRow("結果", formatPips(t.pips)),
         ]
       : [afterRow("決済", "未決済")]),
   ].join("");
 
-  const reasons = i.includeReasons
+  const reasonParts = i.includeReasons
     ? [
         tags.length > 0
-          ? `<section class="blk"><h2>エントリー根拠</h2><p>${tags.map((n) => `<span class="tag">${escapeHtml(n)}</span>`).join(" ")}</p></section>`
+          ? `<p class="tags">${tags.map((n) => `<span class="tag">${escapeHtml(n)}</span>`).join(" ")}</p>`
           : "",
         reasonBlock("根拠メモ", t.rationaleMemo),
         reasonBlock("損切りの理由", t.slReason),
         reasonBlock("利確の理由", t.tpReason),
       ].join("")
+    : "";
+  const reasons = reasonParts
+    ? `<details class="why" open><summary>根拠・メモ</summary>${reasonParts}</details>`
     : "";
 
   const win =
@@ -149,37 +172,35 @@ export function buildShareHtml(i: ShareInput): string {
 
   const sideColor = SIDE_COLORS[t.side];
   const sideBadge = t.side === "buy" ? "▲ 買い" : "▼ 売り";
+  const strip = [
+    `<span>IN ${escapeHtml(p(t.entryPrice))}</span>`,
+    `<span class="loss">SL ${t.slPrice === null ? "—" : escapeHtml(p(t.slPrice))}</span>`,
+    `<span class="win">TP ${t.tpPrice === null ? "—" : escapeHtml(p(t.tpPrice))}</span>`,
+    `<span class="mute">RR ${rr ?? "—"}</span>`,
+  ].join("");
   return `<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${escapeHtml(t.pair)} ${SIDE_LABEL[t.side]} ${escapeHtml(formatJst(t.entryAt))} のトレード</title>
 <style>${SHARE_PAGE_CSS}</style>
 </head>
 <body>
-<main>
-<h1>${escapeHtml(t.pair)} <span class="side" style="color:${sideColor};border-color:${sideColor}">${sideBadge}</span> のトレード</h1>
-<p class="note">評価用の閲覧専用ファイルです。エントリー後の値動きと結果は、初期状態では隠しています（「エントリー後の値動き」にチェックを入れると見られます）。チャートはドラッグで動かし、ホイールで拡大・縮小できます。表示は日本時間です。キー操作: 1〜6=時間足 / D=2画面 / F=全画面</p>
-<div class="card">
-  <div id="panel">
-    <div class="row2">
-      <label class="chk"><input type="checkbox" id="showAfter"> エントリー後の値動き</label>
-      <div class="group">
-        <button type="button" class="btn" id="dual" aria-pressed="false">時間足を並べる</button>
-        <button type="button" class="btn" id="fs" aria-pressed="false">全画面</button>
-      </div>
-    </div>
-    <div class="chips" id="emas" role="group" aria-label="EMA"></div>
-    <div class="legend" id="legend" role="group" aria-label="凡例"></div>
-    <div class="panes" id="panes"></div>
-  </div>
+<header id="top">
+  <div class="ttl"><span class="side" style="color:${sideColor}">${sideBadge}</span> <b>${escapeHtml(t.pair)}</b> <span class="mono mute">${escapeHtml(formatJst(t.entryAt))}</span></div>
+  <div id="ctl-top" class="ctl"></div>
+</header>
+<div id="strip" class="strip mono">${strip}</div>
+<div id="cvwrap">
+  <div class="panes" id="panes"></div>
+  <aside id="hud" class="hud" aria-label="計画">
+    <div class="hudhead"><b>計画</b><button type="button" id="hudToggle" class="b" aria-label="計画を畳む・開く">▾</button></div>
+    <div class="hudbody"><dl>${info}</dl>${reasons}</div>
+  </aside>
 </div>
-<div class="card info">
-  <dl>${info}</dl>
-  ${reasons}
-</div>
-</main>
+<div id="bottom" class="bottom"></div>
+<div id="ov" hidden></div>
 <script>${i.librarySource}</script>
 <script type="application/json" id="d">${safeJson(data)}</script>
 <script>${SHARE_PAGE_SCRIPT}</script>
