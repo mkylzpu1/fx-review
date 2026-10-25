@@ -8,6 +8,8 @@ import {
 interface Props {
   /** 指定すると、そのトレードの時間帯だけ更新する（詳細画面）。省略すると全トレード分（一覧画面） */
   tradeId?: string;
+  /** header: 一覧画面の上部に置く、押しやすいボタン。省略時は手順つきの文字リンク */
+  variant?: "header";
 }
 
 function RefreshIcon({ spinning }: { spinning: boolean }) {
@@ -35,7 +37,7 @@ function RefreshIcon({ spinning }: { spinning: boolean }) {
  * （1日足で見せる範囲）の1分足をDBへ取り込む。取り込み済みの足は重複しない。
  * 手順が2つあると一目でわかるよう、番号つきの手順とボタンを1つの枠にまとめて見せる。
  */
-export function CandleSyncButton({ tradeId }: Props) {
+export function CandleSyncButton({ tradeId, variant }: Props) {
   const sync = useCandleSync();
   const label = tradeId ? "このトレードの足を更新" : "全トレードの足を更新";
 
@@ -54,6 +56,28 @@ export function CandleSyncButton({ tradeId }: Props) {
             : `ローソク足を更新できませんでした。${e instanceof Error ? e.message : ""}`,
         ),
     });
+
+  const HINT =
+    "MT5のチャートで「CSV書き出し」を押してから実行します（押し忘れると古い足のままです）";
+
+  if (variant === "header")
+    return (
+      <button
+        type="button"
+        className="btn border-transparent text-ink-sub hover:text-ink"
+        disabled={sync.isPending || !CANDLE_SYNC_URL}
+        title={
+          CANDLE_SYNC_URL
+            ? HINT
+            : "ローソク足の更新は、手元で make dev から起動したときだけ使えます"
+        }
+        aria-label={label}
+        onClick={onClick}
+      >
+        <RefreshIcon spinning={sync.isPending} />
+        <span className="ml-2">{sync.isPending ? "更新中…" : "足を更新"}</span>
+      </button>
+    );
 
   if (!CANDLE_SYNC_URL)
     return (

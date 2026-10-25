@@ -87,4 +87,19 @@ describe("ローソク足の更新ボタン（トレード画面）", () => {
       expect(toasts().some((m) => m.includes("make dev"))).toBe(true),
     );
   });
+
+  it("一覧の上部用は、手順を見せなくてもMT5での書き出しを押す案内がボタンに付く", () => {
+    const qc = new QueryClient();
+    render(
+      <QueryClientProvider client={qc}>
+        <CandleSyncButton variant="header" />
+      </QueryClientProvider>,
+    );
+    const btn = screen.getByRole("button", { name: "全トレードの足を更新" });
+    expect(btn).toHaveTextContent("足を更新");
+    expect(btn).toHaveAttribute(
+      "title",
+      expect.stringContaining("CSV書き出し"),
+    );
+  });
 });

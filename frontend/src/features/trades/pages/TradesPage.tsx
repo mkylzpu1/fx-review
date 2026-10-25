@@ -240,6 +240,7 @@ export function TradesPage() {
             onChange={reset(setPeriod)}
           />
           <span aria-hidden="true" className="mx-1.5 h-6 w-px bg-line" />
+          <CandleSyncButton variant="header" />
           <Link
             className="btn border-transparent text-ink-sub hover:text-ink"
             to={ROUTES.TRADE_IMPORT}
@@ -465,10 +466,6 @@ export function TradesPage() {
           total={data.total}
           onChange={setPage}
         />
-      </div>
-
-      <div className="!mt-16 border-t border-line pt-4">
-        <CandleSyncButton />
       </div>
     </div>
   );
