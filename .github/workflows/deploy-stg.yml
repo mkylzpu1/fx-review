@@ -1,8 +1,11 @@
 name: Deploy STG
 
+# AWSへは反映しない運用のため、自動実行を止めている（手動実行のみ）。
+# 自動に戻す場合は、下の workflow_dispatch を元の push / pull_request に書き換える。
 on:
-  push:
-    branches: [develop]
+  workflow_dispatch:
+  # push:
+  #   branches: [develop]
 
 concurrency:
   group: deploy-stg

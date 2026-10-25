@@ -1,10 +1,13 @@
 name: Terraform Plan
 
+# AWSへは反映しない運用のため、自動実行を止めている（手動実行のみ）。
+# 自動に戻す場合は、下の workflow_dispatch を元の push / pull_request に書き換える。
 on:
-  pull_request:
-    branches: [develop, main]
-    paths:
-      - "terraform/**"
+  workflow_dispatch:
+  # pull_request:
+  #   branches: [develop, main]
+  #   paths:
+  #     - "terraform/**"
 
 permissions:
   id-token: write
