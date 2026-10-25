@@ -213,15 +213,12 @@ export function TradesPage() {
       setPage(1);
     };
 
-  if (isLoading) return <LoadingSpinner fullScreen={false} />;
-  if (isError || !data) return <ErrorAlert onRetry={() => void refetch()} />;
-
-  const s = summarize(all.data?.items ?? data.items);
+  const rows = data?.items ?? [];
+  const items = all.data?.items ?? rows;
+  const s = summarize(items);
+  // 読み込み表示は必要な場所だけ（集計・一覧）。画面全体は止めず、行はいつでも押せる
   const aggBusy = all.isFetching;
-  const busy = isFetching || aggBusy;
   const queue = counts.data;
-
-  const items = all.data?.items ?? data.items;
   const winPct = s.winRate ?? 0;
 
   return (
@@ -249,31 +246,6 @@ export function TradesPage() {
         </div>
       </div>
 
-      {/* 読み込み中の表示: 絞り込み・並べ替え・ページ移動で取り直している間、ひと目でわかるようにする */}
-      <div
-        role="status"
-        aria-live="polite"
-        className={`flex items-center gap-2 text-sm text-accent-link ${busy ? "" : "sr-only"}`}
-      >
-        {busy && (
-          <>
-            <span
-              aria-hidden="true"
-              className="h-4 w-4 animate-spin rounded-full border-2 border-accent-link border-t-transparent"
-            />
-            {aggBusy
-              ? "集計中…（件数が多いと少し時間がかかります）"
-              : "読み込み中…"}
-          </>
-        )}
-      </div>
-      <div
-        aria-hidden="true"
-        className={`-mt-3 h-0.5 overflow-hidden rounded bg-line transition-opacity ${busy ? "opacity-100" : "opacity-0"}`}
-      >
-        <div className="h-full w-1/3 animate-[loadbar_1.1s_ease-in-out_infinite] bg-accent-link" />
-      </div>
-
       {/* 指標: 絞り込み後の全体で集計して、いちばん上に置く */}
       <section
         aria-label="集計"
@@ -283,7 +255,9 @@ export function TradesPage() {
         <div className="relative px-6 pb-[22px] pt-5">
           <p className="text-xs text-ink-mute">
             損益
-            <span className="ml-1.5">全{all.data?.total ?? data.total}件</span>
+            <span className="ml-1.5">
+              全{all.data?.total ?? data?.total ?? 0}件
+            </span>
           </p>
           <p
             className={`num mt-2 text-[32px] font-medium leading-[1.1] ${toneOf(s.closed > 0 ? s.totalJpy : null)}`}
@@ -377,9 +351,23 @@ export function TradesPage() {
           )}
         </div>
       </section>
-      <p className="-mt-3 text-xs text-ink-mute">
-        {s.closed}件の決済済みを集計（統計画面と同じ条件）
-        {filtering ? " ・ 絞り込み中" : ""}
+      <p className="-mt-3 flex flex-wrap items-center gap-x-3 text-xs text-ink-mute">
+        <span>
+          {s.closed}件の決済済みを集計（統計画面と同じ条件）
+          {filtering ? " ・ 絞り込み中" : ""}
+        </span>
+        {(aggBusy || isFetching) && (
+          <span
+            role="status"
+            className="inline-flex items-center gap-1.5 text-accent-link"
+          >
+            <span
+              aria-hidden="true"
+              className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent-link border-t-transparent"
+            />
+            {aggBusy ? "集計中…" : "一覧を更新中…"}
+          </span>
+        )}
       </p>
 
       {/* 絞り込み: 1行にまとめる。時間足は一覧の全チャートに効く */}
@@ -452,7 +440,11 @@ export function TradesPage() {
         />
       </div>
 
-      {data.items.length === 0 ? (
+      {isLoading ? (
+        <LoadingSpinner fullScreen={false} />
+      ) : isError || !data ? (
+        <ErrorAlert onRetry={() => void refetch()} />
+      ) : data.items.length === 0 ? (
         <div>
           {filtering ? (
             <EmptyState
@@ -476,23 +468,20 @@ export function TradesPage() {
           <p className="sr-only">
             {data.total}件のうち、{data.items.length}件を表示
           </p>
-          <div
-            aria-busy={isFetching}
-            className={`transition-opacity ${isFetching ? "pointer-events-none opacity-50" : ""}`}
-          >
-            <TradeTable trades={data.items} tf={tf} />
-          </div>
+          <TradeTable trades={data.items} tf={tf} />
         </>
       )}
 
-      <div>
-        <Pagination
-          page={page}
-          limit={LIMIT}
-          total={data.total}
-          onChange={setPage}
-        />
-      </div>
+      {data && (
+        <div>
+          <Pagination
+            page={page}
+            limit={LIMIT}
+            total={data.total}
+            onChange={setPage}
+          />
+        </div>
+      )}
     </div>
   );
 }

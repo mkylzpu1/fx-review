@@ -153,4 +153,32 @@ describe("トレード一覧", () => {
     expect(await screen.findByText("+¥150,000")).toBeInTheDocument();
     expect(screen.getByText("+1500.0 pips")).toBeInTheDocument();
   });
+
+  it("読み込み中でも画面全体は止めず、見出し・絞り込みは操作でき、読み込み表示は一覧の場所だけに出す", async () => {
+    vi.mocked(apiClient.get).mockReturnValue(new Promise(() => {}));
+    renderPage();
+    expect(
+      screen.getByRole("heading", { name: "トレード" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "トレードを記録" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "負け" })).toBeEnabled();
+    expect(
+      screen.getByRole("status", { name: "読み込み中" }),
+    ).toBeInTheDocument();
+  });
+
+  it("絞り込みで取り直している間も、表の行は押せる（薄く無効にしない）", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade()]));
+    renderPage();
+    await screen.findByRole("table");
+    vi.mocked(apiClient.get).mockReturnValue(new Promise(() => {}));
+    await userEvent.click(screen.getByRole("button", { name: "負け" }));
+    const table = await screen.findByRole("table");
+    expect(table.parentElement?.className ?? "").not.toContain(
+      "pointer-events-none",
+    );
+    expect(table.closest("[aria-busy='true']")).toBeNull();
+  });
 });
