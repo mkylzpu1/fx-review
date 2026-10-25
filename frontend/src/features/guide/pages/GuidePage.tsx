@@ -1,40 +1,115 @@
 import { CandleSection } from "../components/CandleSection";
 import { SetupSection } from "../components/SetupSection";
 import { UsageSection } from "../components/UsageSection";
+import {
+  GuideProgressProvider,
+  useGuideProgress,
+} from "../hooks/useGuideProgress";
 
 const TOC = [
-  { href: "#setup", label: "1. セットアップ（MT5・Cloudflare・ローカル起動）" },
+  { href: "#setup", label: "1. セットアップ" },
   { href: "#usage", label: "2. 使い方" },
   { href: "#candles", label: "3. ローソク足の更新" },
 ];
 
+const FLOW = [
+  {
+    href: "#setup",
+    title: "準備する",
+    body: "パソコンで起動し、MT5とつなぐ（最初の1回だけ）",
+  },
+  {
+    href: "#usage",
+    title: "記録して見返す",
+    body: "CSVを取り込み、チャートで振り返る",
+  },
+  {
+    href: "#candles",
+    title: "足を更新する",
+    body: "MT5で書き出し → アプリで取り込む（毎回）",
+  },
+];
+
+function ResetButton() {
+  const { done, reset } = useGuideProgress();
+  if (done.size === 0) return null;
+  return (
+    <button type="button" onClick={reset} className="btn text-sm">
+      チェックを全部はずす
+    </button>
+  );
+}
+
 /** ご利用ガイド: セットアップ・使い方・ローソク足の更新が必要なこと */
 export function GuidePage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div>
-        <h1 className="text-xl font-bold">ご利用ガイド</h1>
-        <p className="mt-1 text-sm text-ink-sub">
-          はじめに、セットアップと使い方、ローソク足の更新を説明します。このアプリは手元のPCでだけ動かします。
-        </p>
-      </div>
-
-      <nav aria-label="ガイドの目次" className="card space-y-1 p-4">
-        <p className="text-sm font-bold">目次</p>
-        <ul className="space-y-1 text-sm">
-          {TOC.map((t) => (
-            <li key={t.href}>
-              <a href={t.href} className="text-accent-link underline">
+    <GuideProgressProvider>
+      <div className="mx-auto max-w-5xl lg:grid lg:grid-cols-[14rem_1fr] lg:gap-10">
+        <aside className="hidden lg:block">
+          <nav
+            aria-label="ガイドの目次"
+            className="sticky top-20 space-y-1 text-base"
+          >
+            <p className="mb-2 text-sm font-bold text-ink-sub">目次</p>
+            {TOC.map((t) => (
+              <a
+                key={t.href}
+                href={t.href}
+                className="flex min-h-touch items-center rounded-btn px-3 hover:bg-surface"
+              >
                 {t.label}
               </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+            ))}
+            <div className="pt-3">
+              <ResetButton />
+            </div>
+          </nav>
+        </aside>
 
-      <SetupSection />
-      <UsageSection />
-      <CandleSection />
-    </div>
+        <div className="min-w-0 space-y-12">
+          <header className="space-y-5">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold leading-tight">ご利用ガイド</h1>
+              <p className="text-base leading-relaxed text-ink-sub">
+                FXレビューを使い始めるための、3つのステップです。このアプリは、自分のパソコンの中だけで動かします。
+              </p>
+            </div>
+            <ol className="grid gap-3 sm:grid-cols-3">
+              {FLOW.map((f, i) => (
+                <li key={f.href}>
+                  <a
+                    href={f.href}
+                    className="card block h-full space-y-1 p-4 hover:bg-surface"
+                  >
+                    <span className="text-sm font-bold text-accent-link">
+                      STEP {i + 1}
+                    </span>
+                    <span className="block text-lg font-bold">{f.title}</span>
+                    <span className="block text-sm leading-relaxed text-ink-sub">
+                      {f.body}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+            <nav
+              aria-label="ガイドの目次（スマホ）"
+              className="flex flex-wrap items-center gap-2 lg:hidden"
+            >
+              {TOC.map((t) => (
+                <a key={t.href} href={t.href} className="btn">
+                  {t.label}
+                </a>
+              ))}
+              <ResetButton />
+            </nav>
+          </header>
+
+          <SetupSection />
+          <UsageSection />
+          <CandleSection />
+        </div>
+      </div>
+    </GuideProgressProvider>
   );
 }

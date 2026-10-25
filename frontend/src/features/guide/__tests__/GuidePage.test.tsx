@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, beforeEach } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { GuidePage } from "../pages/GuidePage";
 
@@ -13,36 +13,53 @@ function renderIt() {
 }
 
 describe("ご利用ガイド", () => {
+  beforeEach(() => window.localStorage.clear());
+
   it("セットアップ・使い方・ローソク足の更新の3セクションがある", () => {
     renderIt();
     expect(
-      screen.getByRole("heading", { name: "1. セットアップ" }),
+      screen.getByRole("heading", { name: "セットアップ" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "使い方" })).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "2. 使い方" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "3. ローソク足の更新が必要です" }),
+      screen.getByRole("heading", { name: "ローソク足の更新が必要です" }),
     ).toBeInTheDocument();
   });
 
   it("MT5・Cloudflare・ローカル起動のみであることを説明する", () => {
     renderIt();
     expect(
-      screen.getByRole("heading", { name: /1-2\. MT5を設定する/ }),
+      screen.getByRole("heading", { name: "B. MT5を設定する" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /1-3\. Cloudflareを設定する/ }),
+      screen.getByRole("heading", { name: /C\. Cloudflareを設定する/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("このアプリは、手元のPCでだけ動かします"),
+      screen.getByText("このアプリは、自分のパソコンの中だけで動かします"),
+    ).toBeInTheDocument();
+  });
+
+  it("「できた」を押すと進み具合が増え、覚えておく", () => {
+    const { unmount } = renderIt();
+    const setup = screen.getByRole("region", { name: /セットアップ/ });
+    expect(within(setup).getByText("0 / 8 完了")).toBeInTheDocument();
+    fireEvent.click(
+      within(setup).getAllByRole("button", { name: "できた" })[0],
+    );
+    expect(within(setup).getByText("1 / 8 完了")).toBeInTheDocument();
+    unmount();
+    renderIt();
+    expect(
+      within(screen.getByRole("region", { name: /セットアップ/ })).getByText(
+        "1 / 8 完了",
+      ),
     ).toBeInTheDocument();
   });
 
   it("目次から各セクションへ飛べる", () => {
     renderIt();
     const toc = screen.getByRole("navigation", { name: "ガイドの目次" });
-    expect(toc.querySelectorAll("a")).toHaveLength(3);
+    expect(toc.querySelectorAll('a[href^="#"]')).toHaveLength(3);
     expect(document.getElementById("candles")).not.toBeNull();
   });
 });

@@ -1,86 +1,117 @@
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/constants/routes";
-import { Callout, Code, GuideSection, GuideSteps } from "./GuideParts";
+import { Callout, Code, GuideSection, Step, StepList } from "./GuideParts";
 
-/** 使い方: 記録 → チャートで見返す → 統計 → AIで分析 → ルール化 */
+const LINK = "font-bold text-accent-link underline";
+export const USAGE_STEPS = [
+  "use-record",
+  "use-chart",
+  "use-review",
+  "use-stats",
+  "use-ai",
+  "use-rule",
+];
+
+/** 2. 使い方 */
 export function UsageSection() {
   return (
     <GuideSection
       id="usage"
-      title="2. 使い方"
-      lead="記録して、チャートで見返して、AIに分析してもらい、ルールに戻す。この一周が基本の流れです。"
+      eyebrow="STEP 2"
+      title="使い方"
+      lead="記録する → チャートで見返す → AIに相談する → ルールに戻す。この一周が、基本の流れです。"
+      stepIds={USAGE_STEPS}
     >
-      <GuideSteps>
-        <li>
-          <b>トレードを記録する。</b>
-          楽天FX証券の約定履歴CSVは、
-          <Link to={ROUTES.TRADE_IMPORT} className="text-accent-link underline">
-            トレードの取り込み
-          </Link>
-          で、複数ファイルをまとめて入れられます（①選ぶ → ②確認 →
-          ③取り込む）。手で入れるときは「トレードを記録」から、方向・ロット・エントリー日時と価格だけを入力します。SL・TP・根拠・感情などは、すべて任意です。
-        </li>
-        <li>
-          <b>チャートで見返す。</b>
-          トレード詳細で、エントリー時点の1m・5m・15m・1h・4h・1日足を切り替え、EMAを重ねて見られます。
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-ink-sub">
+      <StepList>
+        <Step id="use-record" no={1} title="トレードを記録する">
+          <p>
+            楽天FX証券の約定履歴CSVは、まとめて取り込めます。
+            <Link to={ROUTES.TRADE_IMPORT} className={LINK}>
+              CSVを取り込む
+            </Link>
+            を開き、「①ファイルを選ぶ → ②内容を確認 → ③取り込む」と進みます。
+          </p>
+          <p>
+            手で入れるときは、右上の「トレードを記録」から。
+            <b>必須なのは、方向・ロット・エントリー日時・価格だけ</b>
+            です。SL・TP・根拠・感情は、書けるときだけで大丈夫です。
+          </p>
+        </Step>
+        <Step id="use-chart" no={2} title="チャートで、エントリーを見返す">
+          <p>
+            トレードを開くと、エントリーしたときのチャートが見られます。1分足から日足まで切り替えて、EMAも重ねられます。
+          </p>
+          <ul className="list-disc space-y-1 pl-6">
             <li>
-              キー操作: <Code>1〜6</Code> 時間足 / <Code>A</Code>{" "}
-              エントリー後の値動きの表示・非表示 / <Code>D</Code> 2画面 /{" "}
-              <Code>← →</Code> 前後のトレード
+              <Code>1</Code>〜<Code>6</Code>：時間足を切り替える
             </li>
             <li>
-              足が出ない・古いときは、先に
-              <a href="#candles" className="text-accent-link underline">
-                ローソク足の更新
-              </a>
-              をします。
+              <Code>A</Code>：エントリー後の値動きを出す／隠す
+            </li>
+            <li>
+              <Code>D</Code>：チャートを2画面にする
+            </li>
+            <li>
+              <Code>←</Code> <Code>→</Code>：前後のトレードへ
             </li>
           </ul>
-        </li>
-        <li>
-          <b>計画・ルール・振り返りを書く。</b>
-          右側のタブに、計画と結果、ルールを守れたか、振り返りを残します。ルールは
-          <Link to={ROUTES.RULES} className="text-accent-link underline">
-            ルール
-          </Link>
-          で作ります。
-        </li>
-        <li>
-          <b>統計と週次レビューを見る。</b>
-          <Link to={ROUTES.STATS} className="text-accent-link underline">
-            統計
-          </Link>
-          で勝率・損益・ルール遵守を確認し、週ごとの振り返りもできます。
-        </li>
-        <li>
-          <b>AIに分析してもらう。</b>
-          <Link to={ROUTES.EXPORT} className="text-accent-link underline">
-            エクスポート
-          </Link>
-          で期間と項目を選んで、コピーまたはダウンロードし、AIに貼り付けて「どう改善すべきか」を聞きます。
-        </li>
-        <li>
-          <b>改善案をルールにして検証する。</b>
-          AIの回答から取り出した改善案を
-          <Link to={ROUTES.NOTES} className="text-accent-link underline">
-            学習メモ
-          </Link>
-          と
-          <Link to={ROUTES.RULES} className="text-accent-link underline">
-            ルール
-          </Link>
-          に残し、次の10件で効果を確かめます。
-        </li>
-        <li>
-          <b>人に見せる（任意）。</b>
-          トレード画面の「公開してURLを作る」で、評価用ファイルのURLを作れます。Cloudflareの設定が済んでいて、ローカル起動のときだけ使えます。24時間で自動的に消えます。
-        </li>
-      </GuideSteps>
-
+          <p>
+            足が出ない・古いときは、
+            <a href="#candles" className={LINK}>
+              ローソク足の更新
+            </a>
+            をします。
+          </p>
+        </Step>
+        <Step id="use-review" no={3} title="計画・ルール・振り返りを書く">
+          <p>
+            トレード詳細の右側のタブに、計画と結果、ルールを守れたか、振り返りを残します。ルールは、
+            <Link to={ROUTES.RULES} className={LINK}>
+              ルール
+            </Link>
+            の画面で作ります。
+          </p>
+        </Step>
+        <Step id="use-stats" no={4} title="統計で、自分のクセを見る">
+          <p>
+            <Link to={ROUTES.STATS} className={LINK}>
+              統計
+            </Link>
+            で、勝率・損益・ルールの守れた度合いを確認します。週ごとの振り返りも、ここから開けます。
+          </p>
+        </Step>
+        <Step id="use-ai" no={5} title="AIに「どう改善する？」と聞く">
+          <p>
+            <Link to={ROUTES.EXPORT} className={LINK}>
+              エクスポート
+            </Link>
+            で、期間と含める項目を選び、「コピー」を押します。AIの入力欄に貼り付けて、改善点を聞きます。
+          </p>
+        </Step>
+        <Step id="use-rule" no={6} title="改善案をルールにして、10件で確かめる">
+          <p>
+            AIの答えから使えるものを選び、
+            <Link to={ROUTES.NOTES} className={LINK}>
+              学習メモ
+            </Link>
+            と
+            <Link to={ROUTES.RULES} className={LINK}>
+              ルール
+            </Link>
+            に残します。次の10件のトレードで、効果があったかを確かめます。
+          </p>
+        </Step>
+      </StepList>
+      <Callout title="人に評価してもらいたいとき">
+        <p>
+          トレード画面の「公開してURLを作る」を押すと、評価用のURLができます。24時間で自動的に消えます（Cloudflareの設定が必要です）。
+        </p>
+      </Callout>
       <Callout title="データのバックアップ">
-        設定画面の「データ」のJSONは、自分のトレードと設定だけが対象で、ローソク足は含みません。ローソク足も含めて守るときは{" "}
-        <Code>make backup</Code> を使います。
+        <p>
+          設定画面の「データ」のJSONは、自分のトレードと設定だけです。ローソク足も含めて守るときは、ターミナルで{" "}
+          <Code>make backup</Code> を使います。
+        </p>
       </Callout>
     </GuideSection>
   );
