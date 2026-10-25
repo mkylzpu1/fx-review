@@ -7,15 +7,15 @@ const LABEL: Record<MissingItem, string> = {
   open: "未決済",
 };
 
-/** 未入力の項目を、文字で示すバッジ（色だけに頼らない） */
+/** 未入力の項目を、文字だけで示す（枠や塗りは使わない） */
 export function MissingBadges({ missing }: { missing: MissingItem[] }) {
   if (missing.length === 0) return null;
   return (
-    <span className="inline-flex flex-wrap gap-1">
+    <span className="inline-flex flex-wrap gap-x-3 gap-y-1">
       {missing.map((m) => (
         <span
           key={m}
-          className="rounded-full border border-line px-2 py-0.5 text-xs text-ink-sub"
+          className="text-xs text-ink-mute underline decoration-dashed underline-offset-4"
         >
           {LABEL[m]}
         </span>

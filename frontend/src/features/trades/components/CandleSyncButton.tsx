@@ -15,8 +15,8 @@ function RefreshIcon({ spinning }: { spinning: boolean }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      width="18"
-      height="18"
+      width="14"
+      height="14"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -63,33 +63,23 @@ export function CandleSyncButton({ tradeId }: Props) {
     );
 
   return (
-    <div
-      className="flex w-full flex-col gap-3 rounded-btn border border-line bg-bg p-3 sm:flex-row sm:items-center sm:justify-between"
-      aria-label="ローソク足の更新"
-    >
-      <ol className="space-y-1 text-sm text-ink-sub">
-        <li className="flex items-center gap-2">
-          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/20 text-xs font-bold text-accent-link">
-            1
-          </span>
-          MT5のチャートで「CSV書き出し」を押す
-        </li>
-        <li className="flex items-center gap-2">
-          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-accent/20 text-xs font-bold text-accent-link">
-            2
-          </span>
-          右のボタンで取り込む（押し忘れると古い足のままです）
-        </li>
-      </ol>
+    <div aria-label="ローソク足の更新" className="text-sm">
       <button
         type="button"
-        className="btn-primary flex min-h-touch w-full shrink-0 items-center justify-center gap-2 sm:w-auto"
+        className="inline-flex items-center gap-2 text-ink-sub underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
         disabled={sync.isPending}
         onClick={onClick}
       >
         <RefreshIcon spinning={sync.isPending} />
         {sync.isPending ? "更新中…" : label}
       </button>
+      <details className="mt-1 text-xs text-ink-mute">
+        <summary className="cursor-pointer">手順</summary>
+        <ol className="mt-1 list-inside list-decimal space-y-0.5">
+          <li>MT5のチャートで「CSV書き出し」を押す</li>
+          <li>上のリンクで取り込む（押し忘れると古い足のままです）</li>
+        </ol>
+      </details>
     </div>
   );
 }

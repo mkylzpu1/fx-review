@@ -21,6 +21,7 @@ export interface TradeListQuery {
   deviationOnly?: boolean;
   q?: string;
   pair?: string;
+  from?: string;
   pending?: boolean;
   sort?: TradeSort;
   page?: number;

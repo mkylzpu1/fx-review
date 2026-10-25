@@ -26,6 +26,7 @@ const trade = (o: Partial<Trade> = {}): Trade =>
     rMultiple: 1.5,
     deviation: false,
     missing: [],
+    tags: [],
     ...o,
   }) as Trade;
 
