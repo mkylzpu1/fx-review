@@ -18,6 +18,7 @@ import { StatsPage } from "@/features/stats/pages/StatsPage";
 import { WeeklyReviewPage } from "@/features/stats/pages/WeeklyReviewPage";
 import { ExportPage } from "@/features/export/pages/ExportPage";
 import { GuidePage } from "@/features/guide/pages/GuidePage";
+import { FirstVisitGuideDialog } from "@/features/guide/components/FirstVisitGuideDialog";
 import { NoteDetailPage } from "@/features/notes/pages/NoteDetailPage";
 import { NotesPage } from "@/features/notes/pages/NotesPage";
 import { RuleDetailPage } from "@/features/rules/pages/RuleDetailPage";
@@ -47,6 +48,7 @@ export function App() {
           path="/*"
           element={
             <RequireAuth>
+              <FirstVisitGuideDialog />
               <AppLayout>
                 <RequireOnboarded>
                   <Routes>
