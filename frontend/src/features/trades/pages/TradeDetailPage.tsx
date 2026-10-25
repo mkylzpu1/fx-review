@@ -13,8 +13,8 @@ import { useHotkeys } from "@/hooks/useHotkeys";
 import { ApiError } from "@/services/apiClient";
 import { toast } from "@/stores/toastStore";
 import { ChartPanel } from "../components/ChartPanel";
-import { RecentTrades } from "../components/RecentTrades";
 import { TradeDetailBody } from "../components/TradeDetailBody";
+import { TradeDetailHeader } from "../components/TradeDetailHeader";
 import { useChartUiStore } from "../chartUiStore";
 import {
   useAdjacentTrades,
@@ -92,73 +92,32 @@ export function TradeDetailPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link className="text-sm text-accent-link underline" to={ROUTES.TRADES}>
-          一覧に戻る
-        </Link>
-        <div className="flex flex-wrap gap-2">
-          {prev ? (
-            <Link
-              className="btn"
-              to={detailPath(prev.id)}
-              aria-keyshortcuts="ArrowLeft"
-              title="前（古い）のトレード（←キー）"
-            >
-              ← 前
-            </Link>
-          ) : (
-            <button className="btn" disabled>
-              ← 前
-            </button>
-          )}
-          {next ? (
-            <Link
-              className="btn"
-              to={detailPath(next.id)}
-              aria-keyshortcuts="ArrowRight"
-              title="次（新しい）のトレード（→キー）"
-            >
-              次 →
-            </Link>
-          ) : (
-            <button className="btn" disabled>
-              次 →
-            </button>
-          )}
-          <Link
-            className="btn-primary"
-            to={ROUTES.TRADE_EDIT.replace(":id", trade.id)}
-          >
-            編集・決済入力
-          </Link>
-          <button className="btn-danger" onClick={() => setConfirming(true)}>
-            削除
-          </button>
-        </div>
-      </div>
+    <div className="space-y-3">
+      <TradeDetailHeader
+        trade={trade}
+        prev={prev}
+        next={next}
+        detailPath={detailPath}
+        onDelete={() => setConfirming(true)}
+      />
 
       {/* minmax(0,1fr): 中身（チャート）の幅に引っ張られて列が広がったままにならないようにする */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-        <RecentTrades currentId={trade.id} />
-        <TradeDetailBody
-          trade={trade}
-          pipSize={pipSize}
-          chart={
-            settings.isLoading ? (
-              <div className="card grid min-h-[24rem] place-items-center">
-                <LoadingSpinner fullScreen={false} />
-              </div>
-            ) : (
-              // 時間足・EMA・凡例などの表示設定は、別のトレードに移っても引き継ぐ
-              <ChartPanel
-                trade={trade}
-                pipSize={pipSize}
-                settings={settings.data ?? null}
-              />
-            )
-          }
-        />
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0">
+          {settings.isLoading ? (
+            <div className="card grid min-h-[24rem] place-items-center">
+              <LoadingSpinner fullScreen={false} />
+            </div>
+          ) : (
+            // 時間足・EMA・凡例などの表示設定は、別のトレードに移っても引き継ぐ
+            <ChartPanel
+              trade={trade}
+              pipSize={pipSize}
+              settings={settings.data ?? null}
+            />
+          )}
+        </div>
+        <TradeDetailBody trade={trade} pipSize={pipSize} />
       </div>
 
       <ConfirmDialog

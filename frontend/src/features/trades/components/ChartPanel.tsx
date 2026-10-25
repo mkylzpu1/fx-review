@@ -114,6 +114,8 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
     before,
     after,
     fullscreen,
+    // 1画面のときはチャートを大きく、2画面のときは縦に並べても収まる高さにする
+    height: prefs.dual ? 380 : 540,
   };
 
   return (
@@ -121,25 +123,46 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
       className={
         fullscreen
           ? "fixed inset-0 z-[60] flex flex-col gap-3 overflow-y-auto bg-bg p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))]"
-          : "card min-w-0 space-y-3"
+          : "min-w-0 space-y-2"
       }
       aria-label="チャート"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <TimeframeSelect
           value={prefs.tf}
           onChange={(tf) => update({ tf })}
           label="時間足"
         />
-        <div className="flex flex-wrap items-center gap-x-3">
-          <label className="flex min-h-touch items-center gap-2 text-sm text-ink-sub">
-            <input
-              type="checkbox"
-              checked={prefs.showAfter}
-              onChange={(e) => update({ showAfter: e.target.checked })}
-            />
-            エントリー後の値動き
-          </label>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {/* 凡例は畳んでおき、開いたときだけ見せる（チャートを広く使うため） */}
+          <details className="relative">
+            <summary className="btn min-h-touch cursor-pointer list-none">
+              表示 ▾
+            </summary>
+            <div className="absolute right-0 z-20 mt-1 w-[22rem] max-w-[90vw] space-y-2 rounded-card border border-line bg-card p-3 shadow-lg">
+              <ChartLegend
+                overlays={prefs.overlays}
+                onChange={(overlays) => update({ overlays })}
+                hasTp={trade.tpPrice !== null}
+                hasSl={trade.slPrice !== null}
+                hasExit={trade.exitAt !== null && trade.exitPrice !== null}
+                hasExcursion={hasExcursion(levels)}
+                side={trade.side}
+              />
+              {hasSaved && (
+                <p className="text-xs text-ink-mute">
+                  この表示設定（時間足・EMA・凡例・縦軸固定）は、次のトレードにも引き継ぎます。{" "}
+                  <button
+                    type="button"
+                    className="text-accent-link underline"
+                    onClick={reset}
+                  >
+                    設定の初期値に戻す
+                  </button>
+                </p>
+              )}
+            </div>
+          </details>
           <button
             type="button"
             className="btn min-h-touch"
@@ -158,28 +181,8 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
           </button>
         </div>
       </div>
+
       <EmaControls emas={prefs.emas} onChange={(emas) => update({ emas })} />
-      <ChartLegend
-        overlays={prefs.overlays}
-        onChange={(overlays) => update({ overlays })}
-        hasTp={trade.tpPrice !== null}
-        hasSl={trade.slPrice !== null}
-        hasExit={trade.exitAt !== null && trade.exitPrice !== null}
-        hasExcursion={hasExcursion(levels)}
-        side={trade.side}
-      />
-      {hasSaved && (
-        <p className="text-xs text-ink-mute">
-          この表示設定（時間足・EMA・凡例・縦軸固定）は、次のトレードにも引き継ぎます。{" "}
-          <button
-            type="button"
-            className="text-accent-link underline"
-            onClick={reset}
-          >
-            設定の初期値に戻す
-          </button>
-        </p>
-      )}
 
       <div
         className={
@@ -207,7 +210,20 @@ export function ChartPanel({ trade, pipSize, settings }: Props) {
         )}
       </div>
 
-      <CandleSyncButton tradeId={trade.id} />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <label className="flex min-h-touch items-center gap-2 text-sm text-ink-sub">
+          <input
+            type="checkbox"
+            checked={prefs.showAfter}
+            onChange={(e) => update({ showAfter: e.target.checked })}
+          />
+          エントリー後の値動き
+        </label>
+        <CandleSyncButton tradeId={trade.id} />
+        <span className="ml-auto text-xs text-ink-mute">
+          ← → 前後のトレード ・ 1〜6 時間足 ・ D 2画面 ・ F 全画面
+        </span>
+      </div>
       {!fullscreen && (
         <ShareHtmlButton trade={trade} pipSize={pipSize} settings={settings} />
       )}

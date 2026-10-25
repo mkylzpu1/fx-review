@@ -24,7 +24,7 @@ import { excursionLevels } from "../utils/excursionLevels";
 import { ChartMessage } from "./ChartMessage";
 import { TradeChart, type TradeChartHandle } from "./TradeChart";
 
-const HEIGHT = 360;
+const DEFAULT_HEIGHT = 360;
 const DAY_MS = 86_400_000;
 // スクロールで1回に追加する足の本数と、そのEMAウォームアップ（1回のAPI上限2000本に収める）
 const CHUNK_BARS = 1000;
@@ -83,6 +83,8 @@ interface Props {
   title?: string;
   /** 見出しの横に置く操作（2画面目の時間足の切り替えなど） */
   headerExtra?: ReactNode;
+  /** チャートの高さ（px）。1画面のときは大きく取る */
+  height?: number;
   /** 測定モードをキーボードから切り替えるための合図（値が変わるたびに切り替える） */
 }
 
@@ -110,6 +112,7 @@ export function ChartPane({
   onFixedYChange,
   title,
   headerExtra,
+  height: HEIGHT = DEFAULT_HEIGHT,
 }: Props) {
   const chartRef = useRef<TradeChartHandle>(null);
 
@@ -319,6 +322,8 @@ export function ChartPane({
         </div>
       )}
 
+      <div className={fullscreen ? "min-h-0 flex-1" : ""}>{body}</div>
+
       <div className="flex flex-wrap items-center justify-between gap-x-3">
         <div className="flex flex-wrap items-center gap-x-2">
           <button
@@ -370,8 +375,6 @@ export function ChartPane({
           </label>
         </div>
       </div>
-
-      <div className={fullscreen ? "min-h-0 flex-1" : ""}>{body}</div>
 
       <div className="mt-1 flex min-h-[1.25rem] flex-wrap justify-end gap-3 text-xs text-ink-mute">
         {isFetching && !isLoading && <span>更新中…</span>}
