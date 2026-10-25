@@ -1,7 +1,7 @@
 -- ロットの単位を「1 lot = 100,000通貨」から「1 lot = 10,000通貨」に切り替えるための、既存データの変換。
 -- 実行前に必ず make backup でバックアップを取ること。**1回だけ**実行する（2回流すと10倍ずつずれる）。
 --
---   psql "$DATABASE_URL" -f script/migrate-lot-unit.sql
+--   docker exec -i fx-review-postgres psql -U postgres -d postgres -v ON_ERROR_STOP=1 < script/migrate-lot-unit.sql
 --
 -- 変換の内容:
 --   trades.lots                           ×10  （例: 0.1 → 1.0）
