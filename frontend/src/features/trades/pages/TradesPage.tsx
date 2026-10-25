@@ -196,7 +196,7 @@ export function TradesPage() {
     from: periodFrom(period),
   };
   const query: TradeListQuery = { ...filters, sort, page, limit: LIMIT };
-  const { data, isLoading, isError, refetch } = useTrades(query);
+  const { data, isLoading, isError, isFetching, refetch } = useTrades(query);
   // 集計は表示ページではなく、絞り込み後の全件で出す（統計画面と同じ母集団）
   const all = useAllTrades(filters);
   const filtering =
@@ -217,6 +217,8 @@ export function TradesPage() {
   if (isError || !data) return <ErrorAlert onRetry={() => void refetch()} />;
 
   const s = summarize(all.data?.items ?? data.items);
+  const aggBusy = all.isFetching;
+  const busy = isFetching || aggBusy;
   const queue = counts.data;
 
   const items = all.data?.items ?? data.items;
@@ -247,10 +249,36 @@ export function TradesPage() {
         </div>
       </div>
 
+      {/* 読み込み中の表示: 絞り込み・並べ替え・ページ移動で取り直している間、ひと目でわかるようにする */}
+      <div
+        role="status"
+        aria-live="polite"
+        className={`flex items-center gap-2 text-sm text-accent-link ${busy ? "" : "sr-only"}`}
+      >
+        {busy && (
+          <>
+            <span
+              aria-hidden="true"
+              className="h-4 w-4 animate-spin rounded-full border-2 border-accent-link border-t-transparent"
+            />
+            {aggBusy
+              ? "集計中…（件数が多いと少し時間がかかります）"
+              : "読み込み中…"}
+          </>
+        )}
+      </div>
+      <div
+        aria-hidden="true"
+        className={`-mt-3 h-0.5 overflow-hidden rounded bg-line transition-opacity ${busy ? "opacity-100" : "opacity-0"}`}
+      >
+        <div className="h-full w-1/3 animate-[loadbar_1.1s_ease-in-out_infinite] bg-accent-link" />
+      </div>
+
       {/* 指標: 絞り込み後の全体で集計して、いちばん上に置く */}
       <section
         aria-label="集計"
-        className="grid overflow-hidden rounded-card border border-line bg-card md:grid-cols-[1.35fr_1fr_1fr_1.5fr]"
+        aria-busy={aggBusy}
+        className={`${aggBusy ? "opacity-50" : ""} transition-opacity grid overflow-hidden rounded-card border border-line bg-card md:grid-cols-[1.35fr_1fr_1fr_1.5fr]`}
       >
         <div className="relative px-6 pb-[22px] pt-5">
           <p className="text-xs text-ink-mute">
@@ -448,7 +476,12 @@ export function TradesPage() {
           <p className="sr-only">
             {data.total}件のうち、{data.items.length}件を表示
           </p>
-          <TradeTable trades={data.items} tf={tf} />
+          <div
+            aria-busy={isFetching}
+            className={`transition-opacity ${isFetching ? "pointer-events-none opacity-50" : ""}`}
+          >
+            <TradeTable trades={data.items} tf={tf} />
+          </div>
         </>
       )}
 

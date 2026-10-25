@@ -23,6 +23,12 @@ export default {
       },
       borderRadius: { card: "12px", btn: "8px", chip: "22px" },
       minHeight: { touch: "44px" },
+      keyframes: {
+        loadbar: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(300%)" },
+        },
+      },
     },
   },
   plugins: [],

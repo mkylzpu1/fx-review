@@ -104,8 +104,16 @@ export function MiniChart({
     return (
       <div
         ref={ref}
-        className={`${frame} animate-pulse rounded-btn bg-surface/60`}
-      />
+        role="status"
+        aria-label="チャートを読み込み中"
+        className={`${frame} flex animate-pulse items-center justify-center gap-2 rounded-btn bg-surface/60 text-xs text-ink-mute`}
+      >
+        <span
+          aria-hidden="true"
+          className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink-mute border-t-transparent"
+        />
+        読み込み中
+      </div>
     );
   if (isError || candles.length < 2)
     return (
