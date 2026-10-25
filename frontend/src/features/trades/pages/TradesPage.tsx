@@ -22,6 +22,7 @@ import { summarize } from "../utils/summary";
 import type { Trade, TradeSort } from "../types";
 
 const LIMIT = 20;
+const DEFAULT_PERIOD: PeriodKey = "today";
 type ResultTab = "all" | "win" | "loss";
 const TABS: { value: ResultTab; label: string }[] = [
   { value: "all", label: "すべて" },
@@ -157,8 +158,8 @@ const toneOf = (v: number | null | undefined) =>
   !v ? "text-ink" : v > 0 ? "text-profit" : "text-loss";
 
 export function TradesPage() {
-  // 統計画面と同じ既定の期間にして、合計がそろうようにする
-  const [period, setPeriod] = useState<PeriodKey>("90d");
+  // 開いたときは今日のトレードを見る（期間は上のボタンで切り替える）
+  const [period, setPeriod] = useState<PeriodKey>(DEFAULT_PERIOD);
   const [tab, setTab] = useState<ResultTab>("all");
   const [pair, setPair] = useState("");
   const [deviationOnly, setDeviationOnly] = useState(false);
@@ -207,7 +208,7 @@ export function TradesPage() {
     deviationOnly ||
     q !== "" ||
     pair !== "" ||
-    period !== "90d";
+    period !== DEFAULT_PERIOD;
 
   const reset =
     <T,>(set: (v: T) => void) =>
