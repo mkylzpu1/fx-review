@@ -426,6 +426,18 @@ describe("チャート領域", () => {
     );
   });
 
+  it("キーボード: Aでエントリー後の値動きを切り替える", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(ok());
+    renderPanel();
+    await screen.findByTestId("trade-chart");
+    const box = screen.getByRole("checkbox", { name: "エントリー後の値動き" });
+    expect(box).toBeChecked();
+    await userEvent.keyboard("a");
+    await waitFor(() => expect(box).not.toBeChecked());
+    await userEvent.keyboard("a");
+    await waitFor(() => expect(box).toBeChecked());
+  });
+
   it("入力欄に文字を打っている間は、ショートカットを効かせない", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(ok());
     renderPanel();

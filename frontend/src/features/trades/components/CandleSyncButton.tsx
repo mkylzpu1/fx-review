@@ -9,7 +9,7 @@ interface Props {
   /** 指定すると、そのトレードの時間帯だけ更新する（詳細画面）。省略すると全トレード分（一覧画面） */
   tradeId?: string;
   /** header: 一覧画面の上部に置く、押しやすいボタン。省略時は手順つきの文字リンク */
-  variant?: "header";
+  variant?: "header" | "toolbar";
 }
 
 function RefreshIcon({ spinning }: { spinning: boolean }) {
@@ -59,6 +59,26 @@ export function CandleSyncButton({ tradeId, variant }: Props) {
 
   const HINT =
     "MT5のチャートで「CSV書き出し」を押してから実行します（押し忘れると古い足のままです）";
+
+  // toolbar: チャートの操作バーに置く、はっきり見えるボタン（足が古いとき・足が無いときにすぐ押せる）
+  if (variant === "toolbar")
+    return (
+      <button
+        type="button"
+        className="btn min-h-touch border-accent text-accent-link hover:bg-accent/10 disabled:opacity-50"
+        disabled={sync.isPending || !CANDLE_SYNC_URL}
+        title={
+          CANDLE_SYNC_URL
+            ? HINT
+            : "ローソク足の更新は、手元で make dev から起動したときだけ使えます"
+        }
+        aria-label={label}
+        onClick={onClick}
+      >
+        <RefreshIcon spinning={sync.isPending} />
+        <span className="ml-2">{sync.isPending ? "更新中…" : "足を更新"}</span>
+      </button>
+    );
 
   if (variant === "header")
     return (
