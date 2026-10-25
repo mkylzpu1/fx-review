@@ -7,6 +7,7 @@ import {
   formatYenSigned,
 } from "@/utils/format";
 import type { Trade } from "../types";
+import { MiniChart } from "./MiniChart";
 import { MissingBadges } from "./MissingBadges";
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
@@ -43,7 +44,7 @@ function groupByDay(trades: Trade[]) {
 
 /** 理由・メモの要約。タグ → なければメモ本文 */
 function Reason({ t }: { t: Trade }) {
-  const tags = t.tags.filter((x) => x.kind === "rationale");
+  const tags = (t.tags ?? []).filter((x) => x.kind === "rationale");
   const memo = t.insight || t.rationaleMemo;
   if (tags.length === 0 && !memo) return null;
   return (
@@ -66,124 +67,103 @@ export function TradeTable({ trades }: { trades: Trade[] }) {
   const navigate = useNavigate();
   const groups = groupByDay(trades);
   return (
-    <table className="w-full table-fixed text-sm">
-      <thead className="sr-only">
-        <tr>
-          <th>時刻</th>
-          <th>ペア・売買</th>
-          <th>理由・メモ</th>
-          <th>pips</th>
-          <th>損益</th>
-          <th>R</th>
-          <th>状態</th>
-        </tr>
-      </thead>
+    <div role="table" aria-label="トレード一覧" className="space-y-8">
       {groups.map((g) => {
         const done = g.items.filter((t) => t.pnlJpy !== null);
         const total = done.reduce((a, t) => a + (t.pnlJpy ?? 0), 0);
         return (
-          <tbody key={g.key}>
-            <tr>
-              <th
-                colSpan={7}
-                scope="colgroup"
-                className="pb-2 pt-10 text-left font-normal"
-              >
-                <span className="flex items-baseline gap-3">
-                  <span className="num text-base text-ink">{g.key}</span>
-                  <span className="text-xs text-ink-mute">
-                    {WEEK[g.date.getUTCDay()]}曜日 ・ {g.items.length}件
-                  </span>
-                  {done.length > 0 && (
-                    <span className={`num ml-auto text-sm ${pnlClass(total)}`}>
-                      {formatYenSigned(total)}
-                    </span>
-                  )}
+          <section key={g.key} role="rowgroup" aria-label={g.key}>
+            <div className="mb-2 flex items-baseline gap-3 px-1">
+              <span className="num text-base text-ink">{g.key}</span>
+              <span className="text-xs text-ink-mute">
+                {WEEK[g.date.getUTCDay()]}曜日 ・ {g.items.length}件
+              </span>
+              {done.length > 0 && (
+                <span className={`num ml-auto text-sm ${pnlClass(total)}`}>
+                  {formatYenSigned(total)}
                 </span>
-              </th>
-            </tr>
-            {g.items.map((t) => {
-              const href = ROUTES.TRADE_DETAIL.replace(":id", t.id);
-              const d = jst(t.entryAt);
-              return (
-                <tr
-                  key={t.id}
-                  onClick={() => navigate(href)}
-                  className="group cursor-pointer border-t border-line transition-colors hover:bg-surface/60"
-                >
-                  <td className="num w-16 py-4 pl-3 pr-3 text-ink-sub">
-                    <a
-                      href={href}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        navigate(href);
-                      }}
-                      className="hover:text-accent-link"
-                    >
-                      {p2(d.getUTCHours())}:{p2(d.getUTCMinutes())}
-                    </a>
-                  </td>
-                  <td className="w-44 py-4 pr-3">
-                    <span className="flex items-center gap-3">
-                      <span
-                        aria-hidden
-                        className={`h-5 w-0.5 ${t.side === "buy" ? "bg-accent-link" : "bg-ink-mute"}`}
-                      />
-                      <span className="num text-ink">{t.pair}</span>
-                      <span
-                        className={`text-xs ${t.side === "buy" ? "text-accent-link" : "text-ink-sub"}`}
-                      >
-                        {SIDE_LABEL[t.side]}
-                      </span>
-                      <span className="num text-xs text-ink-mute">
-                        {t.lots}
-                      </span>
-                    </span>
-                  </td>
-                  <td className="py-4 pr-6">
-                    <Reason t={t} />
-                    {(t.deviation || t.missing.length > 0) && (
-                      <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                        {t.deviation && (
-                          <span className="text-xs text-caution">
-                            ⚠ ルール逸脱
+              )}
+            </div>
+            <div className="space-y-2">
+              {g.items.map((t) => {
+                const href = ROUTES.TRADE_DETAIL.replace(":id", t.id);
+                const d = jst(t.entryAt);
+                const buy = t.side === "buy";
+                return (
+                  <div
+                    key={t.id}
+                    role="row"
+                    onClick={() => navigate(href)}
+                    className="flex cursor-pointer items-center gap-5 rounded-card border border-line bg-card px-5 py-3 transition-colors hover:border-field hover:bg-surface"
+                  >
+                    <div role="cell" className="w-40 shrink-0 space-y-1">
+                      <p className="flex items-center gap-2">
+                        <a
+                          href={href}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigate(href);
+                          }}
+                          className="num text-ink-sub hover:text-accent-link"
+                        >
+                          {p2(d.getUTCHours())}:{p2(d.getUTCMinutes())}
+                        </a>
+                        {t.status === "draft" && (
+                          <span className="text-xs text-ink-mute">下書き</span>
+                        )}
+                        {t.status === "open" && (
+                          <span className="text-xs text-accent-link">
+                            保有中
                           </span>
                         )}
-                        <MissingBadges missing={t.missing} />
-                      </span>
-                    )}
-                  </td>
-                  <td
-                    className={`num w-28 py-4 pr-3 text-right ${pnlClass(t.pips)}`}
-                  >
-                    {formatPips(t.pips)}
-                  </td>
-                  <td
-                    className={`num w-28 py-4 pr-3 text-right text-base ${pnlClass(t.pnlJpy)}`}
-                  >
-                    {formatYenSigned(t.pnlJpy)}
-                  </td>
-                  <td className="num w-20 py-4 pr-3 text-right text-ink-sub">
-                    {formatR(t.rMultiple)}
-                  </td>
-                  <td className="w-20 py-4 pr-3 text-right text-xs text-ink-mute">
-                    {t.status === "draft" ? (
-                      "下書き"
-                    ) : t.status === "open" ? (
-                      <span className="text-accent-link">保有中</span>
-                    ) : (
-                      <span className="opacity-0 group-hover:opacity-100">
-                        開く →
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <span className="num text-ink">{t.pair}</span>
+                        <span
+                          className={`rounded-chip px-2 py-0.5 text-xs ${buy ? "bg-[#1C2A52] text-[#B7C8FF]" : "bg-[#2B2447] text-[#D6CBFF]"}`}
+                        >
+                          {SIDE_LABEL[t.side]}
+                        </span>
+                        <span className="num text-xs text-ink-mute">
+                          {t.lots}
+                        </span>
+                      </p>
+                    </div>
+                    <div role="cell">
+                      <MiniChart trade={t} />
+                    </div>
+                    <div role="cell" className="min-w-0 flex-1 space-y-1">
+                      <Reason t={t} />
+                      {(t.deviation || t.missing.length > 0) && (
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {t.deviation && (
+                            <span className="text-xs text-caution">
+                              ⚠ ルール逸脱
+                            </span>
+                          )}
+                          <MissingBadges missing={t.missing} />
+                        </span>
+                      )}
+                    </div>
+                    <div role="cell" className="w-32 shrink-0 text-right">
+                      <p className={`num text-lg ${pnlClass(t.pnlJpy)}`}>
+                        {formatYenSigned(t.pnlJpy)}
+                      </p>
+                      <p className={`num text-xs ${pnlClass(t.pips)}`}>
+                        {formatPips(t.pips)}
+                      </p>
+                      <p className="num text-xs text-ink-mute">
+                        {formatR(t.rMultiple)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         );
       })}
-    </table>
+    </div>
   );
 }

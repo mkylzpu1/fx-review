@@ -171,7 +171,7 @@ export function TradesPage() {
       {/* 集計: 枠なし。大きな数字を横に並べるだけ */}
       <section
         aria-label="集計"
-        className="mt-10 flex flex-wrap items-end gap-x-16 gap-y-6"
+        className="card mt-6 flex flex-wrap items-end gap-x-14 gap-y-5"
       >
         <Figure
           label="合計"
@@ -217,7 +217,7 @@ export function TradesPage() {
       </p>
 
       {/* 絞り込み: 罫線の上に文字だけ */}
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-b border-line">
+      <div className="card mt-4 flex flex-wrap items-center justify-between gap-x-8 gap-y-2 !py-2">
         <div className="flex flex-wrap items-center gap-x-10">
           <Underline
             label="期間"
@@ -232,7 +232,7 @@ export function TradesPage() {
             onChange={reset(setTab)}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-x-6 pb-2 text-sm">
+        <div className="flex flex-wrap items-center gap-x-6 text-sm">
           <select
             aria-label="通貨ペア"
             className="bg-transparent text-ink-sub hover:text-ink"
@@ -279,7 +279,7 @@ export function TradesPage() {
       </div>
 
       {data.items.length === 0 ? (
-        <div className="mt-8">
+        <div className="mt-6">
           {filtering ? (
             <EmptyState
               title="条件に合うトレードがありません"
@@ -302,7 +302,9 @@ export function TradesPage() {
           <p className="sr-only">
             {data.total}件のうち、{data.items.length}件を表示
           </p>
-          <TradeTable trades={data.items} />
+          <div className="mt-6">
+            <TradeTable trades={data.items} />
+          </div>
         </>
       )}
 
