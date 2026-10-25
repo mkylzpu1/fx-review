@@ -15,6 +15,9 @@ function signed(v: number, digits: number): string {
 
 export const formatPips = (v: number | null) =>
   v === null ? "—" : `${signed(v, 1)} pips`;
+/** 単位なしのpips（一覧の列見出しに「pips」がある場合用） */
+export const formatPipsValue = (v: number | null) =>
+  v === null ? "—" : signed(v, 1);
 export const formatR = (v: number | null) =>
   v === null ? "—" : `${signed(v, 2)}R`;
 export const formatYenSigned = (v: number | null) =>

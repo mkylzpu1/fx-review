@@ -1,17 +1,26 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ROUTES } from "@/constants/routes";
 import {
   SIDE_LABEL,
-  formatPips,
+  formatPipsValue,
   formatR,
   formatYenSigned,
 } from "@/utils/format";
-import type { Trade } from "../types";
-import { MiniChart } from "./MiniChart";
-import { MissingBadges } from "./MissingBadges";
+import type { MissingItem, Trade } from "../types";
+import { MiniChart, type MiniTf } from "./MiniChart";
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+
+/** 列の並びは見出し・日付行・各行で共通 */
+const GRID =
+  "grid grid-cols-[60px_168px_148px_minmax(0,1fr)_88px_112px_76px_20px] items-center gap-x-[18px] px-6";
+
+const TODO_LABEL: Record<Exclude<MissingItem, "open">, string> = {
+  sl: "SLを入力",
+  tp: "TPを入力",
+  rationale: "根拠を入力",
+};
 
 const pnlClass = (v: number | null) =>
   v === null
@@ -42,126 +51,248 @@ function groupByDay(trades: Trade[]) {
   return groups;
 }
 
-/** 理由・メモの要約。タグ → なければメモ本文 */
-function Reason({ t }: { t: Trade }) {
-  const tags = (t.tags ?? []).filter((x) => x.kind === "rationale");
-  const memo = t.insight || t.rationaleMemo;
-  if (tags.length === 0 && !memo) return null;
+const chip =
+  "inline-flex h-6 items-center gap-1.5 rounded-chip bg-tag px-2.5 text-xs text-ink-sub";
+
+function SideIcon({ buy }: { buy: boolean }) {
   return (
-    <div className="min-w-0 space-y-0.5">
-      {tags.length > 0 && (
-        <p className="truncate text-xs text-ink-sub">
-          {tags.map((x) => x.name).join(" ・ ")}
-        </p>
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={buy ? "M7 17L17 7M9 7h8v8" : "M7 7l10 10M17 9v8H9"} />
+    </svg>
+  );
+}
+
+/** 根拠タグ・状態・未入力の入力導線を、チップで並べる */
+function Chips({ t, editHref }: { t: Trade; editHref: string }) {
+  const tags = t.tags ?? [];
+  const todos = t.missing.filter(
+    (m): m is Exclude<MissingItem, "open"> => m !== "open",
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {t.status === "open" && (
+        <span className="inline-flex h-6 items-center gap-1.5 rounded-chip bg-accent/20 px-2.5 text-xs text-[#B7C8FF]">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent-link" />
+          保有中
+        </span>
       )}
-      {memo && <p className="truncate text-sm text-ink-mute">{memo}</p>}
+      {t.status === "draft" && (
+        <span className="inline-flex h-6 items-center rounded-chip bg-line px-2.5 text-xs text-ink-sub">
+          下書き
+        </span>
+      )}
+      {t.deviation && (
+        <span className="inline-flex h-6 items-center gap-1.5 rounded-chip bg-caution/[.13] px-2.5 text-xs text-caution">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 4l9 16H3L12 4z" />
+            <path d="M12 10v4M12 17h.01" />
+          </svg>
+          ルール逸脱
+        </span>
+      )}
+      {tags.map((x) => (
+        <span key={x.id} className={chip}>
+          {x.name}
+        </span>
+      ))}
+      {todos.map((m) => (
+        <Link
+          key={m}
+          to={editHref}
+          onClick={(e) => e.stopPropagation()}
+          className="relative z-10 inline-flex h-[26px] items-center gap-1.5 rounded-chip border border-dashed border-[#5D78D6] px-[11px] text-xs font-medium text-accent-link hover:bg-accent/15"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          {TODO_LABEL[m]}
+        </Link>
+      ))}
     </div>
   );
 }
 
 /**
- * 枠で囲まず、罫線と余白だけで区切る一覧。行全体が押せる。
- * 買い・売りは左端の細い印と文字で示す（色だけに頼らない）。
+ * 日付ごとにまとめた一覧。見出し・日付行・各行で列をそろえ、行全体が詳細へのリンク。
+ * 買い・売りは矢印と文字で示す（色だけに頼らない）。
  */
-export function TradeTable({ trades }: { trades: Trade[] }) {
+export function TradeTable({
+  trades,
+  tf = "auto",
+}: {
+  trades: Trade[];
+  tf?: MiniTf;
+}) {
   const navigate = useNavigate();
   const groups = groupByDay(trades);
   return (
-    <div role="table" aria-label="トレード一覧" className="space-y-8">
+    <div
+      role="table"
+      aria-label="トレード一覧"
+      className="overflow-hidden rounded-card border border-line bg-card"
+    >
+      <div
+        role="row"
+        aria-hidden="true"
+        className={`${GRID} h-10 text-xs text-ink-mute`}
+      >
+        <span>時刻</span>
+        <span>ペア・売買</span>
+        <span>値動き</span>
+        <span>根拠・メモ</span>
+        <span className="text-right">pips</span>
+        <span className="text-right">損益</span>
+        <span className="text-right">R</span>
+        <span />
+      </div>
       {groups.map((g) => {
         const done = g.items.filter((t) => t.pnlJpy !== null);
         const total = done.reduce((a, t) => a + (t.pnlJpy ?? 0), 0);
+        const holding = g.items.filter((t) => t.status === "open").length;
+        const drafts = g.items.filter((t) => t.status === "draft").length;
         return (
-          <section key={g.key} role="rowgroup" aria-label={g.key}>
-            <div className="mb-2 flex items-baseline gap-3 px-1">
-              <span className="num text-base text-ink">{g.key}</span>
-              <span className="text-xs text-ink-mute">
-                {WEEK[g.date.getUTCDay()]}曜日 ・ {g.items.length}件
-              </span>
-              {done.length > 0 && (
-                <span className={`num ml-auto text-sm ${pnlClass(total)}`}>
-                  {formatYenSigned(total)}
+          <div key={g.key} role="rowgroup" aria-label={g.key}>
+            <div
+              role="row"
+              className={`${GRID} h-11 border-t border-line bg-[#12171E] text-[13px]`}
+            >
+              <div
+                role="cell"
+                className="col-span-5 flex items-baseline gap-2.5"
+              >
+                <strong className="text-sm">
+                  {g.key}（{WEEK[g.date.getUTCDay()]}）
+                </strong>
+                <span className="text-xs text-ink-mute">
+                  {g.items.length}件{holding > 0 ? ` ・ 保有中 ${holding}` : ""}
+                  {drafts > 0 ? ` ・ 下書き ${drafts}` : ""}
                 </span>
-              )}
+              </div>
+              <span
+                role="cell"
+                className={`num text-right text-sm font-medium ${pnlClass(done.length > 0 ? total : null)}`}
+              >
+                {done.length > 0 ? formatYenSigned(total) : ""}
+              </span>
             </div>
-            <div className="space-y-2">
-              {g.items.map((t) => {
-                const href = ROUTES.TRADE_DETAIL.replace(":id", t.id);
-                const d = jst(t.entryAt);
-                const buy = t.side === "buy";
-                return (
-                  <div
-                    key={t.id}
-                    role="row"
-                    onClick={() => navigate(href)}
-                    className="flex cursor-pointer items-center gap-5 rounded-card border border-line bg-card px-5 py-3 transition-colors hover:border-field hover:bg-surface"
-                  >
-                    <div role="cell" className="w-40 shrink-0 space-y-1">
-                      <p className="flex items-center gap-2">
-                        <a
-                          href={href}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            navigate(href);
-                          }}
-                          className="num text-ink-sub hover:text-accent-link"
-                        >
-                          {p2(d.getUTCHours())}:{p2(d.getUTCMinutes())}
-                        </a>
-                        {t.status === "draft" && (
-                          <span className="text-xs text-ink-mute">下書き</span>
-                        )}
-                        {t.status === "open" && (
-                          <span className="text-xs text-accent-link">
-                            保有中
-                          </span>
-                        )}
-                      </p>
-                      <p className="flex items-center gap-2">
-                        <span className="num text-ink">{t.pair}</span>
-                        <span
-                          className={`rounded-chip px-2 py-0.5 text-xs ${buy ? "bg-[#1C2A52] text-[#B7C8FF]" : "bg-[#2B2447] text-[#D6CBFF]"}`}
-                        >
-                          {SIDE_LABEL[t.side]}
-                        </span>
-                        <span className="num text-xs text-ink-mute">
-                          {t.lots}
-                        </span>
-                      </p>
+            {g.items.map((t) => {
+              const href = ROUTES.TRADE_DETAIL.replace(":id", t.id);
+              const editHref = ROUTES.TRADE_EDIT.replace(":id", t.id);
+              const d = jst(t.entryAt);
+              const buy = t.side === "buy";
+              const memo = t.insight || t.rationaleMemo;
+              return (
+                <div
+                  key={t.id}
+                  role="row"
+                  onClick={() => navigate(href)}
+                  className={`${GRID} relative min-h-[76px] cursor-pointer border-t border-line py-3 transition-colors hover:bg-surface`}
+                >
+                  <span role="cell" className="num text-sm text-ink-sub">
+                    {p2(d.getUTCHours())}:{p2(d.getUTCMinutes())}
+                  </span>
+                  <div role="cell" className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <a
+                        href={href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(href);
+                        }}
+                        className="after:absolute after:inset-0 after:content-['']"
+                      >
+                        <strong className="text-[15px] font-bold tracking-[.01em]">
+                          {t.pair}
+                        </strong>
+                      </a>
+                      <span
+                        className={`inline-flex h-[22px] items-center gap-1 rounded-chip pl-1.5 pr-[9px] text-xs font-medium ${buy ? "bg-[#1C2A52] text-[#B7C8FF]" : "bg-[#2B2447] text-[#D6CBFF]"}`}
+                      >
+                        <SideIcon buy={buy} />
+                        {SIDE_LABEL[t.side]}
+                      </span>
                     </div>
-                    <div role="cell">
-                      <MiniChart trade={t} />
-                    </div>
-                    <div role="cell" className="min-w-0 flex-1 space-y-1">
-                      <Reason t={t} />
-                      {(t.deviation || t.missing.length > 0) && (
-                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          {t.deviation && (
-                            <span className="text-xs text-caution">
-                              ⚠ ルール逸脱
-                            </span>
-                          )}
-                          <MissingBadges missing={t.missing} />
-                        </span>
-                      )}
-                    </div>
-                    <div role="cell" className="w-32 shrink-0 text-right">
-                      <p className={`num text-lg ${pnlClass(t.pnlJpy)}`}>
-                        {formatYenSigned(t.pnlJpy)}
-                      </p>
-                      <p className={`num text-xs ${pnlClass(t.pips)}`}>
-                        {formatPips(t.pips)}
-                      </p>
-                      <p className="num text-xs text-ink-mute">
-                        {formatR(t.rMultiple)}
-                      </p>
-                    </div>
+                    <span className="num text-xs text-ink-mute">
+                      {t.lots} lot
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          </section>
+                  <div role="cell">
+                    <MiniChart trade={t} tf={tf} />
+                  </div>
+                  <div role="cell" className="flex min-w-0 flex-col gap-[7px]">
+                    <Chips t={t} editHref={editHref} />
+                    {memo && (
+                      <p className="truncate text-[13px] text-ink-sub">
+                        {memo}
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    role="cell"
+                    className={`num text-right text-sm ${pnlClass(t.pips)}`}
+                  >
+                    {formatPipsValue(t.pips)}
+                  </span>
+                  <span
+                    role="cell"
+                    className={`num text-right text-base font-medium ${pnlClass(t.pnlJpy)}`}
+                  >
+                    {formatYenSigned(t.pnlJpy)}
+                  </span>
+                  <span
+                    role="cell"
+                    className={`num text-right text-sm ${t.rMultiple === null ? "text-ink-mute" : "text-ink-sub"}`}
+                  >
+                    {formatR(t.rMultiple)}
+                  </span>
+                  <svg
+                    className="justify-self-end"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#8B95A5"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </div>
+              );
+            })}
+          </div>
         );
       })}
     </div>

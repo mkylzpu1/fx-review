@@ -75,11 +75,13 @@ describe("トレード一覧", () => {
     );
     renderPage();
     const table = within(await screen.findByRole("table"));
-    expect(table.getByText("+30.0 pips")).toBeInTheDocument();
-    expect(table.getByText("−12.5 pips")).toBeInTheDocument();
-    expect(screen.getByText("⚠ ルール逸脱")).toBeInTheDocument();
-    expect(screen.getByText("SL未入力")).toBeInTheDocument();
-    expect(screen.getByText("根拠なし")).toBeInTheDocument();
+    expect(table.getByText("+30.0")).toBeInTheDocument();
+    expect(table.getByText("−12.5")).toBeInTheDocument();
+    expect(screen.getByText("ルール逸脱")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "SLを入力" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "根拠を入力" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/2件のうち、2件を表示/)).toBeInTheDocument();
   });
 
@@ -89,7 +91,9 @@ describe("トレード一覧", () => {
     await screen.findByRole("table");
     vi.mocked(apiClient.get).mockResolvedValue(page([]));
     await userEvent.click(screen.getByRole("button", { name: "負け" }));
-    await userEvent.click(screen.getByLabelText("ルール逸脱のみ"));
+    await userEvent.click(
+      screen.getByRole("button", { name: "ルール逸脱のみ" }),
+    );
     await waitFor(() => {
       const last = vi.mocked(apiClient.get).mock.calls.at(-1)?.[0] as string;
       expect(last).toContain("result=loss");
@@ -98,5 +102,34 @@ describe("トレード一覧", () => {
     expect(
       await screen.findByText("条件に合うトレードがありません"),
     ).toBeInTheDocument();
+  });
+
+  it("チャートの時間足を切り替えると、一覧の全チャートがその足で取得される", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(
+      page([
+        trade({ id: "a", entryPrice: 150, exitAt: "2026-10-01T14:10:00Z" }),
+        trade({ id: "b", entryPrice: 151, exitAt: "2026-10-01T15:10:00Z" }),
+      ]),
+    );
+    localStorage.clear();
+    renderPage();
+    await screen.findByRole("table");
+    const group = screen.getByRole("group", { name: "チャートの時間足" });
+    expect(within(group).getByRole("button", { name: "自動" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await userEvent.click(within(group).getByRole("button", { name: "15分" }));
+    await waitFor(() => {
+      const urls = vi
+        .mocked(apiClient.get)
+        .mock.calls.map((c) => c[0] as string)
+        .filter((u) => u.startsWith("/candles") && u.includes("tf=15m"));
+      expect(urls.length).toBeGreaterThanOrEqual(2);
+    });
+    expect(within(group).getByRole("button", { name: "15分" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });

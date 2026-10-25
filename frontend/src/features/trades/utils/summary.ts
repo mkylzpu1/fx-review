@@ -8,6 +8,9 @@ export interface TradeSummary {
   profitFactor: number | null;
   avgR: number | null;
   totalPips: number;
+  totalJpy: number;
+  wins: number;
+  losses: number;
 }
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
@@ -28,5 +31,8 @@ export function summarize(trades: Trade[]): TradeSummary {
         ? null
         : round2(rs.reduce((a, b) => a + b, 0) / rs.length),
     totalPips: round2(closed.reduce((a, t) => a + (t.pips ?? 0), 0)),
+    totalJpy: closed.reduce((a, t) => a + (t.pnlJpy ?? 0), 0),
+    wins,
+    losses: closed.filter((t) => (t.pnlJpy ?? 0) < 0).length,
   };
 }

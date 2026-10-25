@@ -16,6 +16,9 @@ describe("summarize", () => {
       profitFactor: null,
       avgR: null,
       totalPips: 0,
+      totalJpy: 0,
+      wins: 0,
+      losses: 0,
     });
   });
   it("勝率・PF・平均R・合計pips（未決済は数えない）", () => {
@@ -31,6 +34,9 @@ describe("summarize", () => {
       profitFactor: 2,
       avgR: 0.33,
       totalPips: 20,
+      totalJpy: 2000,
+      wins: 2,
+      losses: 1,
     });
   });
   it("Rが出ないトレード（SLなし）は R の集計から外し、勝率には含める", () => {
