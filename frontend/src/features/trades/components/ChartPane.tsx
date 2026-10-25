@@ -55,7 +55,7 @@ export function TimeframeSelect({
           aria-checked={value === t}
           onClick={() => onChange(t)}
           className={`num min-h-touch min-w-[3rem] rounded-btn px-3 text-sm ${
-            value === t ? "bg-accent text-white" : "text-ink-sub"
+            value === t ? "bg-accent text-bg" : "text-ink-sub"
           }`}
         >
           {t}

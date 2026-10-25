@@ -150,10 +150,10 @@ export function MiniChart({
     PAD + ((hi - v) / Math.max(1e-9, hi - lo)) * (H - PAD * 2);
   const win = (trade.pnlJpy ?? 0) >= 0;
   const stroke =
-    trade.pnlJpy === null ? "#9DB4FF" : win ? "#6EE7C8" : "#FF7A8A";
+    trade.pnlJpy === null ? "#B4BDCA" : win ? "#6EE7C8" : "#FF7A8A";
   const fill =
     trade.pnlJpy === null
-      ? "rgba(157,180,255,.12)"
+      ? "rgba(180,189,202,.12)"
       : win
         ? "rgba(110,231,200,.12)"
         : "rgba(255,122,138,.12)";
@@ -209,8 +209,8 @@ export function MiniChart({
             cx={x(m.entry)}
             cy={y(trade.entryPrice)}
             r="3"
-            fill="#3E63DD"
-            stroke="#E6EAF0"
+            fill="#E6EAF0"
+            stroke="#0E1116"
             strokeWidth="1"
           />
         )}

@@ -80,7 +80,7 @@ function Seg<T extends string>({
           onClick={() => onChange(o.value)}
           className={`inline-flex h-8 items-center rounded-[7px] px-3 text-[13px] transition-colors ${
             value === o.value
-              ? "bg-accent/[.22] font-medium text-[#C9D6FF]"
+              ? "bg-accent/[.22] font-medium text-ink"
               : "text-ink-sub hover:bg-surface"
           }`}
         >
@@ -315,7 +315,7 @@ export function TradesPage() {
             <>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs text-[#B7C8FF]">入力の進捗</p>
+                  <p className="text-xs text-ink-sub">入力の進捗</p>
                   <p className="num mt-2 text-[32px] font-medium leading-[1.1]">
                     {queue.filledCount}
                     <span className="text-xl text-ink-mute">
@@ -325,7 +325,7 @@ export function TradesPage() {
                 </div>
                 <Link
                   to={ROUTES.TRADE_QUEUE}
-                  className="btn h-9 min-h-0 border-[#5D78D6] px-3 text-[13px] text-[#B7C8FF] hover:bg-accent/15"
+                  className="btn h-9 min-h-0 border-ink-mute px-3 text-[13px] text-ink hover:bg-accent/15"
                 >
                   未入力を埋める →
                 </Link>
@@ -347,7 +347,7 @@ export function TradesPage() {
             </>
           ) : (
             <>
-              <p className="text-xs text-[#B7C8FF]">入力の進捗</p>
+              <p className="text-xs text-ink-sub">入力の進捗</p>
               <p className="mt-2 text-sm text-ink-sub">
                 未入力のトレードはありません
               </p>

@@ -8,7 +8,7 @@ export const CHART_COLORS = {
   text: "#B4BDCA",
   up: "#6EE7C8",
   down: "#FF7A8A",
-  entry: "#9DB4FF",
+  entry: "#D5DBE4",
   sl: "#FF7A8A",
   tp: "#6EE7C8",
   exit: "#F5B94A",

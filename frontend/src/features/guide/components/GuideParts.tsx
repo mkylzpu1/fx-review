@@ -77,7 +77,7 @@ export function Step({
       <span
         aria-hidden
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold ${
-          isDone ? "bg-profit text-bg" : "bg-accent text-white"
+          isDone ? "bg-profit text-bg" : "bg-accent text-bg"
         }`}
       >
         {isDone ? <Check size={20} /> : no}

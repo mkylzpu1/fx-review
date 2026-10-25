@@ -12,7 +12,8 @@ export default {
         field: "#2B3441",
         tag: "#1F2630",
         ink: { DEFAULT: "#E6EAF0", sub: "#B4BDCA", mute: "#8B95A5" },
-        accent: { DEFAULT: "#3E63DD", link: "#9DB4FF" },
+        // 色は緑（上昇・利益）と赤（下降・損失）だけ。ボタン・選択・リンクは、色味のない明るいグレーにする
+        accent: { DEFAULT: "#E6EAF0", link: "#D5DBE4" },
         profit: "#6EE7C8",
         loss: "#FF7A8A",
         caution: "#F5B94A",

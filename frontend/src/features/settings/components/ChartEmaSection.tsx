@@ -42,9 +42,7 @@ export function ChartEmaSection({ value, errors, onChange }: Props) {
             aria-checked={value.chartDefaultTf === tf}
             onClick={() => onChange({ chartDefaultTf: tf })}
             className={`num min-h-touch min-w-[3rem] rounded-btn px-3 text-sm ${
-              value.chartDefaultTf === tf
-                ? "bg-accent text-white"
-                : "text-ink-sub"
+              value.chartDefaultTf === tf ? "bg-accent text-bg" : "text-ink-sub"
             }`}
           >
             {tf}
