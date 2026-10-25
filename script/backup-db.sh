@@ -37,8 +37,12 @@ docker exec "$DB_CONTAINER" \
 
 # 中身の確認（gzipとして読めること・空でないこと・テーブル定義が入っていること）
 gzip -t "$TMP"
-if ! gzip -dc "$TMP" | grep -q "CREATE TABLE"; then
+# grep -q は最初の一致で読むのをやめ、pipefail 下では gzip が SIGPIPE で失敗扱いになる（データが多いと発生）。
+# そのため -c で最後まで読んで数える
+TABLES="$(gzip -dc "$TMP" | grep -c "CREATE TABLE" || true)"
+if [ "${TABLES:-0}" -eq 0 ]; then
   echo "エラー: バックアップにテーブル定義が見つかりません。保存しませんでした。" >&2
+  echo "      DBが空の可能性があります（make backups で既存のバックアップも確認してください）。" >&2
   exit 1
 fi
 
