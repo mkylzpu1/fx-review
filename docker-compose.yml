@@ -18,6 +18,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     volumes:
+      # データは名前付きボリュームに保存される（コンテナを消しても・make stop しても残る）。
+      # 消えるのは次の操作をしたとき: docker compose down -v / docker volume prune /
+      # Docker Desktop の「Reset」や「Clean / Purge data」/ プロジェクトのフォルダ名を変えて起動し直したとき
+      # （ボリューム名は「フォルダ名_postgres-data」のため、別名のフォルダでは空のDBになる）。
+      # 念のため make backup でバックアップを取ること（stop / dev 時は自動で取る）。
       - postgres-data:/var/lib/postgresql/data
       - ./backend/db/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:

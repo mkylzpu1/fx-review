@@ -23,3 +23,5 @@ sam/local-env.json
 backend/.env.local
 frontend/.env.local
 backend/.tmp-scripts/
+# DBバックアップ（個人のトレードデータを含むのでコミットしない）
+backups/

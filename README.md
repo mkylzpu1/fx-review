@@ -171,6 +171,25 @@ npm run dev
 
 `http://localhost:5173` でフロントエンドが起動する。
 
+### データの永続化とバックアップ
+
+ローカルDBのデータは、Docker の名前付きボリューム `postgres-data` に保存される。`make stop` やコンテナの削除では消えない。
+消えるのは次の操作をしたとき: `docker compose down -v` / `docker volume prune` / Docker Desktop のリセット / **プロジェクトのフォルダ名を変えて起動し直したとき**（ボリューム名が `フォルダ名_postgres-data` のため、別のフォルダでは空のDBになる）。
+
+そのため、DBを丸ごと（ローソク足も含む）ローカルPCにバックアップできるようにしてある。
+
+| コマンド | 内容 |
+|---------|------|
+| `make backup` | `./backups/fx-review_日時.sql.gz` に保存（既定で直近30世代を残す） |
+| `make backups` | バックアップの一覧（新しい順） |
+| `make restore FILE=latest` | 最新のバックアップから復元（`FILE=backups/<ファイル>` で指定も可） |
+
+- `make dev` の起動時と `make stop` の止める前に、自動でバックアップを取る
+- 復元は確認が入り、復元前のDBを `pre-restore_日時.sql.gz` に自動で退避する。復元に失敗したらDBは変更前のまま
+- 保存先を変える: `BACKUP_DIR=~/Dropbox/fx-review make backup`（iCloud・外付けドライブ・クラウド同期フォルダを指定すると、PCが壊れても残る）。世代数は `KEEP=60 make backup`
+- `backups/` は `.gitignore` 済み（トレードデータを含むためコミットしない）
+- 設定画面「データ」の JSON バックアップは、自分のトレード・設定だけを対象にした別の仕組み（ローソク足は含まない）。DB全体の保護はこちらを使う
+
 ---
 
 ## 開発コマンド

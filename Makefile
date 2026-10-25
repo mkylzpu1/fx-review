@@ -1,4 +1,4 @@
-.PHONY: dev setup db build api lambda front stop sync sync-server
+.PHONY: dev setup db build api lambda front stop sync sync-server backup restore backups
 
 # 初回だけ: 依存インストール + ローカル設定ファイルの作成（既にあれば上書きしない）
 setup:
@@ -34,8 +34,23 @@ sync:
 
 # 毎回これだけ: DB起動 → ビルド → api / lambda / frontend / 同期サーバーを同時起動（止めるときは Ctrl+C）
 dev: db build
+	@./script/backup-db.sh || echo "警告: 起動前のバックアップに失敗しました（起動は続けます）"
 	$(MAKE) -j4 api lambda front sync-server
 
-# DBコンテナを止める（データは残る）
+# DBコンテナを止める（止める前に自動でバックアップ。データはボリュームに残る）
 stop:
+	@./script/backup-db.sh || echo "警告: バックアップに失敗しました（DBは止めます）"
 	docker compose stop
+
+# DBを丸ごとバックアップ（既定は ./backups/。別の場所にしたいときは BACKUP_DIR=~/Dropbox/fx make backup）
+backup:
+	./script/backup-db.sh
+
+# バックアップの一覧（新しい順）
+backups:
+	@ls -lht $${BACKUP_DIR:-backups}/*.sql.gz 2>/dev/null || echo "バックアップはまだありません"
+
+# 復元: make restore FILE=backups/fx-review_20261025_180000.sql.gz （FILE=latest で最新）
+restore:
+	@test -n "$(FILE)" || { echo "使い方: make restore FILE=backups/<ファイル>.sql.gz  （最新なら FILE=latest）"; exit 1; }
+	@if [ "$(FILE)" = "latest" ]; then ./script/restore-db.sh --latest; else ./script/restore-db.sh "$(FILE)"; fi
