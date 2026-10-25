@@ -15,10 +15,13 @@ export interface TradeSummary {
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
-/** 渡されたトレード（一覧に表示中の分など）の簡易集計。決済済みだけを数える */
+/**
+ * 渡されたトレードの集計。統計画面と同じく、決済済みでpipsが出ているものだけを数え、
+ * 勝ちはpipsが正のものとする（統計画面と数字がずれないようにするため）。
+ */
 export function summarize(trades: Trade[]): TradeSummary {
-  const closed = trades.filter((t) => t.pnlJpy !== null);
-  const wins = closed.filter((t) => (t.pnlJpy ?? 0) > 0).length;
+  const closed = trades.filter((t) => t.status === "closed" && t.pips !== null);
+  const wins = closed.filter((t) => (t.pips ?? 0) > 0).length;
   const rs = closed.flatMap((t) => (t.rMultiple === null ? [] : [t.rMultiple]));
   const gain = rs.filter((r) => r > 0).reduce((a, b) => a + b, 0);
   const loss = Math.abs(rs.filter((r) => r < 0).reduce((a, b) => a + b, 0));
@@ -33,6 +36,6 @@ export function summarize(trades: Trade[]): TradeSummary {
     totalPips: round2(closed.reduce((a, t) => a + (t.pips ?? 0), 0)),
     totalJpy: closed.reduce((a, t) => a + (t.pnlJpy ?? 0), 0),
     wins,
-    losses: closed.filter((t) => (t.pnlJpy ?? 0) < 0).length,
+    losses: closed.length - wins,
   };
 }

@@ -14,6 +14,7 @@ import type { MiniTf } from "../components/MiniChart";
 import { TradeTable } from "../components/TradeTable";
 import {
   useQueue,
+  useAllTrades,
   useTrades,
   type TradeListQuery,
 } from "../hooks/useTradesApi";
@@ -21,8 +22,6 @@ import { summarize } from "../utils/summary";
 import type { Trade, TradeSort } from "../types";
 
 const LIMIT = 20;
-/** 集計に使う件数の上限（APIの1回あたりの最大） */
-const STATS_LIMIT = 100;
 type ResultTab = "all" | "win" | "loss";
 const TABS: { value: ResultTab; label: string }[] = [
   { value: "all", label: "すべて" },
@@ -158,7 +157,8 @@ const toneOf = (v: number | null | undefined) =>
   !v ? "text-ink" : v > 0 ? "text-profit" : "text-loss";
 
 export function TradesPage() {
-  const [period, setPeriod] = useState<PeriodKey>("all");
+  // 統計画面と同じ既定の期間にして、合計がそろうようにする
+  const [period, setPeriod] = useState<PeriodKey>("90d");
   const [tab, setTab] = useState<ResultTab>("all");
   const [pair, setPair] = useState("");
   const [deviationOnly, setDeviationOnly] = useState(false);
@@ -197,19 +197,14 @@ export function TradesPage() {
   };
   const query: TradeListQuery = { ...filters, sort, page, limit: LIMIT };
   const { data, isLoading, isError, refetch } = useTrades(query);
-  // 統計は表示ページではなく、絞り込み後の全体（上限100件）で出す
-  const all = useTrades({
-    ...filters,
-    sort: "entry_desc",
-    page: 1,
-    limit: STATS_LIMIT,
-  });
+  // 集計は表示ページではなく、絞り込み後の全件で出す（統計画面と同じ母集団）
+  const all = useAllTrades(filters);
   const filtering =
     tab !== "all" ||
     deviationOnly ||
     q !== "" ||
     pair !== "" ||
-    period !== "all";
+    period !== "90d";
 
   const reset =
     <T,>(set: (v: T) => void) =>
@@ -222,7 +217,6 @@ export function TradesPage() {
   if (isError || !data) return <ErrorAlert onRetry={() => void refetch()} />;
 
   const s = summarize(all.data?.items ?? data.items);
-  const capped = (all.data?.total ?? 0) > STATS_LIMIT;
   const queue = counts.data;
 
   const items = all.data?.items ?? data.items;
@@ -356,8 +350,7 @@ export function TradesPage() {
         </div>
       </section>
       <p className="-mt-3 text-xs text-ink-mute">
-        {s.closed}件の決済済みを集計
-        {capped ? `（新しい${STATS_LIMIT}件まで）` : ""}
+        {s.closed}件の決済済みを集計（統計画面と同じ条件）
         {filtering ? " ・ 絞り込み中" : ""}
       </p>
 

@@ -6,7 +6,7 @@ const t = (
   pnlJpy: number | null,
   rMultiple: number | null,
   pips: number | null,
-) => ({ pnlJpy, rMultiple, pips }) as Trade;
+) => ({ pnlJpy, rMultiple, pips, status: "closed" }) as Trade;
 
 describe("summarize", () => {
   it("空なら全て未計算", () => {

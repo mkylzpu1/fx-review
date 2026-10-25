@@ -132,4 +132,25 @@ describe("トレード一覧", () => {
       "true",
     );
   });
+
+  it("合計は表示中の20件ではなく、条件に合う全件（100件を超えても）から出す", async () => {
+    const mk = (from: number, n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        trade({ id: `t${from + i}`, pips: 10, pnlJpy: 1000 }),
+      );
+    vi.mocked(apiClient.get).mockImplementation(async (url: string) => {
+      const sp = new URLSearchParams(url.split("?")[1] ?? "");
+      if (!url.startsWith("/trades?") && url !== "/trades") return page([]);
+      const limit = Number(sp.get("limit"));
+      const pg = Number(sp.get("page"));
+      if (limit === 100)
+        return { ...page(pg === 1 ? mk(0, 100) : mk(100, 50), 150), page: pg };
+      return page(mk(0, 20), 150);
+    });
+    renderPage();
+    await screen.findByRole("table");
+    // 150件 × 1,000円
+    expect(await screen.findByText("+¥150,000")).toBeInTheDocument();
+    expect(screen.getByText("+1500.0 pips")).toBeInTheDocument();
+  });
 });

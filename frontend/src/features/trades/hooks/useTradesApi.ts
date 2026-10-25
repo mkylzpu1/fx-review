@@ -55,6 +55,37 @@ export function useTrades(q: TradeListQuery) {
   });
 }
 
+/** 1回の取得上限（API側の最大） */
+const ALL_PAGE_LIMIT = 100;
+/** 集計用に取りに行く最大ページ数（無限ループ防止。100件×50ページ=5,000件） */
+const ALL_MAX_PAGES = 50;
+
+/**
+ * 絞り込み条件に合う全件を、ページをたどって取得する（集計用）。
+ * 統計画面と同じ母集団で合計を出すため、先頭の100件で打ち切らない。
+ */
+export function useAllTrades(
+  q: Omit<TradeListQuery, "page" | "limit" | "sort">,
+) {
+  return useQuery({
+    queryKey: ["trades", "all", q] as const,
+    queryFn: async () => {
+      const items: Trade[] = [];
+      let total = 0;
+      for (let page = 1; page <= ALL_MAX_PAGES; page++) {
+        const r = await apiClient.get<Page<Trade>>(
+          `/trades${toQueryString({ ...q, sort: "entry_desc", page, limit: ALL_PAGE_LIMIT })}`,
+        );
+        items.push(...r.items);
+        total = r.total;
+        if (r.items.length === 0 || items.length >= r.total) break;
+      }
+      return { items, total };
+    },
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useQueue(filter: QueueFilter, page: number, limit = 20) {
   return useQuery({
     queryKey: tradeKeys.queue(filter, page),
