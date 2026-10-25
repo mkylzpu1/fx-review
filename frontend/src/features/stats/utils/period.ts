@@ -1,6 +1,7 @@
 import type { PeriodKey } from "../types";
 
 export const PERIODS: { value: PeriodKey; label: string }[] = [
+  { value: "today", label: "今日" },
   { value: "90d", label: "過去90日" },
   { value: "30d", label: "過去30日" },
   { value: "month", label: "今月" },
@@ -16,6 +17,7 @@ export function periodFrom(
   now: Date = new Date(),
 ): string | undefined {
   if (key === "all") return undefined;
+  if (key === "today") return todayStartJst(now);
   if (key === "month") {
     const jst = new Date(now.getTime() + JST_OFFSET_MS);
     const start =
@@ -33,6 +35,11 @@ export function previousPeriod(
 ): { from: string; to: string } | null {
   if (key === "all") return null;
   const from = new Date(periodFrom(key, now) as string);
+  if (key === "today")
+    return {
+      from: new Date(from.getTime() - DAY_MS).toISOString(),
+      to: from.toISOString(),
+    };
   if (key === "month") {
     const jst = new Date(from.getTime() + JST_OFFSET_MS);
     const prev =

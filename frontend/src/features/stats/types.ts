@@ -61,4 +61,4 @@ export interface StatsResult {
   closedCount: number;
 }
 
-export type PeriodKey = "90d" | "30d" | "month" | "all";
+export type PeriodKey = "today" | "90d" | "30d" | "month" | "all";
