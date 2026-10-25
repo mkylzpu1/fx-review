@@ -6,6 +6,11 @@
  * JSON 以外は拒否する（別サイトの画面からの勝手な呼び出しを防ぐ）。同時には1回しか動かさない。
  */
 import http from "node:http";
+import {
+  ShareNotConfigured,
+  ShareUploadFailed,
+  type PublishResult,
+} from "../src/services/share/kvPublisher";
 import type { SyncSummary } from "./syncRunner";
 
 export const ALLOWED_ORIGINS = new Set([
@@ -14,6 +19,8 @@ export const ALLOWED_ORIGINS = new Set([
 ]);
 
 const MAX_BODY_BYTES = 1024;
+/** 評価用HTML（数百KB）を受けるための上限 */
+const MAX_SHARE_BODY_BYTES = 9 * 1024 * 1024;
 
 /** days を指定すると直近N日分、tradeId を指定するとそのトレードの時間帯分、どちらも無ければ全トレードの時間帯分 */
 export type RunSync = (opts: {
@@ -24,13 +31,19 @@ export type RunSync = (opts: {
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function readBody(req: http.IncomingMessage): Promise<string> {
+/** 評価用HTMLを公開して、見せるURLを返す（設定が無いときは ShareNotConfigured を投げる） */
+export type PublishShare = (html: string) => Promise<PublishResult>;
+
+function readBody(
+  req: http.IncomingMessage,
+  maxBytes: number = MAX_BODY_BYTES,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks: Buffer[] = [];
     req.on("data", (c: Buffer) => {
       size += c.length;
-      if (size > MAX_BODY_BYTES) {
+      if (size > maxBytes) {
         reject(new Error("too large"));
         req.destroy();
         return;
@@ -42,7 +55,10 @@ function readBody(req: http.IncomingMessage): Promise<string> {
   });
 }
 
-export function createSyncServer(run: RunSync): http.Server {
+export function createSyncServer(
+  run: RunSync,
+  publish?: PublishShare,
+): http.Server {
   let running = false;
 
   return http.createServer(async (req, res) => {
@@ -63,7 +79,7 @@ export function createSyncServer(run: RunSync): http.Server {
       res.end(JSON.stringify(body));
     };
 
-    if (req.url !== "/sync")
+    if (req.url !== "/sync" && req.url !== "/share")
       return send(404, { ok: false, message: "not found" });
     if (!allowed) return send(403, { ok: false, message: "forbidden origin" });
     if (req.method === "OPTIONS") return send(204, {});
@@ -71,6 +87,40 @@ export function createSyncServer(run: RunSync): http.Server {
       return send(405, { ok: false, message: "method not allowed" });
     if (!(req.headers["content-type"] ?? "").startsWith("application/json"))
       return send(415, { ok: false, message: "json only" });
+
+    // 評価用HTMLの公開（同期とは別の処理。同時に動いてもよい）
+    if (req.url === "/share") {
+      let html: unknown;
+      try {
+        const text = await readBody(req, MAX_SHARE_BODY_BYTES);
+        html = (JSON.parse(text) as { html?: unknown }).html;
+      } catch {
+        return send(400, {
+          ok: false,
+          message: "リクエストを読めませんでした",
+        });
+      }
+      if (typeof html !== "string" || !html)
+        return send(400, { ok: false, message: "html がありません" });
+      if (!publish)
+        return send(503, {
+          ok: false,
+          message:
+            "公開の設定がまだです。backend/.env.local に CF_ACCOUNT_ID・CF_KV_NAMESPACE_ID・CF_API_TOKEN・SHARE_BASE_URL を書いて、サーバーを再起動してください",
+        });
+      try {
+        send(200, { ok: true, ...(await publish(html)) });
+      } catch (e) {
+        send(e instanceof ShareNotConfigured ? 503 : 502, {
+          ok: false,
+          message:
+            e instanceof ShareUploadFailed || e instanceof ShareNotConfigured
+              ? e.message
+              : "公開できませんでした",
+        });
+      }
+      return;
+    }
     if (running)
       return send(409, {
         ok: false,

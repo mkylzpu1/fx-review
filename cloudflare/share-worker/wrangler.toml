@@ -1,0 +1,9 @@
+# 評価用ファイルを見せる Worker の設定（ダッシュボードから作る場合は、このファイルは使いません）
+name = "fx-review-share"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# KV の入れ物。id は「wrangler kv namespace create SHARES」で出る値に置き換える
+[[kv_namespaces]]
+binding = "SHARES"
+id = "ここをKVのIDに置き換える"
