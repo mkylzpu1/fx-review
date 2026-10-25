@@ -305,7 +305,7 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 - 決済されていない新規 → `status: "open"` のトレード
 - 複数ファイルで重なる同じ約定No.は1件にする（`overlappedRows`）
 - `source_key = "rakuten:" + 新規の約定No + ":" + 決済の約定No`（未決済は決済No.が空）
-- 数量は1,000通貨（0.01 lot）単位のみ。通貨ペアは `ドル/円`（USDJPY）のみ。ほかは行ごとのエラー
+- 数量は1,000通貨（0.1 lot）単位のみ（1 lot = 10,000通貨）。通貨ペアは `ドル/円`（USDJPY）のみ。ほかは行ごとのエラー
 - ファイルに `約定日時` などの必須列が無い（別形式）ときは、そのファイルだけ `status: "error"`。他のファイルは取り込める
 
 ### 重複判定
@@ -325,7 +325,7 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
     "total": 211, "newCount": 200, "duplicateCount": 11, "completesOpenCount": 0,
     "openCount": 0, "errorCount": 0, "overlappedRows": 0
   },
-  "trades": [{ "sourceKey": "rakuten:1000:1001", "importStatus": "new", "side": "buy", "lots": 0.1, "entryAt": "2026-10-01T13:10:00Z", "entryPrice": 150.1, "exitAt": "2026-10-01T13:30:00Z", "exitPrice": 150.2, "pnlJpy": 1000, "status": "closed", "entryNo": "1000", "exitNo": "1001", "pair": "USDJPY" }],
+  "trades": [{ "sourceKey": "rakuten:1000:1001", "importStatus": "new", "side": "buy", "lots": 1, "entryAt": "2026-10-01T13:10:00Z", "entryPrice": 150.1, "exitAt": "2026-10-01T13:30:00Z", "exitPrice": 150.2, "pnlJpy": 1000, "status": "closed", "entryNo": "1000", "exitNo": "1001", "pair": "USDJPY" }],
   "errors": [{ "file": "execution-7.csv", "line": 12, "executionNo": "1234", "message": "…" }],
   "entryRange": { "from": "2026-10-01T13:10:00Z", "to": "2026-10-23T06:21:00Z" }
 }

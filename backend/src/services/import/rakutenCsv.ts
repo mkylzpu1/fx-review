@@ -149,7 +149,7 @@ export function parseRakutenFile(name: string, text: string): ParsedFile {
     const executedAt = parseJstDateTime(get("約定日時"));
     if (!no) return err("約定No.がありません");
     if (quantity === null || quantity <= 0) return err("約定数量が不正です");
-    // lots は0.01（1,000通貨）単位で保存するため、端数が出る数量は取り込めない
+    // lots は0.1（1,000通貨）単位で保存するため、端数が出る数量は取り込めない
     if (quantity % MIN_UNITS !== 0)
       return err(
         `約定数量が${MIN_UNITS.toLocaleString("en-US")}通貨単位ではありません（${quantity}）`,

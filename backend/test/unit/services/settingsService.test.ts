@@ -58,7 +58,7 @@ describe("settingsService", () => {
       expect.objectContaining({
         symbol: "USDJPY",
         pipSize: 0.01,
-        pipValueJpyPerLot: 1000,
+        pipValueJpyPerLot: 100,
       }),
     );
     const tagCount =

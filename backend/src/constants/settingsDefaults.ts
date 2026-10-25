@@ -1,11 +1,11 @@
 import type { CurrencyPair, TagKind } from "../types/settings";
 
-/** 初回作成時に投入する通貨ペア（USDJPYのみ。1万通貨・1pip=100円 → 1lot・1pip=1,000円） */
+/** 初回作成時に投入する通貨ペア（USDJPYのみ。1 lot = 1万通貨 → 1lot・1pip=100円） */
 export const DEFAULT_PAIRS: Omit<CurrencyPair, "id">[] = [
   {
     symbol: "USDJPY",
     pipSize: 0.01,
-    pipValueJpyPerLot: 1000,
+    pipValueJpyPerLot: 100,
     showInPicker: true,
   },
 ];

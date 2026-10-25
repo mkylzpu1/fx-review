@@ -17,7 +17,7 @@ export function CurrencyPairsSection() {
   const [adding, setAdding] = useState(false);
   const [symbol, setSymbol] = useState("");
   const [pipSize, setPipSize] = useState("0.01");
-  const [pipValue, setPipValue] = useState("1000");
+  const [pipValue, setPipValue] = useState("100");
   const [error, setError] = useState<string>();
 
   const submit = () => {

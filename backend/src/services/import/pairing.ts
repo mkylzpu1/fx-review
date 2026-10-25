@@ -4,8 +4,8 @@ import type {
   ImportTrade,
 } from "../../types/import";
 
-/** 数量（通貨単位）→ lot。1 lot = 100,000通貨 */
-const UNITS_PER_LOT = 100_000;
+/** 数量（通貨単位）→ lot。1 lot = 10,000通貨 */
+const UNITS_PER_LOT = 10_000;
 
 export const toSourceKey = (entryNo: string, exitNo: string | null) =>
   `rakuten:${entryNo}:${exitNo ?? ""}`;

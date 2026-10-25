@@ -110,7 +110,7 @@ describe("pairExecutions", () => {
     for (const t of r.trades) {
       const sign = t.side === "buy" ? 1 : -1;
       expect(
-        Math.round(sign * (t.exitPrice! - t.entryPrice) * t.lots * 100000),
+        Math.round(sign * (t.exitPrice! - t.entryPrice) * t.lots * 10000),
       ).toBe(t.pnlJpy);
     }
   });
@@ -132,7 +132,7 @@ describe("pairExecutions", () => {
     expect(r.trades).toHaveLength(1);
     const t = r.trades[0];
     expect(t.side).toBe("sell");
-    expect(t.lots).toBe(0.05);
+    expect(t.lots).toBe(0.5);
     expect(t.sourceKey).toBe("rakuten:1:2");
     expect(t.pnlJpy).toBe(50);
     expect(t.entryAt).toBe("2026-10-01T13:11:00Z");
