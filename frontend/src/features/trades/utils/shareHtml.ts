@@ -20,6 +20,7 @@ import {
 import type { Candle, Trade } from "../types";
 import { excursionLevels, hasExcursion } from "./excursionLevels";
 import { SHARE_PAGE_CSS, SHARE_PAGE_SCRIPT } from "./shareHtmlPage";
+import { buildShareHeadMeta } from "./shareMeta";
 
 export interface ShareFrame {
   tf: Timeframe;
@@ -178,12 +179,14 @@ export function buildShareHtml(i: ShareInput): string {
     `<span class="win">TP ${t.tpPrice === null ? "—" : escapeHtml(p(t.tpPrice))}</span>`,
     `<span class="mute">RR ${rr ?? "—"}</span>`,
   ].join("");
+  const pageTitle = `${t.pair} ${SIDE_LABEL[t.side]} ${formatJst(t.entryAt)} のトレード`;
   return `<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${escapeHtml(t.pair)} ${SIDE_LABEL[t.side]} ${escapeHtml(formatJst(t.entryAt))} のトレード</title>
+<title>${escapeHtml(pageTitle)}</title>
+${buildShareHeadMeta(escapeHtml(pageTitle))}
 <style>${SHARE_PAGE_CSS}</style>
 </head>
 <body>

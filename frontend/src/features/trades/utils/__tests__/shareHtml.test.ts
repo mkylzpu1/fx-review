@@ -186,3 +186,36 @@ describe("escape", () => {
     expect(safeJson({ a: "</script>" })).not.toContain("<");
   });
 });
+
+describe("公開ページのプレビュー用タグ（LINEなど）", () => {
+  const head = () => {
+    const html = buildShareHtml(input());
+    return html.slice(0, html.indexOf("</head>"));
+  };
+
+  it("題名・説明・画像のタグがあり、画像のURLは Worker が置き換える印のまま", () => {
+    const h = head();
+    expect(h).toContain('<meta property="og:title" content="USDJPY');
+    expect(h).toContain('<meta property="og:description"');
+    expect(h).toContain(
+      '<meta property="og:image" content="{{ORIGIN}}/og.png">',
+    );
+    expect(h).toContain('<meta property="og:url" content="{{URL}}">');
+    expect(h).toContain(
+      '<meta name="twitter:card" content="summary_large_image">',
+    );
+  });
+
+  it("タブのアイコンはページ内（data:）に持つ", () => {
+    expect(head()).toMatch(
+      /<link rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml,/,
+    );
+  });
+
+  it("プレビューに、損益額・振り返り・メモは出ない", () => {
+    const h = head();
+    expect(h).not.toContain("98765");
+    expect(h).not.toContain("秘密");
+    expect(h).not.toContain("押し目");
+  });
+});
