@@ -7,9 +7,10 @@ export default {
       colors: {
         bg: "#0E1116",
         card: "#161B22",
-        line: "#262D38",
+        // 線は、背景の紺とは別に、ほんのり緑がかったグレーにする
+        line: "#26352F",
         surface: "#1B222C",
-        field: "#2B3441",
+        field: "#2D3E38",
         tag: "#1F2630",
         ink: { DEFAULT: "#E6EAF0", sub: "#B4BDCA", mute: "#8B95A5" },
         // 主役の色はローソク足と同じ緑。ボタン・選択・リンクに使う（赤は下降・損失・危険な操作）

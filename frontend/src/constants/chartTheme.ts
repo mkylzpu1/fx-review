@@ -4,7 +4,7 @@
  */
 export const CHART_COLORS = {
   background: "#161B22",
-  grid: "#262D38",
+  grid: "#26352F",
   text: "#B4BDCA",
   up: "#6EE7C8",
   down: "#FF7A8A",
