@@ -12,8 +12,8 @@ export default {
         field: "#2B3441",
         tag: "#1F2630",
         ink: { DEFAULT: "#E6EAF0", sub: "#B4BDCA", mute: "#8B95A5" },
-        // 色は緑（上昇・利益）と赤（下降・損失）だけ。ボタン・選択・リンクは、色味のない明るいグレーにする
-        accent: { DEFAULT: "#E6EAF0", link: "#D5DBE4" },
+        // 主役の色はローソク足と同じ緑。ボタン・選択・リンクに使う（赤は下降・損失・危険な操作）
+        accent: { DEFAULT: "#6EE7C8", link: "#8FF0D8" },
         profit: "#6EE7C8",
         loss: "#FF7A8A",
         caution: "#F5B94A",

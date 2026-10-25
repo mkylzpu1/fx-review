@@ -81,7 +81,7 @@ function Chips({ t, editHref }: { t: Trade; editHref: string }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {t.status === "open" && (
-        <span className="inline-flex h-6 items-center gap-1.5 rounded-chip bg-accent/20 px-2.5 text-xs text-ink">
+        <span className="inline-flex h-6 items-center gap-1.5 rounded-chip bg-accent/20 px-2.5 text-xs text-accent-link">
           <span className="h-1.5 w-1.5 rounded-full bg-accent-link" />
           保有中
         </span>
@@ -120,7 +120,7 @@ function Chips({ t, editHref }: { t: Trade; editHref: string }) {
           key={m}
           to={editHref}
           onClick={(e) => e.stopPropagation()}
-          className="relative z-10 inline-flex h-[26px] items-center gap-1.5 rounded-chip border border-dashed border-ink-mute px-[11px] text-xs font-medium text-accent-link hover:bg-accent/15"
+          className="relative z-10 inline-flex h-[26px] items-center gap-1.5 rounded-chip border border-dashed border-accent/60 px-[11px] text-xs font-medium text-accent-link hover:bg-accent/15"
         >
           <svg
             width="12"

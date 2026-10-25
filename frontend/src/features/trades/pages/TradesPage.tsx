@@ -80,7 +80,7 @@ function Seg<T extends string>({
           onClick={() => onChange(o.value)}
           className={`inline-flex h-8 items-center rounded-[7px] px-3 text-[13px] transition-colors ${
             value === o.value
-              ? "bg-accent/[.22] font-medium text-ink"
+              ? "bg-accent/[.22] font-medium text-accent-link"
               : "text-ink-sub hover:bg-surface"
           }`}
         >
@@ -325,7 +325,7 @@ export function TradesPage() {
                 </div>
                 <Link
                   to={ROUTES.TRADE_QUEUE}
-                  className="btn h-9 min-h-0 border-ink-mute px-3 text-[13px] text-ink hover:bg-accent/15"
+                  className="btn h-9 min-h-0 border-accent/60 px-3 text-[13px] text-accent-link hover:bg-accent/15"
                 >
                   未入力を埋める →
                 </Link>

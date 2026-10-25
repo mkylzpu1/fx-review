@@ -10,7 +10,7 @@
     @apply bg-bg font-sans text-ink antialiased;
   }
   :focus-visible {
-    outline: 2px solid #d5dbe4;
+    outline: 2px solid #6ee7c8;
     outline-offset: 2px;
   }
 }
