@@ -73,15 +73,18 @@ export const tradeListStore = {
     paging?: { limit: number; offset: number },
   ): Promise<{ rows: TradeRecord[]; total: number }> {
     const where = whereClause(userId, f);
-    const rows = await sql<TradeRow[]>`
-      SELECT ${TRADE_COLUMNS} FROM trades t
-      WHERE ${where}
-      ORDER BY ${ORDER[f.sort]}
-      ${paging ? sql`LIMIT ${paging.limit} OFFSET ${paging.offset}` : sql``}
-    `;
-    const count = await sql<{ n: number }[]>`
-      SELECT COUNT(*)::int as n FROM trades t WHERE ${where}
-    `;
+    // 一覧と件数は互いに独立なので、同時に取りに行く
+    const [rows, count] = await Promise.all([
+      sql<TradeRow[]>`
+        SELECT ${TRADE_COLUMNS} FROM trades t
+        WHERE ${where}
+        ORDER BY ${ORDER[f.sort]}
+        ${paging ? sql`LIMIT ${paging.limit} OFFSET ${paging.offset}` : sql``}
+      `,
+      sql<{ n: number }[]>`
+        SELECT COUNT(*)::int as n FROM trades t WHERE ${where}
+      `,
+    ]);
     return { rows: await attachLinks(rows), total: count[0].n };
   },
 

@@ -181,9 +181,12 @@ export const tradeService = {
   },
 
   async get(userId: string, id: string): Promise<TradeView> {
-    const record = await tradeStore.findById(userId, id);
+    const [record, viewer] = await Promise.all([
+      tradeStore.findById(userId, id),
+      loadViewer(userId),
+    ]);
     if (!record) throw new NotFoundError("トレード");
-    return (await loadViewer(userId)).toView(record);
+    return viewer.toView(record);
   },
 
   async update(
@@ -233,10 +236,12 @@ export const tradeService = {
       queue: q.pending ? "all" : undefined,
       sort: q.sort,
     };
-    const viewer = await loadViewer(userId);
 
     if (q.deviationOnly) {
-      const { rows } = await tradeListStore.list(userId, filter);
+      const [viewer, { rows }] = await Promise.all([
+        loadViewer(userId),
+        tradeListStore.list(userId, filter),
+      ]);
       const matched = rows.map(viewer.toView).filter((v) => v.deviation);
       const start = pageOffset(q.page, q.limit);
       return {
@@ -247,10 +252,14 @@ export const tradeService = {
       };
     }
 
-    const { rows, total } = await tradeListStore.list(userId, filter, {
-      limit: q.limit,
-      offset: pageOffset(q.page, q.limit),
-    });
+    // 設定・ペア・ルールの読み込みと一覧の取得は互いに独立なので、同時に行う
+    const [viewer, { rows, total }] = await Promise.all([
+      loadViewer(userId),
+      tradeListStore.list(userId, filter, {
+        limit: q.limit,
+        offset: pageOffset(q.page, q.limit),
+      }),
+    ]);
     return {
       items: rows.map(viewer.toView),
       total,
@@ -264,20 +273,22 @@ export const tradeService = {
     userId: string,
     q: { from?: string; to?: string; pair?: string },
   ): Promise<TradeView[]> {
-    const viewer = await loadViewer(userId);
-    const { rows } = await tradeListStore.list(userId, {
-      from: q.from,
-      to: q.to,
-      pair: q.pair,
-      sort: "entry_asc",
-    });
+    const [viewer, { rows }] = await Promise.all([
+      loadViewer(userId),
+      tradeListStore.list(userId, {
+        from: q.from,
+        to: q.to,
+        pair: q.pair,
+        sort: "entry_asc",
+      }),
+    ]);
     return rows.map(viewer.toView);
   },
 
   /** 未入力キュー。件数の強調はしない（入力は任意）ので、数値だけを返す */
   async queue(userId: string, q: QueueQuery): Promise<QueueResult> {
-    const viewer = await loadViewer(userId);
-    const [{ rows, total }, counts] = await Promise.all([
+    const [viewer, { rows, total }, counts] = await Promise.all([
+      loadViewer(userId),
       tradeListStore.list(
         userId,
         { queue: q.filter, sort: q.sort },

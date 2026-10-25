@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Timeframe } from "@/features/settings/types";
 import { TF_SECONDS } from "../utils/chartRange";
-import { useCandles } from "../hooks/useCandles";
+import { useMiniCandles } from "../hooks/useCandles";
 import type { Trade } from "../types";
 
 const W = 148;
@@ -13,6 +13,8 @@ const TARGET_BARS = 60;
 const MAX_BARS = 240;
 /** 時間足を固定したとき、最低でもこの本数ぶんは前後に余白を取る */
 const MIN_PAD_BARS = 6;
+/** 保有中のトレードの「いま」を丸める単位 */
+const OPEN_NOW_STEP_MS = 5 * 60_000;
 
 /** 一覧のチャートの時間足。auto は保有時間に合わせて行ごとに選ぶ */
 export type MiniTf = "auto" | Timeframe;
@@ -27,7 +29,11 @@ export function miniRange(
   tfChoice: MiniTf = "auto",
 ) {
   const entry = Date.parse(trade.entryAt);
-  const exit = trade.exitAt ? Date.parse(trade.exitAt) : Date.now();
+  // 保有中は「いま」まで描くが、再描画のたびに値が変わると取得条件（キャッシュのキー）も毎回変わって
+  // 取り直しになるため、5分単位に丸める
+  const exit = trade.exitAt
+    ? Date.parse(trade.exitAt)
+    : Math.floor(Date.now() / OPEN_NOW_STEP_MS) * OPEN_NOW_STEP_MS;
   const hold = Math.max(15 * 60_000, exit - entry);
   if (tfChoice === "auto") {
     const pad = hold * 0.5;
@@ -96,7 +102,7 @@ export function MiniChart({
 }) {
   const { ref, seen } = useVisible();
   const m = miniRange(trade, tf);
-  const { data, isError } = useCandles(m.tf, seen ? m.range : null);
+  const { data, isError } = useMiniCandles(m.tf, seen ? m.range : null);
 
   const frame = "h-11 w-[148px] shrink-0";
   const candles = data?.candles ?? [];

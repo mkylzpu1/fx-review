@@ -111,6 +111,18 @@ describe("トレード一覧", () => {
         trade({ id: "b", entryPrice: 151, exitAt: "2026-10-01T15:10:00Z" }),
       ]),
     );
+    vi.mocked(apiClient.post).mockImplementation(async (_url, body) => ({
+      results: (body as { requests: { tf: string }[] }).requests.map((r) => ({
+        ok: true,
+        data: {
+          tf: r.tf,
+          candles: [],
+          warmupCount: 0,
+          hasData: false,
+          mock: false,
+        },
+      })),
+    }));
     localStorage.clear();
     renderPage();
     await screen.findByRole("table");
@@ -121,12 +133,19 @@ describe("トレード一覧", () => {
     );
     await userEvent.click(within(group).getByRole("button", { name: "15分" }));
     await waitFor(() => {
-      const urls = vi
-        .mocked(apiClient.get)
-        .mock.calls.map((c) => c[0] as string)
-        .filter((u) => u.startsWith("/candles") && u.includes("tf=15m"));
-      expect(urls.length).toBeGreaterThanOrEqual(2);
+      const reqs = vi
+        .mocked(apiClient.post)
+        .mock.calls.filter((c) => c[0] === "/candles/batch")
+        .flatMap((c) => (c[1] as { requests: { tf: string }[] }).requests)
+        .filter((r) => r.tf === "15m");
+      expect(reqs.length).toBeGreaterThanOrEqual(2);
     });
+    // 行ごとに /candles を個別に呼ばない（まとめて取得する）
+    expect(
+      vi
+        .mocked(apiClient.get)
+        .mock.calls.some((c) => (c[0] as string).startsWith("/candles")),
+    ).toBe(false);
     expect(within(group).getByRole("button", { name: "15分" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -152,6 +171,44 @@ describe("トレード一覧", () => {
     // 150件 × 1,000円
     expect(await screen.findByText("+¥150,000")).toBeInTheDocument();
     expect(screen.getByText("+1500.0 pips")).toBeInTheDocument();
+  });
+
+  it("全件の集計は、1ページ目で総件数が分かったら、残りのページをまとめて取りに行く", async () => {
+    const mk = (from: number, n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        trade({ id: `t${from + i}`, pips: 10, pnlJpy: 1000 }),
+      );
+    const inFlight = { now: 0, max: 0 };
+    vi.mocked(apiClient.get).mockImplementation(async (url: string) => {
+      const sp = new URLSearchParams(url.split("?")[1] ?? "");
+      if (!url.startsWith("/trades?") && url !== "/trades") return page([]);
+      const limit = Number(sp.get("limit"));
+      const pg = Number(sp.get("page"));
+      if (limit !== 100) return page(mk(0, 20), 450);
+      inFlight.now++;
+      inFlight.max = Math.max(inFlight.max, inFlight.now);
+      await new Promise((r) => setTimeout(r, 5));
+      inFlight.now--;
+      return {
+        ...page(mk((pg - 1) * 100, pg === 5 ? 50 : 100), 450),
+        page: pg,
+      };
+    });
+    renderPage();
+    await screen.findByRole("table");
+    // 450件 × 1,000円（5ページ）
+    expect(await screen.findByText("+¥450,000")).toBeInTheDocument();
+    // 2ページ目以降は同時に取得している（1ページずつ待たない）
+    expect(inFlight.max).toBeGreaterThan(1);
+    // 再描画のたびに取り直さない（1ページ目の取得は1回だけ）
+    const firstPages = vi
+      .mocked(apiClient.get)
+      .mock.calls.filter(
+        (c) =>
+          (c[0] as string).includes("page=1&limit=100") &&
+          (c[0] as string).startsWith("/trades?"),
+      );
+    expect(firstPages).toHaveLength(1);
   });
 
   it("読み込み中でも画面全体は止めず、見出し・絞り込みは操作でき、読み込み表示は一覧の場所だけに出す", async () => {

@@ -505,6 +505,24 @@ Resources:
         Sourcemap: true
         EntryPoints: [src/handlers/candles/index.ts]
 
+  CandlesBatchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/candles/index.batchHandler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /candles/batch
+            Method: POST
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/handlers/candles/index.ts]
+
   # ─── 統計 ───────────────────────────────────────────────
   StatsGetFunction:
     Type: AWS::Serverless::Function

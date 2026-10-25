@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
@@ -188,12 +188,15 @@ export function TradesPage() {
   const pairs = usePairs();
   const counts = useQueue("all", 1, 1);
 
+  // 「過去90日」などの from は現在時刻から作るため、再描画のたびに計算し直すと値が毎回変わり、
+  // 取得条件（キャッシュのキー）が変わって、一覧と全件集計を何度も取り直してしまう。期間を選んだときだけ決める
+  const from = useMemo(() => periodFrom(period), [period]);
   const filters: TradeListQuery = {
     result: tab === "all" ? undefined : tab,
     deviationOnly,
     q: q || undefined,
     pair: pair || undefined,
-    from: periodFrom(period),
+    from,
   };
   const query: TradeListQuery = { ...filters, sort, page, limit: LIMIT };
   const { data, isLoading, isError, isFetching, refetch } = useTrades(query);

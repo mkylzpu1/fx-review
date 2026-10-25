@@ -3,6 +3,7 @@ import type { Timeframe } from "@/features/settings/types";
 import { apiClient } from "@/services/apiClient";
 import type { CandlesResponse } from "../types";
 import type { ChartRange } from "../utils/chartRange";
+import { fetchCandlesBatched } from "./candleBatcher";
 import { toQueryString } from "./useTradesApi";
 
 export const candleKeys = {
@@ -22,6 +23,24 @@ export function useCandles(tf: Timeframe, range: ChartRange | null) {
       apiClient.get<CandlesResponse>(
         `/candles${toQueryString({ tf, ...range })}`,
       ),
+  });
+}
+
+/**
+ * 一覧の各行の小さなチャート用。同じ画面で続けて出た要求は、1回のリクエストにまとめて取得する
+ * （キャッシュのキーは useCandles と同じなので、詳細画面のチャートとも取得結果を共有する）
+ */
+export function useMiniCandles(tf: Timeframe, range: ChartRange | null) {
+  return useQuery({
+    queryKey: range ? candleKeys.range(tf, range) : ["candles", "idle"],
+    enabled: range !== null,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    queryFn: () =>
+      range
+        ? fetchCandlesBatched(tf, range)
+        : Promise.reject(new Error("範囲が未定です")),
   });
 }
 

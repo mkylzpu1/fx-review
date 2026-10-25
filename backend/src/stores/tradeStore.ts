@@ -56,25 +56,26 @@ export interface TradeLinks {
 export async function attachLinks(rows: TradeRow[]): Promise<TradeRecord[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
-  const tags = await sql<
-    {
-      tradeId: string;
-      id: string;
-      name: string;
-      kind: "rationale" | "emotion";
-    }[]
-  >`
-    SELECT tt.trade_id as "tradeId", g.id, g.name, g.kind
-    FROM trade_tags tt JOIN tags g ON g.id = tt.tag_id
-    WHERE tt.trade_id IN ${sql(ids)}
-    ORDER BY g.kind, g.sort_order, g.created_at
-  `;
-  const checks = await sql<
-    { tradeId: string; ruleId: string; result: RuleResult }[]
-  >`
-    SELECT trade_id as "tradeId", rule_id as "ruleId", result
-    FROM trade_rule_checks WHERE trade_id IN ${sql(ids)}
-  `;
+  // タグとルール判定は互いに独立なので、同時に取りに行く
+  const [tags, checks] = await Promise.all([
+    sql<
+      {
+        tradeId: string;
+        id: string;
+        name: string;
+        kind: "rationale" | "emotion";
+      }[]
+    >`
+      SELECT tt.trade_id as "tradeId", g.id, g.name, g.kind
+      FROM trade_tags tt JOIN tags g ON g.id = tt.tag_id
+      WHERE tt.trade_id IN ${sql(ids)}
+      ORDER BY g.kind, g.sort_order, g.created_at
+    `,
+    sql<{ tradeId: string; ruleId: string; result: RuleResult }[]>`
+      SELECT trade_id as "tradeId", rule_id as "ruleId", result
+      FROM trade_rule_checks WHERE trade_id IN ${sql(ids)}
+    `,
+  ]);
   return rows.map((r) => ({
     ...r,
     tags: tags

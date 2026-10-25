@@ -8,7 +8,11 @@ vi.mock("../../../../src/services/candles/candleService", () => ({
   candleService: { get: vi.fn() },
 }));
 
-import { getHandler } from "../../../../src/handlers/candles";
+import {
+  MAX_BATCH_REQUESTS,
+  batchHandler,
+  getHandler,
+} from "../../../../src/handlers/candles";
 import { candleService } from "../../../../src/services/candles/candleService";
 import { ValidationError } from "../../../../src/lib/errors";
 
@@ -77,5 +81,82 @@ describe("GET /candles", () => {
   it("想定外のエラーは 500", async () => {
     vi.mocked(candleService.get).mockRejectedValue(new Error("db down"));
     expect((await getHandler(ev(ok))).statusCode).toBe(500);
+  });
+});
+
+const evPost = (body: unknown) =>
+  ({
+    body: typeof body === "string" ? body : JSON.stringify(body),
+  }) as unknown as APIGatewayProxyEvent;
+
+describe("POST /candles/batch", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const empty = {
+    tf: "1h" as const,
+    candles: [],
+    warmupCount: 0,
+    hasData: false,
+    mock: false,
+  };
+
+  it("正常系: 範囲ごとに結果を、渡した順で返す", async () => {
+    vi.mocked(candleService.get).mockResolvedValue(empty);
+    const res = await batchHandler(
+      evPost({ requests: [ok, { ...ok, tf: "5m", warmup: 10 }] }),
+    );
+    expect(res.statusCode).toBe(200);
+    expect(candleService.get).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(candleService.get).mock.calls[1][0]).toMatchObject({
+      tf: "5m",
+      warmup: 10,
+    });
+    const { results } = JSON.parse(res.body).data;
+    expect(results).toEqual([
+      { ok: true, data: empty },
+      { ok: true, data: empty },
+    ]);
+  });
+
+  it("1つの範囲が広すぎても、ほかの範囲は返す", async () => {
+    vi.mocked(candleService.get)
+      .mockRejectedValueOnce(new ValidationError("範囲が広すぎます"))
+      .mockResolvedValueOnce(empty);
+    const res = await batchHandler(evPost({ requests: [ok, ok] }));
+    expect(res.statusCode).toBe(200);
+    const { results } = JSON.parse(res.body).data;
+    expect(results[0]).toMatchObject({
+      ok: false,
+      code: "VALIDATION_ERROR",
+      message: "範囲が広すぎます",
+    });
+    expect(results[1].ok).toBe(true);
+  });
+
+  it("想定外のエラーは 500", async () => {
+    vi.mocked(candleService.get).mockRejectedValue(new Error("db down"));
+    expect((await batchHandler(evPost({ requests: [ok] }))).statusCode).toBe(
+      500,
+    );
+  });
+
+  it.each([
+    ["ボディなし", null],
+    ["JSONでない", "{"],
+    ["requestsが空", { requests: [] }],
+    ["tfが不正", { requests: [{ ...ok, tf: "2h" }] }],
+    ["日時がISOでない", { requests: [{ ...ok, from: "2026/10/21" }] }],
+    [
+      "件数が多すぎる",
+      { requests: Array.from({ length: MAX_BATCH_REQUESTS + 1 }, () => ok) },
+    ],
+  ])("400: %s", async (_name, body) => {
+    const res = await batchHandler(
+      body === null
+        ? ({ body: null } as unknown as APIGatewayProxyEvent)
+        : evPost(body),
+    );
+    expect(res.statusCode).toBe(400);
+    expect(candleService.get).not.toHaveBeenCalled();
   });
 });

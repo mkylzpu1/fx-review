@@ -59,10 +59,13 @@ export function useTrades(q: TradeListQuery) {
 const ALL_PAGE_LIMIT = 100;
 /** 集計用に取りに行く最大ページ数（無限ループ防止。100件×50ページ=5,000件） */
 const ALL_MAX_PAGES = 50;
+/** 残りのページを同時に取りに行く数（DBの接続を使い切らないための上限） */
+const ALL_CONCURRENCY = 4;
 
 /**
  * 絞り込み条件に合う全件を、ページをたどって取得する（集計用）。
  * 統計画面と同じ母集団で合計を出すため、先頭の100件で打ち切らない。
+ * 1ページ目で総件数が分かるので、残りは1ページずつ待たずに、まとめて同時に取りに行く。
  */
 export function useAllTrades(
   q: Omit<TradeListQuery, "page" | "limit" | "sort">,
@@ -70,17 +73,25 @@ export function useAllTrades(
   return useQuery({
     queryKey: ["trades", "all", q] as const,
     queryFn: async () => {
-      const items: Trade[] = [];
-      let total = 0;
-      for (let page = 1; page <= ALL_MAX_PAGES; page++) {
-        const r = await apiClient.get<Page<Trade>>(
+      const fetchPage = (page: number) =>
+        apiClient.get<Page<Trade>>(
           `/trades${toQueryString({ ...q, sort: "entry_desc", page, limit: ALL_PAGE_LIMIT })}`,
         );
-        items.push(...r.items);
-        total = r.total;
-        if (r.items.length === 0 || items.length >= r.total) break;
+      const first = await fetchPage(1);
+      const items: Trade[] = [...first.items];
+      const pageCount = Math.min(
+        ALL_MAX_PAGES,
+        Math.ceil(first.total / ALL_PAGE_LIMIT),
+      );
+      for (let from = 2; from <= pageCount; from += ALL_CONCURRENCY) {
+        const pages = Array.from(
+          { length: Math.min(ALL_CONCURRENCY, pageCount - from + 1) },
+          (_, i) => from + i,
+        );
+        const rest = await Promise.all(pages.map(fetchPage));
+        for (const r of rest) items.push(...r.items);
       }
-      return { items, total };
+      return { items, total: first.total };
     },
     placeholderData: keepPreviousData,
   });
