@@ -14,6 +14,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.RULES, label: "ルール", matchPrefixes: ["/rules"] },
   { to: ROUTES.NOTES, label: "学習メモ", matchPrefixes: ["/notes"] },
   { to: ROUTES.EXPORT, label: "エクスポート", matchPrefixes: ["/export"] },
+  { to: ROUTES.GUIDE, label: "ガイド", matchPrefixes: ["/guide"] },
   { to: ROUTES.SETTINGS, label: "設定", matchPrefixes: ["/settings"] },
 ];
 
@@ -27,6 +28,7 @@ export const MOBILE_TABS: NavItem[] = [
 
 export const MOBILE_MORE_ITEMS: NavItem[] = [
   { to: ROUTES.EXPORT, label: "エクスポート", matchPrefixes: ["/export"] },
+  { to: ROUTES.GUIDE, label: "ご利用ガイド", matchPrefixes: ["/guide"] },
   { to: ROUTES.SETTINGS, label: "設定", matchPrefixes: ["/settings"] },
   { to: ROUTES.ACCOUNT, label: "アカウント", matchPrefixes: ["/account"] },
 ];

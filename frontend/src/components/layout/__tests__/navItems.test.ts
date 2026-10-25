@@ -14,6 +14,7 @@ describe("統一ナビの現在地", () => {
     ["/rules/xyz", "ルール"],
     ["/notes/1", "学習メモ"],
     ["/settings", "設定"],
+    ["/guide", "ガイド"],
   ])("%s は「%s」を選択状態にする", (path, label) => {
     expect(current(path)).toEqual([label]);
   });

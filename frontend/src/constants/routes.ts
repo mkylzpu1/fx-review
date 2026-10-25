@@ -18,6 +18,7 @@ export const ROUTES = {
   NOTES: "/notes",
   NOTE_DETAIL: "/notes/:id",
   EXPORT: "/export",
+  GUIDE: "/guide",
   SETTINGS: "/settings",
   ACCOUNT: "/account",
 } as const;
