@@ -5,235 +5,124 @@ import { BrandMark } from "@/components/layout/BrandMark";
 import { ROUTES } from "@/constants/routes";
 import {
   AiVisual,
-  AppWindow,
   ImportVisual,
   ReviewVisual,
   RulesVisual,
   WeeklyVisual,
 } from "../components/Visuals";
+import type { WorldHandle } from "../components/world";
 import "../landing.css";
 
-const STATEMENT = [
-  "ばらばらだった",
-  "記録が、",
-  "見返すうちに、",
-  "ひとつの",
-  "形に",
-  "整っていく。",
+interface Chapter {
+  id: string;
+  label: string;
+  title?: string;
+  body?: string;
+  side: "left" | "right" | "center";
+  /** 現れ始め・はっきり・薄れ始め・消える（スクロール進行 0〜1） */
+  band: [number, number, number, number];
+  visual?: ReactNode;
+}
+
+const CHAPTERS: Chapter[] = [
+  {
+    id: "hero",
+    label: "はじめに",
+    side: "center",
+    band: [-1, -0.5, 0.07, 0.11],
+  },
+  {
+    id: "statement",
+    label: "整っていく",
+    side: "center",
+    band: [0.11, 0.14, 0.17, 0.21],
+  },
+  {
+    id: "import",
+    label: "取り込む",
+    title: "取り込む",
+    body: "MT5の約定履歴CSVから、トレードをまとめて登録します。",
+    side: "left",
+    band: [0.22, 0.26, 0.3, 0.34],
+    visual: <ImportVisual />,
+  },
+  {
+    id: "review",
+    label: "見返す",
+    title: "見返す",
+    body: "ローソク足のチャートで、エントリーから決済までをあとから振り返ります。",
+    side: "right",
+    band: [0.35, 0.39, 0.43, 0.47],
+    visual: <ReviewVisual />,
+  },
+  {
+    id: "rules",
+    label: "確かめる",
+    title: "確かめる",
+    body: "自分で決めたルールを発注前チェックにして、守れたかを残します。",
+    side: "left",
+    band: [0.48, 0.52, 0.56, 0.6],
+    visual: <RulesVisual />,
+  },
+  {
+    id: "weekly",
+    label: "週で見る",
+    title: "週で見る",
+    body: "統計と週次レビューで、勝ち負けの偏りを見つけます。",
+    side: "right",
+    band: [0.61, 0.65, 0.69, 0.73],
+    visual: <WeeklyVisual />,
+  },
+  {
+    id: "ai",
+    label: "AIに聞く",
+    title: "AIに聞く",
+    body: "記録をまとめて出力し、「どう改善すべきか」を分析してもらいます。",
+    side: "left",
+    band: [0.74, 0.78, 0.82, 0.86],
+    visual: <AiVisual />,
+  },
+  {
+    id: "closing",
+    label: "はじめる",
+    side: "center",
+    band: [0.88, 0.92, 2, 3],
+  },
 ];
 
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const smooth = (a: number, b: number, x: number) => {
-  const t = clamp01((x - a) / (b - a));
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
-
-/** ヒーローのカメラ位置。[進行, 上下の傾き, 左右の回り込み, 回転, 下げ幅(vh), 拡大, 分解度] */
-const CAMERA: number[][] = [
-  [0.0, 34, -16, 0, 34, 0.82, 0],
-  [0.16, 22, 10, 0, 20, 0.92, 0],
-  [0.3, 4, 0, 0, 3, 1.0, 0],
-  [0.46, 8, -6, 0, 0, 1.0, 0],
-  [0.58, 58, -30, 4, 0, 0.78, 1],
-  [0.74, 24, 38, -5, 0, 0.9, 1],
-  [0.88, 6, 10, 0, 0, 1.0, 0.3],
-  [1.0, 0, 0, 0, 0, 1.1, 0],
-];
-
-function cameraAt(p: number): number[] {
-  for (let i = 1; i < CAMERA.length; i++) {
-    if (p <= CAMERA[i][0]) {
-      const a = CAMERA[i - 1];
-      const b = CAMERA[i];
-      const t = smooth(a[0], b[0], p);
-      return a.map((v, k) => v + (b[k] - v) * t);
-    }
-  }
-  return CAMERA[CAMERA.length - 1];
-}
-
-/** 前後で薄く出入りするキャプション用 */
-const band = (p: number, a: number, b: number, c: number, d: number) =>
+const bandAt = (p: number, [a, b, c, d]: Chapter["band"]) =>
   smooth(a, b, p) * (1 - smooth(c, d, p));
 
-/** スクロール量に合わせて、[data-scene] の --p (0〜1) を更新する。ヒーローはカメラも動かす */
-function useScrollScenes() {
-  useEffect(() => {
-    const els = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-scene]"),
-    );
-    const hero = document.querySelector<HTMLElement>("[data-camera]");
-    const device = hero?.querySelector<HTMLElement>(".lp-hero-device");
-    let raf = 0;
-    let camP = 0;
-    let target = 0;
-    const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
-
-    const raw = () => {
-      const vh = window.innerHeight;
-      for (const el of els) {
-        const r = el.getBoundingClientRect();
-        const span = r.height - vh;
-        const p = span > 0 ? clamp01(-r.top / span) : 0;
-        el.style.setProperty("--p", p.toFixed(4));
-        if (el === hero) target = p;
-      }
-    };
-
-    const applyCamera = () => {
-      if (!hero || !device) return;
-      const [, rx, ry, rz, ty, sc0, ex] = cameraAt(camP);
-      const vw = window.innerWidth;
-      const sc =
-        Math.min(sc0, vw < 700 ? sc0 * 0.98 : 9) * Math.min(1, vw / 900 + 0.25);
-      device.style.setProperty("--rx", (rx + mouse.sy * -4).toFixed(2));
-      device.style.setProperty("--ry", (ry + mouse.sx * 5).toFixed(2));
-      device.style.setProperty("--rz", rz.toFixed(2));
-      device.style.setProperty("--ty", ty.toFixed(2));
-      device.style.setProperty("--sc", sc.toFixed(3));
-      device.style.setProperty("--ex", ex.toFixed(3));
-      hero.style.setProperty("--hd", (1 - smooth(0.05, 0.17, camP)).toFixed(3));
-      hero.style.setProperty(
-        "--o-a",
-        band(camP, 0.3, 0.37, 0.47, 0.54).toFixed(3),
-      );
-      hero.style.setProperty(
-        "--o-b",
-        band(camP, 0.6, 0.67, 0.78, 0.84).toFixed(3),
-      );
-      hero.style.setProperty(
-        "--o-c",
-        band(camP, 0.88, 0.93, 1.01, 1.02).toFixed(3),
-      );
-    };
-
-    // 慣性をつけて、カメラをなめらかに追従させる
-    const loop = () => {
-      camP += (target - camP) * 0.085;
-      mouse.sx += (mouse.x - mouse.sx) * 0.06;
-      mouse.sy += (mouse.y - mouse.sy) * 0.06;
-      applyCamera();
-      raf = requestAnimationFrame(loop);
-    };
-
-    const onMove = (e: PointerEvent) => {
-      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-    const reduce = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    raw();
-    if (reduce) camP = target;
-    applyCamera();
-    window.addEventListener("scroll", raw, { passive: true });
-    window.addEventListener("resize", raw);
-    if (!reduce) {
-      window.addEventListener("pointermove", onMove, { passive: true });
-      raf = requestAnimationFrame(loop);
-    } else {
-      const sync = () => {
-        camP = target;
-        applyCamera();
-      };
-      window.addEventListener("scroll", sync, { passive: true });
-    }
-    return () => {
-      window.removeEventListener("scroll", raw);
-      window.removeEventListener("resize", raw);
-      window.removeEventListener("pointermove", onMove);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-}
-
-function onTilt(e: React.PointerEvent<HTMLDivElement>) {
-  if (e.pointerType !== "mouse") return;
-  const el = e.currentTarget;
-  const r = el.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width;
-  const y = (e.clientY - r.top) / r.height;
-  el.style.setProperty("--ty", `${((x - 0.5) * 7).toFixed(2)}deg`);
-  el.style.setProperty("--tx", `${((0.5 - y) * 7).toFixed(2)}deg`);
-  el.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
-  el.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
-  el.setAttribute("data-hover", "true");
-}
-function onTiltEnd(e: React.PointerEvent<HTMLDivElement>) {
-  const el = e.currentTarget;
-  el.style.setProperty("--ty", "0deg");
-  el.style.setProperty("--tx", "0deg");
-  el.removeAttribute("data-hover");
-}
-
-/** 画面に入ったら data-in="true" にする */
-function InView({
-  children,
-  className,
-  delay = 0,
-  tilt = false,
-}: {
-  children: ReactNode;
-  className?: string;
-  delay?: number;
-  tilt?: boolean;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setOn(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.35 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+function Actions() {
   return (
-    <div
-      ref={ref}
-      data-in={on}
-      className={className}
-      style={{ transitionDelay: `${delay}ms` }}
-      onPointerMove={tilt ? onTilt : undefined}
-      onPointerLeave={tilt ? onTiltEnd : undefined}
-    >
-      {children}
+    <div className="lp-actions">
+      <Link to={ROUTES.LOGIN} className="lp-btn">
+        ログインして始める
+      </Link>
+      <Link to={ROUTES.GUIDE} className="lp-link">
+        ご利用ガイドを見る
+      </Link>
     </div>
   );
 }
 
-function Card({
-  className,
-  title,
-  body,
-  children,
-}: {
-  className: string;
-  title: string;
-  body: string;
-  children: ReactNode;
-}) {
-  return (
-    <InView className={`lp-card ${className}`} tilt>
-      <div className="lp-card-text">
-        <h3>{title}</h3>
-        <p>{body}</p>
-      </div>
-      {children}
-    </InView>
-  );
-}
-
-/** FXレビューの紹介ページ（ログイン不要） */
+/** FXレビューの紹介ページ（ログイン不要）。ローソク足の街の上を、カメラが飛ぶ */
 export function LandingPage() {
-  useScrollScenes();
+  const worldRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const control = useRef({ progress: 0 });
+  const handle = useRef<WorldHandle | null>(null);
+  const ready = useRef(false);
+  const loaderRef = useRef<HTMLDivElement>(null);
+  const loaderNum = useRef<HTMLSpanElement>(null);
+  const loaderBar = useRef<HTMLDivElement>(null);
+  const pctRef = useRef<HTMLSpanElement>(null);
+  const [webgl, setWebgl] = useState(true);
 
   useEffect(() => {
     const prev = document.title;
@@ -242,6 +131,120 @@ export function LandingPage() {
       document.title = prev;
     };
   }, []);
+
+  // スクロール進行（ステージの中だけ 0〜1）
+  useEffect(() => {
+    const onScroll = () => {
+      const el = worldRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const span = r.height - window.innerHeight;
+      control.current.progress =
+        span > 0 ? Math.min(1, Math.max(0, -r.top / span)) : 0;
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  // 3D と ローダー
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const stage = stageRef.current;
+    if (!canvas || !stage) return;
+    let cancelled = false;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const chapEls = Array.from(
+      stage.querySelectorAll<HTMLElement>("[data-chap]"),
+    );
+    const dotEls = Array.from(
+      stage.querySelectorAll<HTMLElement>("[data-dot]"),
+    );
+    const state = CHAPTERS.map(() => false);
+    let lastPct = "";
+
+    import("../components/world")
+      .then(({ createWorld }) => {
+        if (cancelled) return;
+        const h = createWorld(
+          canvas,
+          control.current,
+          {
+            onFrame: (p) => {
+              CHAPTERS.forEach((c, i) => {
+                const o = bandAt(p, c.band);
+                chapEls[i]?.style.setProperty("--o", o.toFixed(3));
+                if (i === 0) stage.style.setProperty("--c0", o.toFixed(3));
+                const on = o > 0.5;
+                if (on !== state[i]) {
+                  state[i] = on;
+                  chapEls[i]?.setAttribute("data-in", String(on));
+                  dotEls[i]?.setAttribute("data-on", String(on));
+                }
+                chapEls[i]?.setAttribute("data-near", String(o > 0.01));
+              });
+              const t = String(Math.round(p * 100)).padStart(3, "0");
+              if (t !== lastPct && pctRef.current) {
+                lastPct = t;
+                pctRef.current.textContent = t;
+              }
+            },
+          },
+          reduce,
+        );
+        handle.current = h;
+        ready.current = true;
+      })
+      .catch(() => {
+        if (!cancelled) setWebgl(false);
+      });
+
+    const t0 = performance.now();
+    let raf = 0;
+    let finished = false;
+    const tick = () => {
+      const t = (performance.now() - t0) / (reduce ? 150 : 1400);
+      let n = Math.min(1, t) * 100;
+      if (!ready.current && !finished) n = Math.min(n, 99);
+      if (loaderNum.current)
+        loaderNum.current.textContent = String(Math.floor(n)).padStart(3, "0");
+      if (loaderBar.current)
+        loaderBar.current.style.transform = `scaleX(${n / 100})`;
+      if (n >= 100 && ready.current) {
+        finished = true;
+        loaderRef.current?.setAttribute("data-done", "true");
+        handle.current?.start();
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      handle.current?.dispose();
+      handle.current = null;
+    };
+  }, []);
+
+  const jump = (i: number) => {
+    const el = worldRef.current;
+    if (!el) return;
+    const [, b, c] = CHAPTERS[i].band;
+    const p = Math.min(0.995, (Math.max(0, b) + c) / 2);
+    const top =
+      el.getBoundingClientRect().top +
+      window.scrollY +
+      p * (el.offsetHeight - window.innerHeight);
+    window.scrollTo({ top, behavior: "smooth" });
+  };
 
   return (
     <div className="lp">
@@ -252,7 +255,6 @@ export function LandingPage() {
             FXレビュー
           </a>
           <div className="lp-nav-links">
-            <a href="#features">できること</a>
             <Link to={ROUTES.GUIDE}>ご利用ガイド</Link>
             <Link to={ROUTES.LOGIN} className="lp-pill-sm">
               ログイン
@@ -261,157 +263,115 @@ export function LandingPage() {
         </div>
       </nav>
 
-      <main>
-        {/* ヒーロー：画面の見本が、手前に起き上がってくる */}
-        <section className="lp-hero" data-scene data-camera>
-          <div className="lp-hero-stick">
-            <div className="lp-hero-head">
-              <h1>
-                トレードを、
-                <br />
-                <span className="lp-grad">見返す。</span>
-              </h1>
-              <p>
-                記録して、チャートで振り返り、決めたルールを守れたかを確かめる。
-                <br className="lp-br" />
-                FXトレードの振り返りに絞ったアプリです。
-              </p>
-              <div className="lp-actions">
-                <Link to={ROUTES.LOGIN} className="lp-btn">
-                  ログインして始める
-                </Link>
-                <Link to={ROUTES.GUIDE} className="lp-link">
-                  ご利用ガイドを見る
-                </Link>
-              </div>
-            </div>
-            <div className="lp-hero-device">
-              <AppWindow />
-            </div>
-            <p
-              className="lp-cap"
-              style={{ ["--o" as string]: "var(--o-a, 0)" }}
-            >
-              取引を、チャートで見返す。
-              <small>エントリーから決済までを、あとから確かめられます。</small>
-            </p>
-            <p
-              className="lp-cap"
-              style={{ ["--o" as string]: "var(--o-b, 0)" }}
-            >
-              ルールを守れたかも、残す。
-              <small>
-                記録・チャート・チェックが、ひとつの画面にまとまっています。
-              </small>
-            </p>
-            <p
-              className="lp-cap"
-              style={{ ["--o" as string]: "var(--o-c, 0)" }}
-            >
-              数字で、偏りを見つける。
-              <small>勝率や損益を、あとから落ち着いて見直せます。</small>
-            </p>
-          </div>
-        </section>
-
-        {/* ステートメント：スクロールで文字が順に明るくなる */}
+      {webgl ? (
         <section
-          className="lp-statement"
-          data-scene
-          style={{ ["--n" as string]: STATEMENT.length }}
+          ref={worldRef}
+          className="lp-world"
+          aria-label="FXレビューの紹介"
         >
-          <div className="lp-statement-stick">
-            <p>
-              {STATEMENT.map((w, i) => (
-                <span
-                  key={w}
-                  className="lp-word"
-                  style={{ ["--i" as string]: i }}
-                >
-                  {w}
-                </span>
-              ))}
-            </p>
-          </div>
-        </section>
+          <div ref={stageRef} className="lp-stage">
+            <canvas ref={canvasRef} aria-hidden="true" />
+            <div className="lp-scrim" aria-hidden="true" />
 
-        {/* できること */}
-        <section id="features" className="lp-features">
-          <InView className="lp-sec-head">
-            <h2>
-              記録から、
-              <br />
-              改善まで。
-            </h2>
-            <p>トレードのあとにやることを、ひとつの流れにまとめました。</p>
-          </InView>
+            {CHAPTERS.map((c) => (
+              <div
+                key={c.id}
+                data-chap
+                data-side={c.side}
+                data-in="false"
+                className="lp-chap"
+              >
+                <div className="lp-chap-text">
+                  {c.id === "hero" && (
+                    <>
+                      <h1>
+                        トレードを、
+                        <br />
+                        <span className="lp-grad">見返す。</span>
+                      </h1>
+                      <p className="lp-chap-sub">
+                        記録して、チャートで振り返り、決めたルールを守れたかを確かめる。FXトレードの振り返りに絞ったアプリです。
+                      </p>
+                      <Actions />
+                    </>
+                  )}
+                  {c.id === "statement" && (
+                    <p className="lp-chap-statement">
+                      ばらばらだった記録が、
+                      <br />
+                      見返すうちに、
+                      <br />
+                      <span className="lp-grad">ひとつの形に整っていく。</span>
+                    </p>
+                  )}
+                  {c.title && (
+                    <>
+                      <h2>{c.title}</h2>
+                      <p className="lp-chap-sub">{c.body}</p>
+                    </>
+                  )}
+                  {c.id === "closing" && (
+                    <>
+                      <h2>
+                        次のトレードの前に、
+                        <br />
+                        <span className="lp-grad">見返そう。</span>
+                      </h2>
+                      <Actions />
+                    </>
+                  )}
+                </div>
+                {c.visual && <div className="lp-glass">{c.visual}</div>}
+              </div>
+            ))}
 
-          <div className="lp-bento">
-            <Card
-              className="lp-c-review"
-              title="見返す"
-              body="ローソク足のチャートで、エントリーから決済までをあとから振り返ります。"
-            >
-              <ReviewVisual />
-            </Card>
-            <Card
-              className="lp-c-rules"
-              title="確かめる"
-              body="自分で決めたルールを発注前チェックにして、守れたかを残します。"
-            >
-              <RulesVisual />
-            </Card>
-            <Card
-              className="lp-c-import"
-              title="取り込む"
-              body="MT5の約定履歴CSVから、まとめて登録します。"
-            >
-              <ImportVisual />
-            </Card>
-            <Card
-              className="lp-c-weekly"
-              title="週で見る"
-              body="統計と週次レビューで、勝ち負けの偏りを見つけます。"
-            >
-              <WeeklyVisual />
-            </Card>
-            <Card
-              className="lp-c-ai"
-              title="AIに聞く"
-              body="記録をまとめて出力し、「どう改善すべきか」を分析してもらいます。"
-            >
-              <AiVisual />
-            </Card>
-          </div>
-        </section>
-
-        <section className="lp-local">
-          <InView className="lp-local-in">
-            <h2>自分のパソコンの中で動かします。</h2>
-            <p>
-              トレードの記録は、自分のパソコンの中のデータベースに入ります。MT5とつなぐ最初の準備だけ、ご利用ガイドの手順どおりに進めてください。
-            </p>
-          </InView>
-        </section>
-
-        <section className="lp-closing">
-          <InView className="lp-closing-in">
-            <h2>
-              次のトレードの前に、
-              <br />
-              <span className="lp-grad">見返そう。</span>
-            </h2>
-            <div className="lp-actions">
-              <Link to={ROUTES.LOGIN} className="lp-btn">
-                ログインして始める
-              </Link>
-              <Link to={ROUTES.GUIDE} className="lp-link">
-                ご利用ガイドを見る
-              </Link>
+            <div className="lp-hint" aria-hidden="true">
+              <span className="lp-scrollhint" />
+              スクロール
             </div>
-          </InView>
+            <div className="lp-hud" aria-hidden="true">
+              <span ref={pctRef}>000</span> / 100
+            </div>
+            <div className="lp-dots">
+              {CHAPTERS.map((c, i) => (
+                <button
+                  key={c.id}
+                  data-dot
+                  data-on="false"
+                  onClick={() => jump(i)}
+                  aria-label={c.label}
+                >
+                  <i />
+                  <span>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
-      </main>
+      ) : (
+        <section className="lp-fallback">
+          <h1 className="text-5xl font-bold">トレードを、見返す。</h1>
+          <p>
+            記録して、チャートで振り返り、決めたルールを守れたかを確かめる。
+          </p>
+          <Actions />
+          {CHAPTERS.filter((c) => c.title).map((c) => (
+            <div key={c.id}>
+              <h2 className="font-bold">{c.title}</h2>
+              <p>{c.body}</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <section className="lp-local">
+        <div className="lp-local-in" data-in="true">
+          <h2>自分のパソコンの中で動かします。</h2>
+          <p>
+            トレードの記録は、自分のパソコンの中のデータベースに入ります。MT5とつなぐ最初の準備だけ、ご利用ガイドの手順どおりに進めてください。
+          </p>
+        </div>
+      </section>
 
       <footer className="lp-footer">
         <span>
@@ -419,7 +379,7 @@ export function LandingPage() {
           FXレビュー
         </span>
         <a
-          href="#top"
+          href="/lp"
           onClick={(e) => {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: "smooth" });
@@ -428,6 +388,17 @@ export function LandingPage() {
           ページの先頭へ
         </a>
       </footer>
+
+      <div ref={loaderRef} className="lp-loader" data-done="false">
+        <div ref={loaderBar} className="lp-loader-bar" />
+        <b>
+          <BrandMark size={22} />
+          FXレビュー
+        </b>
+        <span ref={loaderNum} className="lp-loader-num">
+          000
+        </span>
+      </div>
     </div>
   );
 }

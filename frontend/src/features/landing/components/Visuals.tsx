@@ -155,60 +155,6 @@ export function CandleChart({
   );
 }
 
-const SIDE = ["統計", "トレード", "ルール", "学習メモ", "エクスポート"];
-
-/** ヒーローで見せる、アプリ画面の見本 */
-export function AppWindow() {
-  return (
-    <div className="lp-window" aria-hidden="true">
-      <div className="lp-window-bar">
-        <i style={{ background: "#ff5f57" }} />
-        <i style={{ background: "#febc2e" }} />
-        <i style={{ background: "#28c840" }} />
-        <span>FXレビュー</span>
-      </div>
-      <div className="lp-window-body">
-        <aside className="lp-window-side">
-          {SIDE.map((s, i) => (
-            <span key={s} data-on={i === 1}>
-              {s}
-            </span>
-          ))}
-        </aside>
-        <div className="lp-window-main">
-          <div className="lp-stats">
-            <div>
-              <small>勝率</small>
-              <b className="num">58%</b>
-            </div>
-            <div>
-              <small>今月の損益</small>
-              <b className="num text-profit">+184.6 pips</b>
-            </div>
-            <div>
-              <small>ルールを守れた率</small>
-              <b className="num">82%</b>
-            </div>
-          </div>
-          <div className="lp-window-chart">
-            <div className="lp-window-chart-head">
-              <b>USDJPY</b>
-              <span>15分足</span>
-            </div>
-            <div className="lp-reveal-x">
-              <CandleChart
-                seed={11}
-                drift={0.4}
-                trade={{ entry: 14, exit: 41 }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function ImportVisual() {
   const rows = [
     ["USDJPY", "買い", "+12.4", true],
