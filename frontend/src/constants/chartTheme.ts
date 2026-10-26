@@ -4,7 +4,7 @@
  */
 export const CHART_COLORS = {
   background: "#161B22",
-  grid: "#26352F",
+  grid: "#2A4A3C",
   text: "#B4BDCA",
   up: "#6EE7C8",
   down: "#FF7A8A",
@@ -14,10 +14,10 @@ export const CHART_COLORS = {
   exit: "#F5B94A",
 } as const;
 
-/** 売買の向きの色（買い=青緑寄り・売り=紫寄り）。SL/TP/決済の色と区別する。文字（買い・売り）も必ず併記する */
+/** 売買の向きの色（買い=黄緑寄りの緑・売り=サーモン寄りの赤）。SL/TP/決済の色と区別する。文字（買い・売り）も必ず併記する */
 export const SIDE_COLORS = {
-  buy: "#7DCFFF",
-  sell: "#C792EA",
+  buy: "#B8F07A",
+  sell: "#FF9F7A",
 } as const;
 
 export const SIDE_LABEL_JA = { buy: "買い", sell: "売り" } as const;
@@ -25,13 +25,13 @@ export const SIDE_LABEL_JA = { buy: "買い", sell: "売り" } as const;
 /** EMAの線の色（追加した順に割り当てる） */
 export const EMA_COLORS = [
   "#F5B94A",
-  "#9DB4FF",
-  "#C792EA",
+  "#E6EAF0",
+  "#FF8FA3",
   "#6EE7C8",
   "#FF9E64",
-  "#7DCFFF",
+  "#FFD6A5",
   "#E0AF68",
-  "#BB9AF7",
+  "#8FF0D8",
 ] as const;
 
 /** 表示は日本時間。チャートはUTC秒をそのまま時刻軸にするため、9時間ずらして渡す */

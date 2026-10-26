@@ -314,7 +314,7 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
               .map((c) => ({
                 time: jst(c.time),
                 value: 1,
-                color: "rgba(157, 180, 255, 0.10)",
+                color: "rgba(110, 231, 200, 0.08)",
               }))
           : [],
       );

@@ -5,6 +5,20 @@
 @layer base {
   html {
     color-scheme: dark;
+    /* チェックボックス・ラジオ・スライダーなどのブラウザ既定の青を、緑にする */
+    accent-color: #6ee7c8;
+    -webkit-tap-highlight-color: rgba(110, 231, 200, 0.18);
+  }
+  ::selection {
+    background: rgba(110, 231, 200, 0.28);
+    color: #e6eaf0;
+  }
+  /* 自動入力されたときの青っぽい背景を、アプリの入力欄の色に戻す */
+  input:-webkit-autofill,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e6eaf0;
+    box-shadow: 0 0 0 1000px #0e1116 inset;
+    caret-color: #e6eaf0;
   }
   body {
     @apply bg-bg font-sans text-ink antialiased;
@@ -20,18 +34,22 @@
     @apply font-mono tabular-nums;
   }
   .btn {
-    @apply inline-flex min-h-touch items-center justify-center rounded-btn border border-field px-4 text-sm font-medium text-ink transition-colors hover:bg-surface disabled:opacity-50;
+    @apply inline-flex min-h-touch items-center justify-center rounded-btn border border-field px-4 text-sm font-medium text-ink transition-colors hover:border-accent/60 hover:bg-accent/10 disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn border-accent bg-accent text-bg hover:bg-accent/90;
+    @apply btn border-accent bg-accent text-bg hover:border-accent hover:bg-accent/90;
   }
   .btn-danger {
-    @apply btn border-loss text-loss hover:bg-loss/10;
+    @apply btn border-loss text-loss hover:border-loss hover:bg-loss/10;
   }
   .input {
     @apply min-h-touch w-full rounded-btn border border-field bg-bg px-3 font-mono text-sm text-ink placeholder:text-ink-mute;
   }
-  .input-error {
+  .input:focus {
+    @apply border-accent;
+  }
+  .input-error,
+  .input-error:focus {
     @apply border-loss;
   }
   .card {
