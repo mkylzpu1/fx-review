@@ -5,13 +5,17 @@ import type {
   CommitResult,
   DuplicateMode,
   ImportFileInput,
+  OrderLinkCommit,
+  OrderLinkPreview,
   PreviewResult,
 } from "../types";
 
 export function useImportPreview() {
   return useMutation({
     mutationFn: (files: ImportFileInput[]) =>
-      apiClient.post<PreviewResult>("/imports/preview", { files }),
+      apiClient.post<PreviewResult | OrderLinkPreview>("/imports/preview", {
+        files,
+      }),
   });
 }
 
@@ -21,7 +25,7 @@ export function useImportCommit() {
     mutationFn: (v: {
       files: ImportFileInput[];
       duplicateMode: DuplicateMode;
-    }) => apiClient.post<CommitResult>("/imports/commit", v),
+    }) => apiClient.post<CommitResult | OrderLinkCommit>("/imports/commit", v),
     onSuccess: () => qc.invalidateQueries({ queryKey: tradeKeys.all }),
   });
 }

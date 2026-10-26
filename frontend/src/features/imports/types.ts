@@ -69,3 +69,55 @@ export interface CommitResult {
   files: ImportFileResult[];
   entryRange: EntryRange | null;
 }
+
+/** 注文履歴CSV（SL・TPの紐づけ）。バックエンド services/import/orderLinkService.ts と対応 */
+export interface OrderPlan {
+  entryOrderNo: number;
+  side: "buy" | "sell";
+  lots: number;
+  orderedAt: string;
+  entryRate: number;
+}
+
+export interface UnfilledOrder {
+  entryOrderNo: number;
+  side: "buy" | "sell";
+  lots: number;
+  orderedAt: string;
+  state: string;
+  orderRate: number | null;
+  slPrice: number | null;
+  tpPrice: number | null;
+}
+
+export interface OrderLinkSummary {
+  filledOrders: number;
+  matched: number;
+  willUpdate: number;
+  unmatched: number;
+  slOnProfitSide: number;
+  unfilled: number;
+  rejected: number;
+  errorCount: number;
+}
+
+export interface OrderLinkPreview {
+  kind: "orders";
+  files: ImportFileResult[];
+  summary: OrderLinkSummary;
+  unmatched: OrderPlan[];
+  unfilled: UnfilledOrder[];
+  errors: ImportRowError[];
+}
+
+export interface OrderLinkCommit extends Omit<OrderLinkPreview, "unmatched"> {
+  updated: number;
+}
+
+export const isOrderPreview = (
+  p: PreviewResult | OrderLinkPreview,
+): p is OrderLinkPreview => "kind" in p && p.kind === "orders";
+
+export const isOrderCommit = (
+  r: CommitResult | OrderLinkCommit,
+): r is OrderLinkCommit => "kind" in r && r.kind === "orders";

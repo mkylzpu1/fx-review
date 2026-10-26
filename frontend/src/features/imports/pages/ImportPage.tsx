@@ -5,6 +5,10 @@ import { ROUTES } from "@/constants/routes";
 import { toast } from "@/stores/toastStore";
 import { DoneStep } from "../components/DoneStep";
 import { FileStep } from "../components/FileStep";
+import {
+  OrderLinkDoneStep,
+  OrderLinkPreviewStep,
+} from "../components/OrderLinkSteps";
 import { PreviewStep } from "../components/PreviewStep";
 import { Stepper } from "../components/Stepper";
 import { useImportCommit, useImportPreview } from "../hooks/useImportApi";
@@ -12,8 +16,11 @@ import type {
   CommitResult,
   DuplicateMode,
   ImportFileInput,
+  OrderLinkCommit,
+  OrderLinkPreview,
   PreviewResult,
 } from "../types";
+import { isOrderCommit, isOrderPreview } from "../types";
 import { readCsvFiles, type ReadFailure } from "../utils/readCsvFile";
 
 /** 楽天FX証券の約定履歴CSVを複数まとめて取り込む（①選ぶ → ②確認 → ③取り込む） */
@@ -25,9 +32,13 @@ export function ImportPage() {
   const [selected, setSelected] = useState<File[]>([]);
   const [failures, setFailures] = useState<ReadFailure[]>([]);
   const [texts, setTexts] = useState<ImportFileInput[]>([]);
-  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [preview, setPreview] = useState<
+    PreviewResult | OrderLinkPreview | null
+  >(null);
   const [mode, setMode] = useState<DuplicateMode>("skip");
-  const [result, setResult] = useState<CommitResult | null>(null);
+  const [result, setResult] = useState<CommitResult | OrderLinkCommit | null>(
+    null,
+  );
   const [reading, setReading] = useState(false);
 
   const step = result ? 3 : preview ? 2 : 1;
@@ -59,6 +70,10 @@ export function ImportPage() {
       {
         onSuccess: (r) => {
           setResult(r);
+          if (isOrderCommit(r)) {
+            toast.success(`${r.updated}件にSL・TPを反映しました`);
+            return;
+          }
           toast.success(
             `${r.imported}件を取り込みました。取り込み済み${r.skipped}件は除きました`,
             {
@@ -80,7 +95,7 @@ export function ImportPage() {
       <div>
         <h1 className="text-xl font-bold">CSV取り込み</h1>
         <p className="mt-1 text-sm text-ink-sub">
-          約定履歴から、トレードをまとめて登録します。
+          約定履歴からトレードをまとめて登録します。注文履歴のCSVを選ぶと、取り込み済みのトレードにSL・TPを反映します。
         </p>
       </div>
       <Stepper current={step} />
@@ -101,7 +116,16 @@ export function ImportPage() {
           onNext={() => void onNext()}
         />
       )}
-      {step === 2 && preview && (
+      {step === 2 && preview && isOrderPreview(preview) && (
+        <OrderLinkPreviewStep
+          preview={preview}
+          committing={commitApi.isPending}
+          commitError={commitApi.isError}
+          onBack={back}
+          onCommit={onCommit}
+        />
+      )}
+      {step === 2 && preview && !isOrderPreview(preview) && (
         <PreviewStep
           preview={preview}
           mode={mode}
@@ -112,7 +136,12 @@ export function ImportPage() {
           onCommit={onCommit}
         />
       )}
-      {step === 3 && result && <DoneStep result={result} />}
+      {step === 3 && result && isOrderCommit(result) && (
+        <OrderLinkDoneStep result={result} />
+      )}
+      {step === 3 && result && !isOrderCommit(result) && (
+        <DoneStep result={result} />
+      )}
     </div>
   );
 }
