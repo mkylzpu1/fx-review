@@ -24,10 +24,10 @@ import type { Trade, TradeSort } from "../types";
 const LIMIT = 20;
 const DEFAULT_PERIOD: PeriodKey = "today";
 type ResultTab = "all" | "win" | "loss";
-const TABS: { value: ResultTab; label: string }[] = [
+const TABS: { value: ResultTab; label: string; tone?: "profit" | "loss" }[] = [
   { value: "all", label: "すべて" },
-  { value: "win", label: "勝ち" },
-  { value: "loss", label: "負け" },
+  { value: "win", label: "勝ち", tone: "profit" },
+  { value: "loss", label: "負け", tone: "loss" },
 ];
 const TF_OPTIONS: { value: MiniTf; label: string }[] = [
   { value: "auto", label: "自動" },
@@ -63,7 +63,7 @@ function Seg<T extends string>({
 }: {
   label: string;
   value: T;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; tone?: "profit" | "loss" }[];
   onChange: (v: T) => void;
 }) {
   return (
@@ -80,8 +80,14 @@ function Seg<T extends string>({
           onClick={() => onChange(o.value)}
           className={`inline-flex h-8 items-center rounded-[7px] px-3 text-[13px] transition-colors ${
             value === o.value
-              ? "bg-accent/[.22] font-medium text-accent-link"
-              : "text-ink-sub hover:bg-surface"
+              ? o.tone === "loss"
+                ? "bg-loss/[.22] font-medium text-loss"
+                : o.tone === "profit"
+                  ? "bg-profit/[.22] font-medium text-profit"
+                  : "bg-accent/[.22] font-medium text-accent-link"
+              : o.tone === "loss"
+                ? "text-loss/80 hover:bg-loss/10"
+                : "text-ink-sub hover:bg-surface"
           }`}
         >
           {o.label}
@@ -303,14 +309,18 @@ export function TradesPage() {
         </div>
         <div className="border-t border-line px-6 pb-[22px] pt-5 md:border-l md:border-t-0">
           <p className="text-xs text-ink-mute">平均R</p>
-          <p className="num mt-2 text-[32px] font-medium leading-[1.1]">
+          <p
+            className={`num mt-2 text-[32px] font-medium leading-[1.1] ${toneOf(s.avgR)}`}
+          >
             {formatR(s.avgR)}
           </p>
           <p className="num mt-2 text-[13px] text-ink-sub">
             PF {s.profitFactor === null ? "—" : s.profitFactor}
           </p>
         </div>
-        <div className="border-t border-line bg-accent/10 px-6 pb-[22px] pt-5 md:border-l md:border-t-0">
+        <div
+          className={`border-t border-line px-6 pb-[22px] pt-5 md:border-l md:border-t-0 ${queue && queue.pendingCount > 0 ? "bg-loss/10" : "bg-accent/10"}`}
+        >
           {queue && queue.pendingCount > 0 ? (
             <>
               <div className="flex items-start justify-between gap-3">
@@ -325,24 +335,28 @@ export function TradesPage() {
                 </div>
                 <Link
                   to={ROUTES.TRADE_QUEUE}
-                  className="btn h-9 min-h-0 border-accent/60 px-3 text-[13px] text-accent-link hover:bg-accent/15"
+                  className="btn h-9 min-h-0 border-loss/60 px-3 text-[13px] text-loss hover:border-loss hover:bg-loss/15"
                 >
                   未入力を埋める →
                 </Link>
               </div>
               <div
                 aria-hidden="true"
-                className="mt-3 h-1.5 rounded-[3px] bg-line"
+                className="mt-3 h-1.5 rounded-[3px] bg-loss/30"
               >
                 <div
-                  className="h-1.5 rounded-[3px] bg-accent-link"
+                  className="h-1.5 rounded-[3px] bg-profit"
                   style={{
                     width: `${queue.totalCount === 0 ? 0 : (queue.filledCount / queue.totalCount) * 100}%`,
                   }}
                 />
               </div>
               <p className="mt-2.5 text-[13px] text-ink-sub">
-                未入力 <span className="num">{queue.pendingCount}</span>件
+                未入力{" "}
+                <span className="num font-medium text-loss">
+                  {queue.pendingCount}
+                </span>
+                件
               </p>
             </>
           ) : (
@@ -388,8 +402,8 @@ export function TradesPage() {
           onClick={() => reset(setDeviationOnly)(!deviationOnly)}
           className={`inline-flex h-[38px] items-center gap-2 rounded-chip border px-3.5 text-[13px] ${
             deviationOnly
-              ? "border-caution bg-caution/10 text-caution"
-              : "border-field text-ink-sub hover:bg-surface"
+              ? "border-loss bg-loss/10 text-loss"
+              : "border-field text-ink-sub hover:border-loss/50 hover:bg-loss/10 hover:text-loss"
           }`}
         >
           ルール逸脱のみ

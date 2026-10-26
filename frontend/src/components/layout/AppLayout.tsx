@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { CandlestickChart, User } from "lucide-react";
+import { User } from "lucide-react";
+import { BrandMark } from "./BrandMark";
 import { useAuthContext } from "@/features/auth/components/AuthProvider";
 import { Banner } from "@/components/common/Banner";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -28,12 +29,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-bg text-ink">
       {/* 上部ナビ */}
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
+        {/* 上端の細い帯: 緑(上昇)から赤(下降)へ */}
+        <div
+          aria-hidden="true"
+          className="h-[3px] bg-gradient-to-r from-profit via-profit/20 to-loss"
+        />
         <div className="mx-auto flex h-14 max-w-screen-xl items-center gap-6 px-4">
           <Link
             to={ROUTES.STATS}
             className="flex items-center gap-2 text-base font-bold"
           >
-            <CandlestickChart size={20} className="text-profit" aria-hidden />
+            <BrandMark />
             FXレビュー
           </Link>
           <nav
