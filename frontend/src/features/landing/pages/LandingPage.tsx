@@ -22,35 +22,148 @@ const STATEMENT = [
   "整っていく。",
 ];
 
-/** スクロール量に合わせて、[data-scene] の --p (0〜1) を更新する */
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+const smooth = (a: number, b: number, x: number) => {
+  const t = clamp01((x - a) / (b - a));
+  return t * t * (3 - 2 * t);
+};
+
+/** ヒーローのカメラ位置。[進行, 上下の傾き, 左右の回り込み, 回転, 下げ幅(vh), 拡大, 分解度] */
+const CAMERA: number[][] = [
+  [0.0, 34, -16, 0, 34, 0.82, 0],
+  [0.16, 22, 10, 0, 20, 0.92, 0],
+  [0.3, 4, 0, 0, 3, 1.0, 0],
+  [0.46, 8, -6, 0, 0, 1.0, 0],
+  [0.58, 58, -30, 4, 0, 0.78, 1],
+  [0.74, 24, 38, -5, 0, 0.9, 1],
+  [0.88, 6, 10, 0, 0, 1.0, 0.3],
+  [1.0, 0, 0, 0, 0, 1.1, 0],
+];
+
+function cameraAt(p: number): number[] {
+  for (let i = 1; i < CAMERA.length; i++) {
+    if (p <= CAMERA[i][0]) {
+      const a = CAMERA[i - 1];
+      const b = CAMERA[i];
+      const t = smooth(a[0], b[0], p);
+      return a.map((v, k) => v + (b[k] - v) * t);
+    }
+  }
+  return CAMERA[CAMERA.length - 1];
+}
+
+/** 前後で薄く出入りするキャプション用 */
+const band = (p: number, a: number, b: number, c: number, d: number) =>
+  smooth(a, b, p) * (1 - smooth(c, d, p));
+
+/** スクロール量に合わせて、[data-scene] の --p (0〜1) を更新する。ヒーローはカメラも動かす */
 function useScrollScenes() {
   useEffect(() => {
     const els = Array.from(
       document.querySelectorAll<HTMLElement>("[data-scene]"),
     );
+    const hero = document.querySelector<HTMLElement>("[data-camera]");
+    const device = hero?.querySelector<HTMLElement>(".lp-hero-device");
     let raf = 0;
-    const update = () => {
-      raf = 0;
+    let camP = 0;
+    let target = 0;
+    const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
+
+    const raw = () => {
       const vh = window.innerHeight;
       for (const el of els) {
         const r = el.getBoundingClientRect();
         const span = r.height - vh;
-        const p = span > 0 ? Math.min(1, Math.max(0, -r.top / span)) : 0;
+        const p = span > 0 ? clamp01(-r.top / span) : 0;
         el.style.setProperty("--p", p.toFixed(4));
+        if (el === hero) target = p;
       }
     };
-    const on = () => {
-      if (!raf) raf = requestAnimationFrame(update);
+
+    const applyCamera = () => {
+      if (!hero || !device) return;
+      const [, rx, ry, rz, ty, sc0, ex] = cameraAt(camP);
+      const vw = window.innerWidth;
+      const sc =
+        Math.min(sc0, vw < 700 ? sc0 * 0.98 : 9) * Math.min(1, vw / 900 + 0.25);
+      device.style.setProperty("--rx", (rx + mouse.sy * -4).toFixed(2));
+      device.style.setProperty("--ry", (ry + mouse.sx * 5).toFixed(2));
+      device.style.setProperty("--rz", rz.toFixed(2));
+      device.style.setProperty("--ty", ty.toFixed(2));
+      device.style.setProperty("--sc", sc.toFixed(3));
+      device.style.setProperty("--ex", ex.toFixed(3));
+      hero.style.setProperty("--hd", (1 - smooth(0.05, 0.17, camP)).toFixed(3));
+      hero.style.setProperty(
+        "--o-a",
+        band(camP, 0.3, 0.37, 0.47, 0.54).toFixed(3),
+      );
+      hero.style.setProperty(
+        "--o-b",
+        band(camP, 0.6, 0.67, 0.78, 0.84).toFixed(3),
+      );
+      hero.style.setProperty(
+        "--o-c",
+        band(camP, 0.88, 0.93, 1.01, 1.02).toFixed(3),
+      );
     };
-    update();
-    window.addEventListener("scroll", on, { passive: true });
-    window.addEventListener("resize", on);
+
+    // 慣性をつけて、カメラをなめらかに追従させる
+    const loop = () => {
+      camP += (target - camP) * 0.085;
+      mouse.sx += (mouse.x - mouse.sx) * 0.06;
+      mouse.sy += (mouse.y - mouse.sy) * 0.06;
+      applyCamera();
+      raf = requestAnimationFrame(loop);
+    };
+
+    const onMove = (e: PointerEvent) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    raw();
+    if (reduce) camP = target;
+    applyCamera();
+    window.addEventListener("scroll", raw, { passive: true });
+    window.addEventListener("resize", raw);
+    if (!reduce) {
+      window.addEventListener("pointermove", onMove, { passive: true });
+      raf = requestAnimationFrame(loop);
+    } else {
+      const sync = () => {
+        camP = target;
+        applyCamera();
+      };
+      window.addEventListener("scroll", sync, { passive: true });
+    }
     return () => {
-      window.removeEventListener("scroll", on);
-      window.removeEventListener("resize", on);
+      window.removeEventListener("scroll", raw);
+      window.removeEventListener("resize", raw);
+      window.removeEventListener("pointermove", onMove);
       cancelAnimationFrame(raf);
     };
   }, []);
+}
+
+function onTilt(e: React.PointerEvent<HTMLDivElement>) {
+  if (e.pointerType !== "mouse") return;
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width;
+  const y = (e.clientY - r.top) / r.height;
+  el.style.setProperty("--ty", `${((x - 0.5) * 7).toFixed(2)}deg`);
+  el.style.setProperty("--tx", `${((0.5 - y) * 7).toFixed(2)}deg`);
+  el.style.setProperty("--gx", `${(x * 100).toFixed(1)}%`);
+  el.style.setProperty("--gy", `${(y * 100).toFixed(1)}%`);
+  el.setAttribute("data-hover", "true");
+}
+function onTiltEnd(e: React.PointerEvent<HTMLDivElement>) {
+  const el = e.currentTarget;
+  el.style.setProperty("--ty", "0deg");
+  el.style.setProperty("--tx", "0deg");
+  el.removeAttribute("data-hover");
 }
 
 /** 画面に入ったら data-in="true" にする */
@@ -58,10 +171,12 @@ function InView({
   children,
   className,
   delay = 0,
+  tilt = false,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  tilt?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [on, setOn] = useState(false);
@@ -86,6 +201,8 @@ function InView({
       data-in={on}
       className={className}
       style={{ transitionDelay: `${delay}ms` }}
+      onPointerMove={tilt ? onTilt : undefined}
+      onPointerLeave={tilt ? onTiltEnd : undefined}
     >
       {children}
     </div>
@@ -104,7 +221,7 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <InView className={`lp-card ${className}`}>
+    <InView className={`lp-card ${className}`} tilt>
       <div className="lp-card-text">
         <h3>{title}</h3>
         <p>{body}</p>
@@ -146,7 +263,7 @@ export function LandingPage() {
 
       <main>
         {/* ヒーロー：画面の見本が、手前に起き上がってくる */}
-        <section className="lp-hero" data-scene>
+        <section className="lp-hero" data-scene data-camera>
           <div className="lp-hero-stick">
             <div className="lp-hero-head">
               <h1>
@@ -171,6 +288,29 @@ export function LandingPage() {
             <div className="lp-hero-device">
               <AppWindow />
             </div>
+            <p
+              className="lp-cap"
+              style={{ ["--o" as string]: "var(--o-a, 0)" }}
+            >
+              取引を、チャートで見返す。
+              <small>エントリーから決済までを、あとから確かめられます。</small>
+            </p>
+            <p
+              className="lp-cap"
+              style={{ ["--o" as string]: "var(--o-b, 0)" }}
+            >
+              ルールを守れたかも、残す。
+              <small>
+                記録・チャート・チェックが、ひとつの画面にまとまっています。
+              </small>
+            </p>
+            <p
+              className="lp-cap"
+              style={{ ["--o" as string]: "var(--o-c, 0)" }}
+            >
+              数字で、偏りを見つける。
+              <small>勝率や損益を、あとから落ち着いて見直せます。</small>
+            </p>
           </div>
         </section>
 
