@@ -52,9 +52,9 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
       </section>
 
       <section className="card space-y-3">
-        <h2 className="text-base font-bold">約定履歴のCSV</h2>
+        <h2 className="text-base font-bold">CSVファイル</h2>
         <p className="text-xs text-ink-mute">
-          楽天FX証券の約定履歴CSV（Shift_JIS）を、複数ファイルまとめて選べます。
+          楽天FX証券の約定履歴CSV（トレードの登録）か、注文履歴CSV（SL・TPの反映）を選びます（Shift_JIS）。約定履歴を先に取り込んでから、注文履歴を取り込んでください。2種類は同時に選べません。
         </p>
         <div
           onDragOver={(e) => {
