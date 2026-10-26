@@ -2,6 +2,7 @@
  * アプリケーションのルート定義
  */
 export const ROUTES = {
+  LP: "/lp",
   LOGIN: "/login",
   CALLBACK: "/callback",
   ONBOARDING: "/onboarding",

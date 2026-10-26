@@ -5,6 +5,7 @@ import { RequireGuest } from "@/features/auth/components/RequireGuest";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Toaster } from "@/components/common/Toast";
 import { NotFoundPage } from "@/components/common/NotFoundPage";
+import { LandingPage } from "@/features/landing/pages/LandingPage";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { CallbackPage } from "@/features/auth/pages/CallbackPage";
 import { RequireOnboarded } from "@/features/onboarding/components/RequireOnboarded";
@@ -34,6 +35,7 @@ export function App() {
       <Toaster />
       <SessionExpiredDialog />
       <Routes>
+        <Route path={ROUTES.LP} element={<LandingPage />} />
         <Route
           path={ROUTES.LOGIN}
           element={
