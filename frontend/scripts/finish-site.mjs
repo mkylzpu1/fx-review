@@ -3,4 +3,3 @@ import { copyFileSync, renameSync } from "node:fs";
 
 renameSync("dist-site/site.html", "dist-site/index.html");
 copyFileSync("dist-site/index.html", "dist-site/404.html");
-console.log("dist-site: index.html / 404.html を用意しました");
