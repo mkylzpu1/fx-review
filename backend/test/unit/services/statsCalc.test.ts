@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   cumulativeR,
+  dailySeries,
+  dateInZone,
   groupBy,
   hourInZone,
   judgeGroup,
@@ -154,5 +156,56 @@ describe("強み・弱み・要検証", () => {
     ]);
     expect(g).toHaveLength(1);
     expect(g[0]).toMatchObject({ key: "x", n: 2, avgR: 0 });
+  });
+});
+
+describe("日ごとの成績と累積", () => {
+  const at = (iso: string, pips: number, r: number | null, pnl: number) => ({
+    entryAt: iso,
+    pips,
+    rMultiple: r,
+    pnlJpy: pnl,
+  });
+
+  it("JSTの暦日でまとめ、累積を持つ（UTC 15:00 以降は翌日）", () => {
+    const d = dailySeries(
+      [
+        at("2026-10-01T14:59:00Z", 10, 1, 1000), // JST 10/1 23:59
+        at("2026-10-01T15:00:00Z", -4, -1, -400), // JST 10/2 00:00
+        at("2026-10-02T01:00:00Z", 6, null, 600), // JST 10/2
+      ],
+      "Asia/Tokyo",
+    );
+    expect(d.map((x) => x.date)).toEqual(["2026-10-01", "2026-10-02"]);
+    expect(d[1]).toMatchObject({
+      n: 2,
+      wins: 1,
+      pips: 2,
+      pnlJpy: 200,
+      r: -1,
+      rCount: 1,
+      cumulativePips: 12,
+      cumulativePnlJpy: 1200,
+      cumulativeR: 0,
+    });
+  });
+
+  it("R が無い日は rCount 0 で、累積Rは据え置き", () => {
+    const d = dailySeries(
+      [
+        at("2026-10-01T00:00:00Z", 5, 2, 500),
+        at("2026-10-02T00:00:00Z", 3, null, 300),
+      ],
+      "Asia/Tokyo",
+    );
+    expect(d[1].rCount).toBe(0);
+    expect(d[1].cumulativeR).toBe(2);
+  });
+
+  it("空なら空、他タイムゾーンも暦日を返す", () => {
+    expect(dailySeries([], "Asia/Tokyo")).toEqual([]);
+    expect(dateInZone("2026-10-01T20:00:00Z", "America/New_York")).toBe(
+      "2026-10-01",
+    );
   });
 });

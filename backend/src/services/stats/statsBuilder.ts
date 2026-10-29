@@ -6,6 +6,7 @@ import { OTHER_SESSION, SESSIONS } from "../../constants/sessions";
 import type { TradeView } from "../../types/trade";
 import {
   cumulativeR,
+  dailySeries,
   groupBy,
   hourInZone,
   maxDrawdown,
@@ -13,6 +14,7 @@ import {
   summarize,
   weekdayInZone,
   type CumulativePoint,
+  type DailyPoint,
   type Drawdown,
   type GroupStat,
   type StatTrade,
@@ -37,6 +39,8 @@ export interface StatsResult {
   summary: Summary;
   cumulative: CumulativePoint[];
   drawdown: Drawdown | null;
+  /** 日ごとの成績と累積（取引のあった日だけ・古い順） */
+  daily: DailyPoint[];
   bySession: GroupStat[];
   byRationale: GroupStat[];
   byRule: GroupStat[];
@@ -188,6 +192,7 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     summary: summarize(rows),
     cumulative: points,
     drawdown: maxDrawdown(points),
+    daily: dailySeries(rows, timezone),
     bySession,
     byRationale,
     byRule,

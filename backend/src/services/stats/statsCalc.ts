@@ -88,6 +88,80 @@ export function cumulativeR(trades: StatTrade[]): CumulativePoint[] {
   return out;
 }
 
+export interface DailyPoint {
+  /** エントリー日（表示タイムゾーン・YYYY-MM-DD） */
+  date: string;
+  n: number;
+  wins: number;
+  pips: number;
+  pnlJpy: number;
+  r: number;
+  /** R が計算できた件数（0 の日は R が「—」） */
+  rCount: number;
+  cumulativePips: number;
+  cumulativePnlJpy: number;
+  cumulativeR: number;
+}
+
+/** 表示タイムゾーンでの暦日（YYYY-MM-DD） */
+export function dateInZone(iso: string, timezone: string): string {
+  if (timezone === "Asia/Tokyo") {
+    return new Date(Date.parse(iso) + JST_OFFSET_MS).toISOString().slice(0, 10);
+  }
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: timezone,
+  }).format(new Date(iso));
+}
+
+/** エントリー日ごとの損益・pips・R と累積（取引のあった日だけ・古い順） */
+export function dailySeries(
+  trades: StatTrade[],
+  timezone: string,
+): DailyPoint[] {
+  const out: DailyPoint[] = [];
+  let cumPips = 0;
+  let cumPnl = 0;
+  let cumR = 0;
+  for (const t of sortAsc(trades)) {
+    if (t.pips === null) continue;
+    const date = dateInZone(t.entryAt, timezone);
+    let day = out[out.length - 1];
+    if (!day || day.date !== date) {
+      day = {
+        date,
+        n: 0,
+        wins: 0,
+        pips: 0,
+        pnlJpy: 0,
+        r: 0,
+        rCount: 0,
+        cumulativePips: 0,
+        cumulativePnlJpy: 0,
+        cumulativeR: 0,
+      };
+      out.push(day);
+    }
+    day.n += 1;
+    if (t.pips > 0) day.wins += 1;
+    day.pips = round(day.pips + t.pips, 1);
+    day.pnlJpy = round(day.pnlJpy + (t.pnlJpy ?? 0), 0);
+    if (t.rMultiple !== null) {
+      day.r = round(day.r + t.rMultiple, 2);
+      day.rCount += 1;
+    }
+    cumPips = round(cumPips + t.pips, 1);
+    cumPnl = round(cumPnl + (t.pnlJpy ?? 0), 0);
+    cumR = t.rMultiple !== null ? round(cumR + t.rMultiple, 2) : cumR;
+    day.cumulativePips = cumPips;
+    day.cumulativePnlJpy = cumPnl;
+    day.cumulativeR = cumR;
+  }
+  return out;
+}
+
 export interface Drawdown {
   /** ピークからの最大下落（0以下ではなく正の値で返す） */
   depth: number;

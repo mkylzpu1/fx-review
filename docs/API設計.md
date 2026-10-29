@@ -393,6 +393,7 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
   "summary": { "n": 120, "winRate": 55.0, "totalPips": 310.5, "totalPnlJpy": 31000, "rCount": 40, "rMissing": 80, "avgR": 0.31, "totalR": 12.4, "profitFactor": 1.4, "maxLossStreak": 5 },
   "cumulative": [{ "index": 1, "entryAt": "…", "r": 1.2, "cumulative": 1.2 }],
   "drawdown": { "depth": 3.1, "peakIndex": 10, "troughIndex": 18 },
+  "daily": [{ "date": "2026-10-01", "n": 3, "wins": 2, "pips": 12.5, "pnlJpy": 1250, "r": 1.4, "rCount": 3, "cumulativePips": 12.5, "cumulativePnlJpy": 1250, "cumulativeR": 1.4 }],
   "bySession": [{ "key": "tokyo", "label": "東京", "n": 20, "avgR": 0.4, "verdict": "strength", "shortfall": 0 }],
   "byRationale": [], "byRule": [],
   "insights": [{ "kind": "needs_check", "axis": "session", "label": "NY", "n": 6, "avgR": -0.2, "shortfall": 9 }],
