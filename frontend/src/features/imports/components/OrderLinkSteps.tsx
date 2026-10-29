@@ -91,7 +91,8 @@ export function OrderLinkPreviewStep({
         </p>
         {s.slOnProfitSide > 0 && (
           <p className="text-sm text-ink-sub">
-            利益側にあった逆指値{s.slOnProfitSide}件は、SLに入れません。
+            逆指値が建値より利益側にあった{s.slOnProfitSide}
+            件は、SLに入れていません（建値超えへ動かした逆指値・トレール等で、最初のSLは注文履歴CSVに残らないため）。必要ならトレード詳細でSLを入力してください。
           </p>
         )}
         {s.rejected > 0 && (
