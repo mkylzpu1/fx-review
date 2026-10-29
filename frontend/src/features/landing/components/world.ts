@@ -32,36 +32,6 @@ function mulberry32(a: number) {
 
 const hdr = (hex: string, k: number) => new THREE.Color(hex).multiplyScalar(k);
 
-/** カメラが通る道（位置）と、見つめる先 */
-const PATH = [
-  [-40, 62, 70],
-  [20, 44, 42],
-  [70, 26, 16],
-  [115, 9, 0],
-  [170, 7, 1],
-  [225, 24, -3],
-  [285, 11, 5],
-  [340, 6, 0],
-  [395, 30, 8],
-  [450, 52, 24],
-  [510, 78, 46],
-  [560, 100, 70],
-].map(([x, y, z]) => new THREE.Vector3(x, y, z));
-const LOOK = [
-  [60, 30, 0],
-  [90, 25, 0],
-  [130, 14, 0],
-  [165, 10, -2],
-  [225, 18, 2],
-  [275, 14, 2],
-  [335, 10, 0],
-  [390, 18, -2],
-  [450, 36, 0],
-  [500, 48, 0],
-  [540, 55, 0],
-  [580, 60, 0],
-].map(([x, y, z]) => new THREE.Vector3(x, y, z));
-
 const RGB_SHIFT = {
   uniforms: { tDiffuse: { value: null }, uAmount: { value: 0.0015 } },
   vertexShader: /* glsl */ `
@@ -415,8 +385,38 @@ export function createWorld(
   if (!reduceMotion)
     window.addEventListener("pointermove", onMove, { passive: true });
 
-  const path = new THREE.CatmullRomCurve3(PATH, false, "centripetal");
-  const look = new THREE.CatmullRomCurve3(LOOK, false, "centripetal");
+  // --- カメラワーク：チャートの高さに沿って、横・下・上・裏と見せ場を巡る ---
+  const emaAt = (x: number) => {
+    const f = Math.min(N - 1, Math.max(0, (x - X0) / SP));
+    const i = Math.min(N - 2, Math.floor(f));
+    return THREE.MathUtils.lerp(emaPts[0][i].y, emaPts[0][i + 1].y, f - i);
+  };
+  // [カメラx, 線からの高さ, カメラz, 注視x, 注視の高さ, 注視z]
+  const KEYS = [
+    [-45, 45, 95, 30, 5, 0], // 全景（斜め前から）
+    [30, 26, 58, 105, 6, 0], // 寄っていく
+    [110, 10, 34, 175, 8, 0], // 横から並走
+    [185, -30, 26, 250, 18, 0], // ローアングルで見上げる
+    [255, 22, 40, 320, 4, 0], // 持ち上がる
+    [325, 58, 28, 385, -4, 0], // 真上近くから見下ろす
+    [395, 42, -40, 450, 4, 0], // 高さを保ったまま裏側へ回り込む
+    [465, 18, -36, 520, 6, 0], // 裏側から並走
+    [545, 70, 105, 480, 8, 0], // 引いて全体を見渡す
+  ];
+  const path = new THREE.CatmullRomCurve3(
+    KEYS.map(
+      ([cx, dy, cz]) => new THREE.Vector3(cx, Math.max(4, emaAt(cx) + dy), cz),
+    ),
+    false,
+    "centripetal",
+  );
+  const look = new THREE.CatmullRomCurve3(
+    KEYS.map(
+      ([, , , lx, ldy, lz]) => new THREE.Vector3(lx, emaAt(lx) + ldy, lz),
+    ),
+    false,
+    "centripetal",
+  );
   const pos = new THREE.Vector3();
   const tgt = new THREE.Vector3();
   const tan0 = new THREE.Vector3();
