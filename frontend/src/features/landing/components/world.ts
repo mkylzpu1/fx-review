@@ -79,7 +79,8 @@ export function createWorld(
   renderer.toneMappingExposure = 1.05;
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(BG, small ? 0.0085 : 0.0068);
+  const fogBase = small ? 0.0085 : 0.0068;
+  scene.fog = new THREE.FogExp2(BG, fogBase);
   const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 900);
   scene.add(camera);
 
@@ -395,11 +396,11 @@ export function createWorld(
   // 酔わないよう、距離をとって同じ側からゆっくり進む
   const KEYS = [
     [-60, 60, 130, 40, 5, 0], // 全景
-    [80, 40, 100, 160, 5, 0],
-    [200, 30, 90, 280, 10, 0],
-    [320, 70, 80, 400, 0, 0],
-    [440, 55, 105, 500, 5, 0],
-    [550, 85, 140, 470, 8, 0], // 引いて全体を見渡す
+    [80, 55, 140, 170, 5, 0],
+    [210, 50, 140, 290, 8, 0],
+    [340, 75, 140, 410, 0, 0],
+    [410, 70, 200, 350, 5, 0], // 遠ざかりながら
+    [300, 25, 330, 300, 5, 0], // 遠くから正面でチャート全体を捉える
   ];
   const path = new THREE.CatmullRomCurve3(
     KEYS.map(
@@ -455,6 +456,8 @@ export function createWorld(
     mouseS.lerp(mouse, Math.min(1, dt * 3));
 
     const u = Math.min(0.9999, Math.max(0.0001, pS));
+    const fogK = THREE.MathUtils.smoothstep(u, 0.7, 1);
+    (scene.fog as THREE.FogExp2).density = fogBase * (1 - 0.8 * fogK);
     path.getPointAt(u, pos);
     look.getPointAt(u, tgt);
     path.getTangentAt(u, tan0);
