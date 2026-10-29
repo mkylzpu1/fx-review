@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
-import { ShowChart } from "./ShowChart";
 import { ShowExport } from "./ShowExport";
 import { ShowImport } from "./ShowImport";
 import { ShowRules } from "./ShowRules";
 import { ShowShare } from "./ShowShare";
-import { ShowStats } from "./ShowStats";
+import { ShotFrame } from "./ShotFrame";
 import { ShowWeekly } from "./ShowWeekly";
 
 interface Feature {
@@ -35,7 +34,14 @@ const FEATURES: Feature[] = [
       "凡例を押すだけで、線ごとに表示・非表示を切り替え",
       "EMAを重ねて、そのときの相場の流れも確認",
     ],
-    ui: <ShowChart />,
+    ui: (
+      <ShotFrame
+        name="trade-detail"
+        alt="トレード詳細の実際の画面。1分足のチャートにエントリー・決済の線、右に計画と結果のパネル"
+        width={2630}
+        height={1724}
+      />
+    ),
   },
   {
     id: "share",
@@ -67,7 +73,14 @@ const FEATURES: Feature[] = [
       "今日・30日・90日・今月・すべてで期間を切り替え",
       "SLがなくRが出せない記録は、「R未計算」として別に数える",
     ],
-    ui: <ShowStats />,
+    ui: (
+      <ShotFrame
+        name="stats"
+        alt="統計の実際の画面。期間の切り替え、勝率・PFなどの指標、日々の成長と累積Rのグラフ"
+        width={2562}
+        height={1506}
+      />
+    ),
   },
   {
     id: "weekly",
@@ -114,7 +127,7 @@ export function Showcase() {
       <header className="lp-show-head">
         <h2 id="show-h">実際の画面で、見てください。</h2>
         <p>
-          ここに並ぶのは、アプリの画面と同じ作りの見本です。ボタンや凡例は、押して確かめられます。
+          ここに並ぶのは、アプリの実際の画面と、アプリと同じ作りの見本です。見本のボタンは、押して確かめられます。
         </p>
       </header>
 
