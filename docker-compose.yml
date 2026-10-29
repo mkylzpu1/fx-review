@@ -11,8 +11,10 @@ services:
     container_name: fx-review-postgres
     restart: unless-stopped
     ports:
-      # ホスト側は5433（他プロジェクトのPostgreSQLが5432を使っていても衝突しないように）
-      - "5433:5432"
+      # ホスト側は5433（他プロジェクトのPostgreSQLが5432を使っていても衝突しないように）。
+      # 127.0.0.1 に限定する: 付けないと同じWi-Fi上の他の端末からも、
+      # 初期パスワード（postgres/postgres）でDBに入れてしまう。
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
