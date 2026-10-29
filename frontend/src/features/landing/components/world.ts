@@ -19,6 +19,7 @@ export interface WorldHandle {
 }
 
 const BG = "#05070A";
+const EXPOSURE = 1.4;
 
 function mulberry32(a: number) {
   return () => {
@@ -76,7 +77,7 @@ export function createWorld(
   renderer.setPixelRatio(pr);
   renderer.setClearColor(BG);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = EXPOSURE;
 
   const scene = new THREE.Scene();
   const fogBase = small ? 0.0085 : 0.0068;
@@ -85,11 +86,11 @@ export function createWorld(
   scene.add(camera);
 
   // --- 光 ---
-  scene.add(new THREE.AmbientLight("#8aa3a0", 0.55));
-  const keyA = new THREE.DirectionalLight("#bff5e6", 2.6);
+  scene.add(new THREE.AmbientLight("#9db5b2", 1.0));
+  const keyA = new THREE.DirectionalLight("#bff5e6", 3.4);
   keyA.position.set(-60, 100, 40);
   scene.add(keyA);
-  const keyB = new THREE.DirectionalLight("#ff9aa8", 1.5);
+  const keyB = new THREE.DirectionalLight("#ff9aa8", 2.0);
   keyB.position.set(80, 40, -60);
   scene.add(keyB);
   const camLight = new THREE.PointLight("#6EE7C8", 650, 80, 2);
@@ -188,14 +189,14 @@ export function createWorld(
   const upMat = new THREE.MeshStandardMaterial({
     color: "#1c4a3d",
     emissive: "#2fbf9d",
-    emissiveIntensity: 0.28,
+    emissiveIntensity: 0.45,
     roughness: 0.38,
     metalness: 0.55,
   });
   const dnMat = new THREE.MeshStandardMaterial({
     color: "#4d1f29",
     emissive: "#cc4457",
-    emissiveIntensity: 0.26,
+    emissiveIntensity: 0.42,
     roughness: 0.38,
     metalness: 0.55,
   });
@@ -247,7 +248,7 @@ export function createWorld(
   scene.add(floor);
   const grid = new THREE.GridHelper(1500, 150, "#6EE7C8", "#6EE7C8");
   (grid.material as THREE.LineBasicMaterial).transparent = true;
-  (grid.material as THREE.LineBasicMaterial).opacity = 0.11;
+  (grid.material as THREE.LineBasicMaterial).opacity = 0.16;
   (grid.material as THREE.LineBasicMaterial).depthWrite = false;
   grid.position.set(300, 0.03, 0);
   grid.renderOrder = 2;
@@ -440,7 +441,7 @@ export function createWorld(
     // 入場：少し広角から締まる
     const it = started ? Math.min(1, (time - startAt) / 2.6) : 0;
     const ease = 1 - Math.pow(1 - it, 3);
-    renderer.toneMappingExposure = 1.05 * (0.15 + 0.85 * ease);
+    renderer.toneMappingExposure = EXPOSURE * (0.15 + 0.85 * ease);
 
     const bank = THREE.MathUtils.clamp((tan1.z - tan0.z) * -7, -0.06, 0.06);
     camera.position.copy(pos);
