@@ -1,11 +1,9 @@
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/constants/routes";
-import { buildSyncCommand } from "../utils/syncCommand";
 import type { CommitResult } from "../types";
 
 /** ③ 取り込み完了。ローソク足の同期が必要なことを案内する */
 export function DoneStep({ result }: { result: CommitResult }) {
-  const command = buildSyncCommand(result.entryRange);
   return (
     <div className="space-y-4">
       <section className="card space-y-3" aria-live="polite">
@@ -47,18 +45,14 @@ export function DoneStep({ result }: { result: CommitResult }) {
         </ul>
       </section>
 
-      {command && (
-        <section className="card space-y-2">
-          <h2 className="text-base font-bold">チャートを表示するには</h2>
-          <p className="text-sm text-ink-sub">
-            ローソク足は手元で同期します。次のコマンドを backend
-            で実行すると、チャートとMFE / MAEが表示されます（日付はUTC）。
-          </p>
-          <pre className="num overflow-x-auto rounded-btn bg-bg p-3 text-sm">
-            {command}
-          </pre>
-        </section>
-      )}
+      <section className="card space-y-2">
+        <h2 className="text-base font-bold">チャートを表示するには</h2>
+        <p className="text-sm text-ink-sub">
+          MT5で「CSV書き出し」ボタンを押したあと、トレード一覧の「全トレードの足を更新」を押すと、
+          チャートとMFE / MAEが表示されます（<code>make dev</code>{" "}
+          で起動しているときに使えます）。
+        </p>
+      </section>
 
       <div className="flex justify-end gap-2">
         <Link className="btn" to={ROUTES.TRADES}>

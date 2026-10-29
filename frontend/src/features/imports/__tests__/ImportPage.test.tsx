@@ -196,7 +196,7 @@ describe("CSV取り込み", () => {
     expect(screen.queryByText("取り込み済みの扱い")).toBeNull();
   });
 
-  it("完了後に、結果・同期コマンド・未入力キューへのリンクを出す", async () => {
+  it("完了後に、結果・足の更新の案内・未入力キューへのリンクを出す", async () => {
     vi.mocked(apiClient.post).mockResolvedValueOnce(previewOf());
     renderPage();
     await chooseFile();
@@ -206,11 +206,8 @@ describe("CSV取り込み", () => {
     await userEvent.click(screen.getByRole("button", { name: "取り込む" }));
 
     expect(await screen.findByText("取り込みました")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "npm run candles:sync -- --from 2026-10-01 --to 2026-10-23",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/全トレードの足を更新/)).toBeInTheDocument();
+    expect(screen.queryByText(/candles:sync/)).toBeNull();
     const link = screen.getByRole("link", { name: "入力を続ける" });
     expect(link).toHaveAttribute("href", "/trades/queue");
   });

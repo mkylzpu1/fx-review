@@ -5,7 +5,6 @@ import {
   decodeShiftJis,
   readCsvFiles,
 } from "../utils/readCsvFile";
-import { buildSyncCommand } from "../utils/syncCommand";
 
 /** 「ドル/円」をShift_JISにしたバイト列 */
 const SJIS = new Uint8Array([0x83, 0x68, 0x83, 0x8b, 0x2f, 0x89, 0x7e]);
@@ -42,19 +41,5 @@ describe("readCsvFiles", () => {
     const r = await readCsvFiles(many);
     expect(r.files).toHaveLength(MAX_FILES);
     expect(r.failures).toHaveLength(2);
-  });
-});
-
-describe("buildSyncCommand", () => {
-  it("取り込み範囲の日付（UTC）で同期コマンドを作る", () => {
-    expect(
-      buildSyncCommand({
-        from: "2026-10-01T13:10:00Z",
-        to: "2026-10-23T06:21:00Z",
-      }),
-    ).toBe("npm run candles:sync -- --from 2026-10-01 --to 2026-10-23");
-  });
-  it("範囲が無ければ null", () => {
-    expect(buildSyncCommand(null)).toBeNull();
   });
 });
