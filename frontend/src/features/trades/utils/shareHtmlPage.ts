@@ -198,7 +198,7 @@ function Pane(idx,tf){
     p.emaSeries.forEach(function(s){chart.removeSeries(s);});p.emaSeries=[];
     state.emas.forEach(function(e,i){
       if(!e.visible)return;
-      var s=chart.addSeries(LC.LineSeries,{color:emaColor(i),lineWidth:2,priceLineVisible:false,lastValueVisible:false,title:"EMA"+e.period});
+      var s=chart.addSeries(LC.LineSeries,{color:emaColor(i),lineWidth:1,priceLineVisible:false,lastValueVisible:false,title:"EMA"+e.period});
       s.setData(ema(cs,e.period));p.emaSeries.push(s);
     });
     var m=[],buy=D.side==="buy";

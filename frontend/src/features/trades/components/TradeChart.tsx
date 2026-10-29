@@ -325,7 +325,7 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
       emaRefs.current = data.emaLines.map((line, i) => {
         const s = chart.addSeries(LineSeries, {
           color: EMA_COLORS[i % EMA_COLORS.length],
-          lineWidth: 2,
+          lineWidth: 1,
           priceLineVisible: false,
           lastValueVisible: false,
           title: `EMA${line.period}`,
