@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { SegmentedControl } from "@/components/common/SegmentedControl";
 import type { DailyPoint } from "../types";
 import {
   DAILY_METRICS,
@@ -18,8 +19,8 @@ interface Props {
 
 const W = 640;
 const PAD = { l: 52, r: 12 };
-const LINE = { t: 12, h: 150 };
-const BAR = { t: LINE.t + LINE.h + 24, h: 100 };
+const LINE = { t: 12, h: 110 };
+const BAR = { t: LINE.t + LINE.h + 22, h: 70 };
 const H = BAR.t + BAR.h + 22;
 
 /**
@@ -75,27 +76,12 @@ export function DailyGrowthChart({ daily }: Props) {
   return (
     <figure className="space-y-2" data-testid="daily-growth">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div
-          role="group"
-          aria-label="表示する指標"
-          className="inline-flex overflow-hidden rounded-btn border border-field"
-        >
-          {DAILY_METRICS.map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              aria-pressed={metric === m.key}
-              onClick={() => setMetric(m.key)}
-              className={`min-h-touch px-4 text-sm font-medium transition-colors ${
-                metric === m.key
-                  ? "bg-accent font-bold text-bg"
-                  : "text-ink hover:bg-accent/10"
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          label="表示する指標"
+          value={metric}
+          options={DAILY_METRICS.map((m) => ({ value: m.key, label: m.label }))}
+          onChange={setMetric}
+        />
         <p className="text-sm">
           累積{" "}
           <span className={`num font-bold ${tone}`}>
