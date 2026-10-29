@@ -128,7 +128,8 @@ export function createWorld(
   const N = small ? 110 : 150;
   const SP = 4;
   const X0 = -24;
-  const rowsZ = small ? [-9, 9, -20, 20] : [-9, 9, -20, 20, -31, 31];
+  // チャートは1本だけ。複数並べると散らかって見え、描画も重くなる
+  const rowsZ = [0];
 
   const up: Inst[] = [];
   const dn: Inst[] = [];
@@ -170,7 +171,7 @@ export function createWorld(
       price = c;
       ema += (c - ema) * 0.14;
       const x = X0 + i * SP + (rnd() - 0.5) * 0.4;
-      const z = rz + (rnd() - 0.5) * 3;
+      const z = rz;
       const w = 2.2 + rnd() * 0.6;
       const bh = Math.max(1.2, Math.abs(c - o));
       const by = (o + c) / 2;
@@ -287,7 +288,7 @@ export function createWorld(
     toneMapped: false,
   });
   const tubes: THREE.Mesh[] = [];
-  [0, 1].forEach((ri) => {
+  [0].forEach((ri) => {
     const curve = new THREE.CatmullRomCurve3(emaPts[ri]);
     const geo = new THREE.TubeGeometry(curve, N * 2, 0.3, 6, false);
     const t = new THREE.Mesh(geo, tubeMat);
