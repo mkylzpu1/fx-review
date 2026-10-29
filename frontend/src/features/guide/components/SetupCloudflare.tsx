@@ -6,13 +6,13 @@ export const CF_STEPS = ["cf-kv", "cf-worker", "cf-token", "cf-env"];
 export function SetupCloudflare() {
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold">
+      <h3 className="text-base font-bold">
         C. Cloudflareを設定する
-        <span className="ml-3 rounded-full border border-line px-3 py-0.5 align-middle text-sm font-normal text-ink-sub">
+        <span className="ml-3 rounded-full border border-line px-3 py-0.5 align-middle text-xs font-normal text-ink-sub">
           使う人だけ
         </span>
       </h3>
-      <p className="text-base leading-relaxed text-ink-sub">
+      <p className="text-sm leading-relaxed text-ink-sub">
         トレード画面の「公開してURLを作る」を使うための設定です。評価用のファイルが、24時間で自動的に消えるURLになります。
         <b className="text-ink">使わないなら、ここは飛ばして大丈夫です。</b>
         他の機能は、設定なしで動きます。無料の範囲で使えます。

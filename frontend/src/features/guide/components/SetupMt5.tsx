@@ -12,8 +12,8 @@ export const MT5_STEPS = [
 export function SetupMt5() {
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold">B. MT5を設定する</h3>
-      <p className="text-base leading-relaxed text-ink-sub">
+      <h3 className="text-base font-bold">B. MT5を設定する</h3>
+      <p className="text-sm leading-relaxed text-ink-sub">
         ローソク足の元データは、MT5から取り出します。専用の小さなプログラム（EA）を入れると、チャートに
         「CSV書き出し」ボタンが出ます。
       </p>

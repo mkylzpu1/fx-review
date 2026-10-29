@@ -29,14 +29,14 @@ export function GuideSection({
       className="scroll-mt-24 space-y-6"
     >
       <header className="space-y-2 border-b border-line pb-4">
-        <p className="text-sm font-bold text-accent-link">{eyebrow}</p>
+        <p className="text-xs font-bold text-accent-link">{eyebrow}</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <h2 id={`${id}-title`} className="text-2xl font-bold">
+          <h2 id={`${id}-title`} className="text-lg font-bold">
             {title}
           </h2>
           {stepIds && (
             <span
-              className={`rounded-full border px-3 py-0.5 text-sm ${
+              className={`rounded-full border px-3 py-0.5 text-xs ${
                 count === stepIds.length
                   ? "border-profit text-profit"
                   : "border-line text-ink-sub"
@@ -47,7 +47,7 @@ export function GuideSection({
             </span>
           )}
         </div>
-        <p className="text-base leading-relaxed text-ink-sub">{lead}</p>
+        <p className="text-sm leading-relaxed text-ink-sub">{lead}</p>
       </header>
       {children}
     </section>
@@ -85,8 +85,8 @@ export function Step({
         {isDone ? <Check size={20} /> : no}
       </span>
       <div className="min-w-0 flex-1 space-y-3">
-        <h3 className="text-lg font-bold leading-snug">{title}</h3>
-        <div className="space-y-3 text-base leading-relaxed">{children}</div>
+        <h3 className="text-base font-bold leading-snug">{title}</h3>
+        <div className="space-y-3 text-sm leading-relaxed">{children}</div>
         <button
           type="button"
           aria-pressed={isDone}
@@ -159,8 +159,8 @@ export function Callout({
       role="note"
       className={`rounded-card border-2 bg-surface p-5 ${color}`}
     >
-      <p className="text-base font-bold">{title}</p>
-      <div className="mt-2 space-y-2 text-base leading-relaxed text-ink">
+      <p className="text-sm font-bold">{title}</p>
+      <div className="mt-2 space-y-2 text-sm leading-relaxed text-ink">
         {children}
       </div>
     </div>
@@ -177,11 +177,11 @@ export function Trouble({
 }) {
   return (
     <details className="group rounded-card border border-line bg-card">
-      <summary className="flex min-h-touch cursor-pointer items-center px-5 py-3 text-base font-bold marker:content-none">
+      <summary className="flex min-h-touch cursor-pointer items-center px-5 py-3 text-sm font-bold marker:content-none">
         <span className="mr-2 text-ink-sub group-open:rotate-90">▶</span>
         {question}
       </summary>
-      <div className="space-y-2 border-t border-line px-5 py-4 text-base leading-relaxed">
+      <div className="space-y-2 border-t border-line px-5 py-4 text-sm leading-relaxed">
         {children}
       </div>
     </details>

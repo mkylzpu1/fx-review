@@ -6,7 +6,7 @@ export const LOCAL_STEPS = ["local-tools", "local-setup", "local-dev"];
 export function SetupLocal() {
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold">A. パソコンで起動する</h3>
+      <h3 className="text-base font-bold">A. パソコンで起動する</h3>
       <Callout title="このアプリは、自分のパソコンの中だけで動かします">
         <p>
           インターネット上には置きません。データベース・画面・MT5のデータを読む部品は、すべて手元で動きます。

@@ -49,8 +49,8 @@ export function CandleSection() {
         </Step>
       </StepList>
       <div className="space-y-3">
-        <h3 className="text-xl font-bold">知っておくと安心なこと</h3>
-        <ul className="list-disc space-y-2 pl-6 text-base leading-relaxed">
+        <h3 className="text-base font-bold">知っておくと安心なこと</h3>
+        <ul className="list-disc space-y-2 pl-6 text-sm leading-relaxed">
           <li>
             書き出されるのは、直近180日分の、確定した足だけです（形成中の最新の1本は含みません）。
           </li>
@@ -65,7 +65,7 @@ export function CandleSection() {
         </ul>
       </div>
       <div className="space-y-3">
-        <h3 className="text-xl font-bold">うまくいかないとき</h3>
+        <h3 className="text-base font-bold">うまくいかないとき</h3>
         <Trouble question="「取り込める足がありませんでした」と出る">
           <p>MT5の「CSV書き出し」を、先に押したか確認します。</p>
           <p>

@@ -48,9 +48,9 @@ export function GuidePage() {
         <aside className="hidden lg:block">
           <nav
             aria-label="ガイドの目次"
-            className="sticky top-20 space-y-1 text-base"
+            className="sticky top-20 space-y-1 text-sm"
           >
-            <p className="mb-2 text-sm font-bold text-ink-sub">目次</p>
+            <p className="mb-2 text-xs font-bold text-ink-sub">目次</p>
             {TOC.map((t) => (
               <a
                 key={t.href}
@@ -69,8 +69,8 @@ export function GuidePage() {
         <div className="min-w-0 space-y-12">
           <header className="space-y-5">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold leading-tight">ご利用ガイド</h1>
-              <p className="text-base leading-relaxed text-ink-sub">
+              <h1 className="text-xl font-bold leading-tight">ご利用ガイド</h1>
+              <p className="text-sm leading-relaxed text-ink-sub">
                 FXレビューを使い始めるための、3つのステップです。このアプリは、自分のパソコンの中だけで動かします。
               </p>
             </div>
@@ -81,10 +81,10 @@ export function GuidePage() {
                     href={f.href}
                     className="card block h-full space-y-1 p-4 hover:bg-surface"
                   >
-                    <span className="text-sm font-bold text-accent-link">
+                    <span className="text-xs font-bold text-accent-link">
                       STEP {i + 1}
                     </span>
-                    <span className="block text-lg font-bold">{f.title}</span>
+                    <span className="block text-base font-bold">{f.title}</span>
                     <span className="block text-sm leading-relaxed text-ink-sub">
                       {f.body}
                     </span>
