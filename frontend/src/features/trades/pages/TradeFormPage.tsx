@@ -18,9 +18,12 @@ import {
   peekLoginDraft,
   registerDraft,
 } from "@/features/session/draftStore";
+import { useHotkeys } from "@/hooks/useHotkeys";
 import { toast } from "@/stores/toastStore";
 import { isoToJstInput, SIDE_LABEL, formatJst } from "@/utils/format";
+import { ChartPanel } from "../components/ChartPanel";
 import { TradeFormBody } from "../components/TradeFormBody";
+import { useChartUiStore } from "../chartUiStore";
 import {
   findNextUnfilledId,
   useSaveTrade,
@@ -31,6 +34,7 @@ import {
   emptyForm,
   fromTrade,
   isDirty,
+  parseNum,
   toPayload,
   validateForm,
   type FormErrors,
@@ -124,6 +128,34 @@ function TradeFormInner({ trade, settings, pairs, tags, rules }: InnerProps) {
   const [leaveTo, setLeaveTo] = useState<string | null>(null);
   const exitOpen = useRef(isEdit || !!initial.exitAt).current;
 
+  // 編集中は、フォームとチャートを同じ画面の中で切り替えて見られる（入力はフォームを隠すだけで保たれる）
+  const [view, setView] = useState<"form" | "chart">("form");
+  const showChart = isEdit && view === "chart";
+  const toggleView = () => {
+    if (!isEdit) return;
+    useChartUiStore.getState().setFullscreen(false);
+    setView((v) => (v === "form" ? "chart" : "form"));
+  };
+  // C: 切り替え（入力欄の中では効かない）。Alt+C は入力欄の中でも効く
+  useHotkeys({ c: toggleView }, isEdit);
+  const toggleRef = useRef(toggleView);
+  toggleRef.current = toggleView;
+  useEffect(() => {
+    if (!isEdit) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.isComposing || !e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.code !== "KeyC") return;
+      if (document.querySelector('[role="dialog"], [role="alertdialog"]'))
+        return;
+      e.preventDefault();
+      toggleRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isEdit]);
+  // 画面を離れるとき、チャートの全画面を解除する
+  useEffect(() => () => useChartUiStore.getState().setFullscreen(false), []);
+
   const dirty = isDirty(form, initial) && leaveTo === null;
   const formRef = useRef({ form, dirty });
   formRef.current = { form, dirty };
@@ -164,7 +196,9 @@ function TradeFormInner({ trade, settings, pairs, tags, rules }: InnerProps) {
     if (Object.keys(found).length > 0) {
       setErrors(found);
       const first = (Object.keys(found) as (keyof FormErrors)[])[0];
-      document.getElementById(FIELD_IDS[first])?.focus();
+      // チャート表示中はフォームが隠れているので、先にフォームへ戻してからフォーカスする
+      setView("form");
+      setTimeout(() => document.getElementById(FIELD_IDS[first])?.focus(), 0);
       return null;
     }
     try {
@@ -238,16 +272,48 @@ function TradeFormInner({ trade, settings, pairs, tags, rules }: InnerProps) {
         )}
       </div>
 
-      <TradeFormBody
-        form={form}
-        errors={errors}
-        preview={preview}
-        pairs={pickerPairs}
-        tags={tags}
-        rules={rules}
-        exitOpen={exitOpen}
-        onChange={onChange}
-      />
+      {trade && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            className="btn min-h-touch"
+            aria-pressed={showChart}
+            onClick={toggleView}
+          >
+            {showChart ? "フォームに戻る" : "チャートを見る"}
+            <kbd className="ml-2 rounded border border-line px-1 text-xs text-ink-sub">
+              C
+            </kbd>
+          </button>
+        </div>
+      )}
+
+      {showChart && trade && (
+        // 入力中のSL・TPをチャートの線にも反映する（保存前の値）
+        <ChartPanel
+          trade={{
+            ...trade,
+            slPrice: parseNum(form.slPrice),
+            tpPrice: parseNum(form.tpPrice),
+          }}
+          pipSize={pairs.find((p) => p.symbol === trade.pair)?.pipSize ?? 0.01}
+          settings={settings ?? null}
+        />
+      )}
+
+      {/* チャート表示中もフォームは消さず隠すだけにして、入力内容とスクロール位置を保つ */}
+      <div hidden={showChart}>
+        <TradeFormBody
+          form={form}
+          errors={errors}
+          preview={preview}
+          pairs={pickerPairs}
+          tags={tags}
+          rules={rules}
+          exitOpen={exitOpen}
+          onChange={onChange}
+        />
+      </div>
 
       <div className="flex flex-wrap justify-end gap-2">
         <button className="btn" onClick={cancel}>
