@@ -13,7 +13,7 @@ export function ShotFrame({
   return (
     <figure className="lp-win lp-shot">
       <img
-        src={`${import.meta.env.BASE_URL}lp/${name}.webp`}
+        src={`${import.meta.env.BASE_URL}shots/${name}.webp`}
         alt={alt}
         width={width}
         height={height}
