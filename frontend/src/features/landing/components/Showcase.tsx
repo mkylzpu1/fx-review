@@ -3,6 +3,7 @@ import { ShowChart } from "./ShowChart";
 import { ShowExport } from "./ShowExport";
 import { ShowImport } from "./ShowImport";
 import { ShowRules } from "./ShowRules";
+import { ShowShare } from "./ShowShare";
 import { ShowStats } from "./ShowStats";
 import { ShowWeekly } from "./ShowWeekly";
 
@@ -33,9 +34,19 @@ const FEATURES: Feature[] = [
     points: [
       "凡例を押すだけで、線ごとに表示・非表示を切り替え",
       "EMAを重ねて、そのときの相場の流れも確認",
-      "共有したいチャートは、24時間で消えるURLで相手に見せられる",
     ],
     ui: <ShowChart />,
+  },
+  {
+    id: "share",
+    title: "チャート分析の詳細も、URLひとつで共有。",
+    lead: "ネット公開の設定をしておくと、トレード画面の「公開してURLを作る」で、操作できるチャートが評価用のURLになります。相手はログインなしで、時間足もEMAも切り替えながら、エントリーの計画を見られます。",
+    points: [
+      "SL・TP・RRに加えて、根拠のタグ・メモ・SL/TPの理由も、含めるかどうかを選べる",
+      "損益額・口座・感情タグ・振り返りの記述は、共有されない",
+      "URLは24時間で自動的に消える（公開の設定は、ご利用ガイドの手順C）",
+    ],
+    ui: <ShowShare />,
   },
   {
     id: "rules",
