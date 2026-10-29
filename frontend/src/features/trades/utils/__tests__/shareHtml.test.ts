@@ -200,6 +200,7 @@ describe("公開ページのプレビュー用タグ（LINEなど）", () => {
     expect(h).toContain(
       '<meta property="og:image" content="{{ORIGIN}}/og.png">',
     );
+    expect(h).toContain('<meta property="og:image:type" content="image/png">');
     expect(h).toContain('<meta property="og:url" content="{{URL}}">');
     expect(h).toContain(
       '<meta name="twitter:card" content="summary_large_image">',

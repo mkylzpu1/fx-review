@@ -28,6 +28,7 @@ export function buildShareHeadMeta(escapedTitle: string): string {
     `<meta property="og:description" content="${d}">`,
     `<meta property="og:url" content="{{URL}}">`,
     `<meta property="og:image" content="{{ORIGIN}}/og.png">`,
+    `<meta property="og:image:type" content="image/png">`,
     `<meta property="og:image:width" content="1200">`,
     `<meta property="og:image:height" content="630">`,
     `<meta property="og:image:alt" content="${SITE_NAME}">`,
