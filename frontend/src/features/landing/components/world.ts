@@ -82,7 +82,7 @@ export function createWorld(
     antialias: false,
     powerPreference: "high-performance",
   });
-  const pr = Math.min(window.devicePixelRatio, small ? 1.25 : 1.5);
+  let pr = Math.min(window.devicePixelRatio, small ? 1 : 1.25);
   renderer.setPixelRatio(pr);
   renderer.setClearColor(BG);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -102,8 +102,6 @@ export function createWorld(
   const keyB = new THREE.DirectionalLight("#ff9aa8", 2.0);
   keyB.position.set(80, 40, -60);
   scene.add(keyB);
-  const camLight = new THREE.PointLight("#6EE7C8", 650, 80, 2);
-  camera.add(camLight);
 
   // --- ローソク足の街 ---
   const N = small ? 110 : 150;
@@ -261,6 +259,7 @@ export function createWorld(
   const M4 = new THREE.Matrix4();
   const PV = new THREE.Vector3();
   const SV = new THREE.Vector3();
+  let lastFront = -1;
   const setReveal = (front: number) => {
     parts.forEach(({ im, items }) => {
       let dirty = false;
@@ -289,10 +288,8 @@ export function createWorld(
   // --- 床と格子 ---
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(1500, 700),
-    new THREE.MeshStandardMaterial({
-      color: "#080b0e",
-      roughness: 0.3,
-      metalness: 0.85,
+    new THREE.MeshBasicMaterial({
+      color: "#0b1014",
       transparent: true,
       opacity: 0.84,
       depthWrite: false,
@@ -340,7 +337,7 @@ export function createWorld(
     toneMapped: false,
   });
   const COMETS = 4;
-  const TRAIL = 6;
+  const TRAIL = 2;
   const comets: { head: THREE.Mesh; trail: THREE.Mesh[] }[] = [];
   for (let i = 0; i < COMETS; i++) {
     const head = new THREE.Mesh(cometGeo, cometMat);
@@ -461,6 +458,9 @@ export function createWorld(
   const clock = new THREE.Clock();
 
   // 画面外・非表示タブでは描画を止める（無駄なGPU負荷を避ける）
+  let frames = 0;
+  let accDt = 0;
+  let accN = 0;
   let visible = true;
   const io = new IntersectionObserver(
     ([e]) => {
@@ -478,6 +478,20 @@ export function createWorld(
       return;
     }
     const dt = Math.min(clock.getDelta(), 0.05);
+
+    // 端末が重いときは解像度を段階的に下げる（最初の読み込み直後は除く）
+    if (++frames > 90) {
+      accDt += dt;
+      if (++accN >= 40) {
+        if (accDt / accN > 0.024 && pr > 0.75) {
+          pr = Math.max(0.75, pr - 0.25);
+          renderer.setPixelRatio(pr);
+          resize();
+        }
+        accDt = 0;
+        accN = 0;
+      }
+    }
     const time = reduceMotion ? 0 : clock.elapsedTime;
     if (started && startAt === -99) startAt = time;
 
@@ -498,7 +512,10 @@ export function createWorld(
           END_X + GROW_W + 8,
           THREE.MathUtils.clamp(u / 0.85, 0, 1),
         );
-    setReveal(front);
+    if (front !== lastFront) {
+      lastFront = front;
+      setReveal(front);
+    }
     const frac = THREE.MathUtils.clamp((front - X0) / (END_X - X0), 0.02, 1);
     const emaGeo = tubes[0].geometry;
     if (emaGeo.index) {
@@ -532,7 +549,7 @@ export function createWorld(
       emaCurve.getPointAt(base, cp);
       c.head.position.copy(cp).setY(cp.y + 0.8);
       c.trail.forEach((t, k) => {
-        emaCurve.getPointAt(Math.max(0, base - (k + 1) * 0.006), cp);
+        emaCurve.getPointAt(Math.max(0, base - (k + 1) * 0.012), cp);
         t.position.copy(cp).setY(cp.y + 0.8);
       });
     });
