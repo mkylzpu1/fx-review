@@ -5,7 +5,7 @@ Description: App - ローカル開発環境
 
 Globals:
   Function:
-    Runtime: nodejs20.x
+    Runtime: nodejs24.x
     Architectures:
       - arm64
     Timeout: 30
