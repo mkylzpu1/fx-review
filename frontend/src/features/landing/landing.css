@@ -256,6 +256,10 @@
     gap: 18px;
     padding: 64px 20px 20px;
   }
+  /* 縦並びでは文章を高さいっぱいに伸ばさない（図が下に離れてしまう） */
+  .lp-chap:has(.lp-glass) .lp-chap-text {
+    flex: none;
+  }
   .lp-chap:has(.lp-glass) h2 {
     font-size: clamp(2.6rem, 14vw, 4rem);
   }
