@@ -245,20 +245,6 @@ export function LandingPage() {
 
   return (
     <div className="lp">
-      <nav className="lp-nav">
-        <div className="lp-nav-in">
-          <Link to={ROUTES.LP} className="lp-brand">
-            <BrandMark size={20} />
-            とれみる
-          </Link>
-          <div className="lp-nav-links">
-            <Link to={ROUTES.GUIDE} className="lp-pill-sm">
-              ご利用ガイド
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       {webgl ? (
         <section
           ref={worldRef}

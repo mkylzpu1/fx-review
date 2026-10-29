@@ -23,60 +23,6 @@
   color: transparent;
 }
 
-/* ナビ */
-.lp-nav {
-  position: fixed;
-  inset: 0 0 auto 0;
-  z-index: 50;
-  height: 52px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-.lp-nav-in {
-  max-width: 1080px;
-  height: 100%;
-  margin: 0 auto;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.lp-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 700;
-}
-.lp-nav-links {
-  display: flex;
-  align-items: center;
-  gap: 26px;
-  font-size: 13px;
-  color: rgba(245, 245, 247, 0.8);
-}
-.lp-nav-links a:hover {
-  color: #fff;
-}
-.lp-pill-sm {
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--green);
-  color: #04110d;
-  font-weight: 600;
-}
-.lp-nav-links .lp-pill-sm:hover {
-  color: #04110d;
-  background: #9af2dc;
-}
-@media (max-width: 640px) {
-  .lp-nav-links a:not(.lp-pill-sm) {
-    display: none;
-  }
-}
-
 /* ボタン */
 .lp-actions {
   display: flex;
