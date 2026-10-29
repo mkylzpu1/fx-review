@@ -209,8 +209,9 @@ export function ChartPane({
       entrySec: Date.parse(trade.entryAt) / 1000,
       exitSec: trade.exitAt ? Date.parse(trade.exitAt) / 1000 : null,
       showAfter,
+      stepSec: TF_SECONDS[tf],
     });
-  }, [data, chunks, emas, showAfter, trade.entryAt, trade.exitAt]);
+  }, [data, chunks, emas, showAfter, tf, trade.entryAt, trade.exitAt]);
 
   const levels = useMemo(
     () => excursionLevels(trade, pipSize),

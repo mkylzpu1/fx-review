@@ -17,6 +17,12 @@ describe("candleStartFor", () => {
   it("最初の足より前は null", () => {
     expect(candleStartFor(candles(3, 10), 3600)).toBeNull();
   });
+  it("足の長さを渡すと、足が途切れた先の時刻は null（最後の足に寄せない）", () => {
+    // 足は 0〜4時台まで。5時台の時刻は含む足が無い
+    expect(candleStartFor(candles(5), 4 * 3600 + 3599, 3600)).toBe(4 * 3600);
+    expect(candleStartFor(candles(5), 5 * 3600, 3600)).toBeNull();
+    expect(candleStartFor(candles(5), 9 * 3600, 3600)).toBeNull();
+  });
 });
 
 describe("buildChartData", () => {
@@ -47,6 +53,20 @@ describe("buildChartData", () => {
     });
     expect(r.candles.at(-1)?.time).toBe(5 * 3600);
     expect(r.emaLines[0].points.at(-1)?.time).toBe(5 * 3600);
+  });
+
+  it("足がエントリー・決済より手前で途切れていれば、INもOUTも付けない", () => {
+    const r = buildChartData({
+      candles: candles(5), // 4時台まで
+      warmupCount: 0,
+      emaPeriods: [],
+      entrySec: 3 * 3600,
+      exitSec: 7 * 3600,
+      showAfter: true,
+      stepSec: 3600,
+    });
+    expect(r.entryTime).toBe(3 * 3600);
+    expect(r.exitTime).toBeNull();
   });
 
   it("足が無ければ空", () => {

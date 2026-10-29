@@ -15,16 +15,23 @@ export interface ChartData {
   exitTime: number | null;
 }
 
-/** ts（UTC秒）を含む足の開始時刻。最初の足より前なら null */
+/**
+ * ts（UTC秒）を含む足の開始時刻。最初の足より前なら null。
+ * stepSec（足の長さ・秒）を渡すと、足のデータが途切れていて ts を含む足が無いとき
+ * （同期していない時間帯など）も null にする。渡さないと、直前の足にそのまま寄せる
+ */
 export function candleStartFor(
   candles: ReadonlyArray<{ time: number }>,
   tsSec: number,
+  stepSec?: number,
 ): number | null {
   let found: number | null = null;
   for (const c of candles) {
     if (c.time <= tsSec) found = c.time;
     else break;
   }
+  if (found !== null && stepSec !== undefined && tsSec >= found + stepSec)
+    return null;
   return found;
 }
 
@@ -38,6 +45,8 @@ export interface BuildInput {
   exitSec?: number | null;
   /** false のとき、エントリーの足より後を隠す */
   showAfter: boolean;
+  /** 足の長さ（秒）。足が途切れた先の時刻にINとOUTを間違った足へ付けないために使う */
+  stepSec?: number;
 }
 
 /**
@@ -45,7 +54,11 @@ export interface BuildInput {
  * EMAはウォームアップ込みの全件で計算し、表示範囲の分だけ返す。
  */
 export function buildChartData(i: BuildInput): ChartData {
-  const entryTime = candleStartFor(i.candles.slice(i.warmupCount), i.entrySec);
+  const entryTime = candleStartFor(
+    i.candles.slice(i.warmupCount),
+    i.entrySec,
+    i.stepSec,
+  );
   const visible = i.candles
     .slice(i.warmupCount)
     .filter((c) => i.showAfter || entryTime === null || c.time <= entryTime);
@@ -62,7 +75,7 @@ export function buildChartData(i: BuildInput): ChartData {
   }));
   const exitTime =
     i.showAfter && i.exitSec != null && i.exitSec >= first
-      ? candleStartFor(visible, i.exitSec)
+      ? candleStartFor(visible, i.exitSec, i.stepSec)
       : null;
   return { candles: visible, emaLines, entryTime, exitTime };
 }
