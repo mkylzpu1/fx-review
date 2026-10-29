@@ -353,30 +353,6 @@ export function createWorld(
   }
   const cp = new THREE.Vector3();
 
-  // --- ちり ---
-  const dustN = small ? 300 : 800;
-  const dp = new Float32Array(dustN * 3);
-  const rd = mulberry32(5);
-  for (let i = 0; i < dustN; i++) {
-    dp[i * 3] = -40 + rd() * 640;
-    dp[i * 3 + 1] = 1 + rd() * 120;
-    dp[i * 3 + 2] = -40 + rd() * 80;
-  }
-  const dustGeo = new THREE.BufferGeometry();
-  dustGeo.setAttribute("position", new THREE.BufferAttribute(dp, 3));
-  const dust = new THREE.Points(
-    dustGeo,
-    new THREE.PointsMaterial({
-      color: "#8FF0D8",
-      size: 0.35,
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    }),
-  );
-  scene.add(dust);
-
   // --- ポスト処理 ---
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -542,7 +518,6 @@ export function createWorld(
     camera.updateProjectionMatrix();
 
     shift.uniforms.uAmount.value = 0.001 + vel * 0.003 + (1 - ease) * 0.004;
-    dust.position.y = Math.sin(time * 0.3) * 0.6;
     comets.forEach((c, i) => {
       const base =
         (reduceMotion ? i / COMETS : (time * 0.045 + i / COMETS) % 1) * frac;
@@ -572,7 +547,6 @@ export function createWorld(
       unit.dispose();
       cometGeo.dispose();
       trailGeo.dispose();
-      dustGeo.dispose();
       tubes.forEach((t) => t.geometry.dispose());
       [
         upMat,
@@ -586,7 +560,6 @@ export function createWorld(
         cometMat,
         trailMat,
       ].forEach((m) => m.dispose());
-      (dust.material as THREE.Material).dispose();
       floor.geometry.dispose();
       (floor.material as THREE.Material).dispose();
       grid.geometry.dispose();
