@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { formatPips, formatR, formatYenSigned } from "@/utils/format";
 import { CumulativeChart } from "../components/CumulativeChart";
+import { DailyGrowthChart } from "../components/DailyGrowthChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
 import { TodayStatus } from "../components/TodayStatus";
@@ -105,6 +106,13 @@ export function StatsPage() {
               SLが入っていない{s.rMissing}
               件は、R系の集計に入っていません（勝率・pips・損益には入っています）。
             </p>
+          )}
+
+          {(data.daily ?? []).length > 0 && (
+            <section className="card space-y-2">
+              <h2 className="text-base font-bold">日々の成長</h2>
+              <DailyGrowthChart daily={data.daily ?? []} />
+            </section>
           )}
 
           <section className="card space-y-2">

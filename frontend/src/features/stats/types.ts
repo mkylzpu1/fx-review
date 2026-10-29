@@ -21,6 +21,22 @@ export interface CumulativePoint {
   cumulative: number;
 }
 
+/** エントリー日ごとの成績と累積（取引のあった日だけ・古い順）。backend の DailyPoint */
+export interface DailyPoint {
+  /** エントリー日（表示タイムゾーン・YYYY-MM-DD） */
+  date: string;
+  n: number;
+  wins: number;
+  pips: number;
+  pnlJpy: number;
+  r: number;
+  /** R が計算できた件数（0 の日は R が「—」） */
+  rCount: number;
+  cumulativePips: number;
+  cumulativePnlJpy: number;
+  cumulativeR: number;
+}
+
 export interface Drawdown {
   depth: number;
   peakIndex: number;
@@ -50,6 +66,8 @@ export interface StatsResult {
   summary: Summary;
   cumulative: CumulativePoint[];
   drawdown: Drawdown | null;
+  /** 古いAPIでは無いことがある */
+  daily?: DailyPoint[];
   bySession: GroupStat[];
   byRationale: GroupStat[];
   byRule: GroupStat[];

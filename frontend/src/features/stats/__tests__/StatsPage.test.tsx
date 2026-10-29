@@ -31,6 +31,32 @@ const stats = (over: Partial<StatsResult> = {}): StatsResult => ({
     { index: 2, entryAt: "2026-10-02T00:00:00Z", r: -2, cumulative: -1 },
   ],
   drawdown: { depth: 2, peakIndex: 1, troughIndex: 2 },
+  daily: [
+    {
+      date: "2026-10-01",
+      n: 2,
+      wins: 1,
+      pips: 20,
+      pnlJpy: 2000,
+      r: 1,
+      rCount: 1,
+      cumulativePips: 20,
+      cumulativePnlJpy: 2000,
+      cumulativeR: 1,
+    },
+    {
+      date: "2026-10-02",
+      n: 1,
+      wins: 0,
+      pips: -8,
+      pnlJpy: -800,
+      r: 0,
+      rCount: 0,
+      cumulativePips: 12,
+      cumulativePnlJpy: 1200,
+      cumulativeR: 1,
+    },
+  ],
   bySession: [
     {
       key: "tokyo",
@@ -148,9 +174,31 @@ describe("統計", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("日々の成長: 累積の折れ線と日ごとの棒を出し、指標を切り替えられる", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(stats());
+    renderPage();
+    const box = within(
+      (await screen.findByRole("heading", { name: "日々の成長" })).closest(
+        "section",
+      )!,
+    );
+    expect(box.getByTestId("cumulative-line")).toBeInTheDocument();
+    expect(box.getAllByTestId("day-bar")).toHaveLength(2);
+    expect(box.getByText("+¥1,200")).toBeInTheDocument();
+    expect(box.getByText(/2日（プラス1日・マイナス1日）/)).toBeInTheDocument();
+
+    await userEvent.click(box.getByRole("button", { name: "pips" }));
+    expect(box.getByText("+12.0 pips")).toBeInTheDocument();
+
+    // R が計算できていない日は棒を出さない
+    await userEvent.click(box.getByRole("button", { name: "R" }));
+    expect(box.getAllByTestId("day-bar")).toHaveLength(1);
+    expect(box.getByText("+1.00R")).toBeInTheDocument();
+  });
+
   it("0件なら空状態と取り込みへの導線", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(
-      stats({ closedCount: 0, cumulative: [], drawdown: null }),
+      stats({ closedCount: 0, cumulative: [], drawdown: null, daily: [] }),
     );
     renderPage();
     expect(
@@ -178,6 +226,7 @@ describe("統計 古いAPI", () => {
     delete old.byHour;
     delete old.byHolding;
     delete old.byLots;
+    delete old.daily;
     vi.mocked(apiClient.get).mockResolvedValue(old);
     renderPage();
     expect(await screen.findByText("曜日別")).toBeInTheDocument();
