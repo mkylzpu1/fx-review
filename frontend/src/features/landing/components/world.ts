@@ -267,32 +267,6 @@ export function createWorld(
     tubes.push(t);
   }
 
-  // --- 光の柱（エントリーと決済） ---
-  const beamGeo = new THREE.CylinderGeometry(0.14, 0.14, 260, 8, 1, true);
-  const beams: THREE.Mesh[] = [];
-  [
-    [95, GREEN, 3],
-    [190, RED, -3],
-    [298, GREEN, 3],
-    [412, GREEN, -3],
-    [505, RED, 3],
-  ].forEach(([x, c, z]) => {
-    const m = new THREE.Mesh(
-      beamGeo,
-      new THREE.MeshBasicMaterial({
-        color: hdr(c as string, 1.8),
-        transparent: true,
-        opacity: 0.55,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        toneMapped: false,
-      }),
-    );
-    m.position.set(x as number, 120, z as number);
-    scene.add(m);
-    beams.push(m);
-  });
-
   // --- 移動平均線を流れる光（価格の流れ） ---
   const cometGeo = new THREE.SphereGeometry(0.9, 12, 12);
   const cometMat = new THREE.MeshBasicMaterial({
@@ -479,11 +453,6 @@ export function createWorld(
 
     shift.uniforms.uAmount.value = 0.001 + vel * 0.003 + (1 - ease) * 0.004;
     dust.position.y = Math.sin(time * 0.3) * 0.6;
-    beams.forEach((b, i) => {
-      (b.material as THREE.MeshBasicMaterial).opacity =
-        0.42 + Math.sin(time * 1.6 + i) * 0.14;
-    });
-
     comets.forEach((c, i) => {
       const base = reduceMotion ? i / COMETS : (time * 0.045 + i / COMETS) % 1;
       emaCurve.getPointAt(base, cp);
@@ -510,7 +479,6 @@ export function createWorld(
       window.removeEventListener("pointermove", onMove);
       io.disconnect();
       unit.dispose();
-      beamGeo.dispose();
       cometGeo.dispose();
       trailGeo.dispose();
       dustGeo.dispose();
@@ -527,7 +495,6 @@ export function createWorld(
         cometMat,
         trailMat,
       ].forEach((m) => m.dispose());
-      beams.forEach((b) => (b.material as THREE.Material).dispose());
       (dust.material as THREE.Material).dispose();
       floor.geometry.dispose();
       (floor.material as THREE.Material).dispose();
