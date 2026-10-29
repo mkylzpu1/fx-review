@@ -164,7 +164,7 @@ export function ImportVisual() {
   ] as const;
   return (
     <div className="lp-vis lp-import" aria-hidden="true">
-      <div className="lp-file">history.csv</div>
+      <div className="lp-file">約定履歴.csv</div>
       <div className="lp-rows">
         {rows.map(([pair, side, pips, win], i) => (
           <div key={pair} className="lp-row" style={{ ["--i" as string]: i }}>
