@@ -22,7 +22,7 @@ const EMAS = [20, 50] as const;
 
 const W = 640;
 const H = 250;
-const PAD_R = 56;
+const PAD_R = 78;
 const PAD_Y = 14;
 
 interface Candle {
