@@ -288,13 +288,13 @@ export function createWorld(
     toneMapped: false,
   });
   const tubes: THREE.Mesh[] = [];
-  [0].forEach((ri) => {
-    const curve = new THREE.CatmullRomCurve3(emaPts[ri]);
-    const geo = new THREE.TubeGeometry(curve, N * 2, 0.3, 6, false);
+  const emaCurve = new THREE.CatmullRomCurve3(emaPts[0]);
+  {
+    const geo = new THREE.TubeGeometry(emaCurve, N * 2, 0.3, 6, false);
     const t = new THREE.Mesh(geo, tubeMat);
     scene.add(t);
     tubes.push(t);
-  });
+  }
 
   // --- 光の柱（エントリーと決済） ---
   const beamGeo = new THREE.CylinderGeometry(0.14, 0.14, 260, 8, 1, true);
@@ -322,33 +322,37 @@ export function createWorld(
     beams.push(m);
   });
 
-  // --- くぐり抜けるゲート ---
-  const gateGeo = new THREE.BufferGeometry().setFromPoints(
-    [
-      [0, 0, -12],
-      [0, 46, -12],
-      [0, 46, 12],
-      [0, 0, 12],
-      [0, 0, -12],
-    ].map(([x, y, z]) => new THREE.Vector3(x, y, z)),
-  );
-  const gates: THREE.Line[] = [];
-  for (let i = 0; i < 12; i++) {
-    const g = new THREE.Line(
-      gateGeo,
-      new THREE.LineBasicMaterial({
-        color: hdr(i % 3 === 1 ? RED : GREEN, 1.6),
-        transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        toneMapped: false,
-      }),
-    );
-    g.position.set(75 + i * 42, 0, 0);
-    scene.add(g);
-    gates.push(g);
+  // --- 移動平均線を流れる光（価格の流れ） ---
+  const cometGeo = new THREE.SphereGeometry(0.9, 12, 12);
+  const cometMat = new THREE.MeshBasicMaterial({
+    color: hdr("#FFE3A3", 3),
+    toneMapped: false,
+  });
+  const trailGeo = new THREE.SphereGeometry(0.5, 8, 8);
+  const trailMat = new THREE.MeshBasicMaterial({
+    color: hdr("#F5B94A", 2),
+    transparent: true,
+    opacity: 0.5,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const COMETS = 4;
+  const TRAIL = 6;
+  const comets: { head: THREE.Mesh; trail: THREE.Mesh[] }[] = [];
+  for (let i = 0; i < COMETS; i++) {
+    const head = new THREE.Mesh(cometGeo, cometMat);
+    scene.add(head);
+    const trail: THREE.Mesh[] = [];
+    for (let k = 0; k < TRAIL; k++) {
+      const t = new THREE.Mesh(trailGeo, trailMat);
+      t.scale.setScalar(1 - k / (TRAIL + 1));
+      scene.add(t);
+      trail.push(t);
+    }
+    comets.push({ head, trail });
   }
+  const cp = new THREE.Vector3();
 
   // --- ちり ---
   const dustN = small ? 300 : 800;
@@ -479,6 +483,16 @@ export function createWorld(
         0.42 + Math.sin(time * 1.6 + i) * 0.14;
     });
 
+    comets.forEach((c, i) => {
+      const base = reduceMotion ? i / COMETS : (time * 0.045 + i / COMETS) % 1;
+      emaCurve.getPointAt(base, cp);
+      c.head.position.copy(cp).setY(cp.y + 0.8);
+      c.trail.forEach((t, k) => {
+        emaCurve.getPointAt(Math.max(0, base - (k + 1) * 0.006), cp);
+        t.position.copy(cp).setY(cp.y + 0.8);
+      });
+    });
+
     hooks.onFrame(pS);
     composer.render();
   };
@@ -496,14 +510,23 @@ export function createWorld(
       io.disconnect();
       unit.dispose();
       beamGeo.dispose();
-      gateGeo.dispose();
+      cometGeo.dispose();
+      trailGeo.dispose();
       dustGeo.dispose();
       tubes.forEach((t) => t.geometry.dispose());
-      [upMat, dnMat, mirUp, mirDn, capMat, capMirMat, wickMat, tubeMat].forEach(
-        (m) => m.dispose(),
-      );
+      [
+        upMat,
+        dnMat,
+        mirUp,
+        mirDn,
+        capMat,
+        capMirMat,
+        wickMat,
+        tubeMat,
+        cometMat,
+        trailMat,
+      ].forEach((m) => m.dispose());
       beams.forEach((b) => (b.material as THREE.Material).dispose());
-      gates.forEach((g) => (g.material as THREE.Material).dispose());
       (dust.material as THREE.Material).dispose();
       floor.geometry.dispose();
       (floor.material as THREE.Material).dispose();
