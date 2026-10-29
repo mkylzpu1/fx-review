@@ -39,6 +39,7 @@ export async function runSync(
     `[sync] ${args.provider}: ${args.from.toISOString()} 〜 ${args.to.toISOString()}`,
   );
   const result = await syncCandles(provider, args.from, args.to, {
+    overwrite: args.overwrite,
     onProgress: (p) =>
       log(
         `[sync] ${p.from.toISOString().slice(0, 10)} 〜 ${p.to.toISOString().slice(0, 10)}: ${p.fetched}本`,
@@ -85,7 +86,9 @@ export async function runSyncForTrades(
     const from = new Date(w.from * 1000);
     const to = new Date(w.to * 1000);
     log(`[sync] トレード範囲: ${from.toISOString()} 〜 ${to.toISOString()}`);
-    const r = await syncCandles(provider, from, to);
+    const r = await syncCandles(provider, from, to, {
+      overwrite: args.overwrite,
+    });
     fetched += r.fetched;
     chunks += r.chunks;
   }

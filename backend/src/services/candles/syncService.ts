@@ -61,6 +61,8 @@ export async function syncCandles(
   to: Date,
   options: {
     now?: Date;
+    /** true のとき、古い足も（同じ取得元なら）上書きする */
+    overwrite?: boolean;
     onProgress?: (p: SyncProgress) => void;
   } = {},
 ): Promise<SyncResult> {
@@ -69,7 +71,9 @@ export async function syncCandles(
   let fetched = 0;
   for (const range of ranges) {
     const candles = await provider.fetch1m(CANDLE_PAIR, range.from, range.to);
-    const { recent, old } = splitRecent(candles, now);
+    const { recent, old } = options.overwrite
+      ? { recent: candles, old: [] as Candle[] }
+      : splitRecent(candles, now);
     for (const part of batches(old, SYNC_UPSERT_BATCH))
       await candleStore.upsertMany(CANDLE_PAIR, provider.source, part, false);
     for (const part of batches(recent, SYNC_UPSERT_BATCH))

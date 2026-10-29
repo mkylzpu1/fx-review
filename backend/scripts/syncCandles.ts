@@ -10,6 +10,9 @@
  * 普段は、アプリのトレード画面の「ローソク足を更新」ボタンから同じ処理が動く（npm run sync:server）。
  * --from / --to は UTC の日付。--to の日の終わりまで取得する。
  * 再実行しても安全（直近48時間は上書き、それより古い実データは変更しない）。
+ * MT5_SERVER_TIME（または --server-time）を直したときは、--overwrite を付けて同じ期間をもう一度取り込むと、
+ * 古い足の時刻も直る。
+ *   npm run candles:sync -- --days 30 --overwrite
  */
 import { sql } from "../src/lib/db";
 import { parseSyncArgs } from "./syncArgs";

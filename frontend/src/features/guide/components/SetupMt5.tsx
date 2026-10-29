@@ -65,7 +65,15 @@ export function SetupMt5() {
         <p>
           お使いの口座のサーバー時刻に合わせます。
           <Code>backend/.env.local</Code> の <Code>MT5_SERVER_TIME</Code>
-          （何も書かなければ <Code>ny-close</Code> ）を書き換えます。
+          （何も書かなければ <Code>eet</Code>
+          ：欧州の夏時間に連動）を書き換えます。米国の夏時間に連動する口座は{" "}
+          <Code>ny-close</Code>、時刻が固定の口座は UTC との差（例：{" "}
+          <Code>2</Code>）を書きます。
+        </p>
+        <p>
+          設定を直したあとは、同じ期間を{" "}
+          <Code>npm run candles:sync -- --days 30 --overwrite</Code>{" "}
+          でもう一度取り込むと、古い足の時刻も直ります。
         </p>
         <p>
           証券会社によって銘柄名が違う場合は、EAを付けるときの設定の{" "}

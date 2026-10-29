@@ -73,6 +73,25 @@ describe("syncCandles", () => {
     expect(upsertMany.mock.calls[0][1]).toBe("dukascopy");
   });
 
+  it("overwrite のときは、古い足も上書きあり(true)で保存する", async () => {
+    const provider = {
+      source: "mt5",
+      fetch1m: vi.fn(async () => [
+        candle("2026-10-10T00:00:00Z"),
+        candle("2026-10-23T12:00:00Z"),
+      ]),
+    };
+    await syncCandles(
+      provider,
+      new Date("2026-10-01T00:00:00Z"),
+      new Date("2026-10-08T00:00:00Z"),
+      { now: new Date("2026-10-24T00:00:00Z"), overwrite: true },
+    );
+    expect(upsertMany).toHaveBeenCalledTimes(1);
+    expect(upsertMany.mock.calls[0][2]).toHaveLength(2);
+    expect(upsertMany.mock.calls[0][3]).toBe(true);
+  });
+
   it("足が0本でも失敗せず、保存を呼ばない", async () => {
     const provider = { source: "mock", fetch1m: vi.fn(async () => []) };
     const res = await syncCandles(
@@ -115,6 +134,26 @@ describe("parseSyncArgs", () => {
     expect(a.from.toISOString()).toBe("2026-10-18T00:00:00.000Z");
     expect(a.to.toISOString()).toBe("2026-10-25T00:00:00.000Z");
     expect(() => parseSyncArgs(["--days", "0"])).toThrow();
+  });
+  it("サーバー時刻の既定は eet。--server-time と --overwrite を読む", () => {
+    const base = ["--from", "2026-10-01", "--to", "2026-10-02"];
+    const prev = process.env.MT5_SERVER_TIME;
+    delete process.env.MT5_SERVER_TIME;
+    try {
+      const d = parseSyncArgs(base);
+      expect(d.serverTime).toBe("eet");
+      expect(d.overwrite).toBe(false);
+      expect(
+        parseSyncArgs([...base, "--server-time", "ny-close"]).serverTime,
+      ).toBe("ny-close");
+      expect(parseSyncArgs([...base, "--server-time", "3"]).serverTime).toBe(3);
+      expect(parseSyncArgs([...base, "--overwrite"]).overwrite).toBe(true);
+      expect(() => parseSyncArgs([...base, "--server-time", "x"])).toThrow(
+        "--server-time",
+      );
+    } finally {
+      if (prev !== undefined) process.env.MT5_SERVER_TIME = prev;
+    }
   });
   it("日付の形式・順序・providerの誤りを弾く", () => {
     expect(() => parseSyncArgs(["--to", "2026-10-23"])).toThrow("--from");

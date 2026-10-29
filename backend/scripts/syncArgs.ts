@@ -1,11 +1,18 @@
+import {
+  DEFAULT_SERVER_TIME,
+  type ServerTime,
+} from "../src/services/candles/CsvCandleProvider";
+
 export interface SyncArgs {
   from: Date;
   to: Date;
   provider: "mt5" | "dukascopy" | "mock";
   /** provider=mt5 のとき: MT5 が CSV を書き出すフォルダ */
   dir: string;
-  /** provider=mt5 のとき: MT5 のサーバー時刻の扱い（"ny-close" か UTC オフセット時間） */
-  serverTime: "ny-close" | number;
+  /** provider=mt5 のとき: MT5 のサーバー時刻の扱い（"eet" / "ny-close" / UTC オフセット時間） */
+  serverTime: ServerTime;
+  /** true のとき、48時間より古い足も同じ取得元なら上書きする（サーバー時刻の設定を直したあとの再同期用） */
+  overwrite: boolean;
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -18,15 +25,17 @@ function parseDate(label: string, value: string | undefined): Date {
   return d;
 }
 
-function parseServerTime(value: string): "ny-close" | number {
-  if (value === "ny-close") return "ny-close";
+function parseServerTime(value: string): ServerTime {
+  if (value === "eet" || value === "ny-close") return value;
   const n = Number(value);
-  if (!Number.isFinite(n) || n < -12 || n > 14)
-    throw new Error("--server-time は ny-close か UTC オフセット（時間）です");
+  if (value.trim() === "" || !Number.isFinite(n) || n < -12 || n > 14)
+    throw new Error(
+      "--server-time は eet / ny-close / UTC オフセット（時間）のどれかです",
+    );
   return n;
 }
 
-/** --from 2026-10-01 --to 2026-10-23（または --days 7）[--provider mt5|mock|dukascopy] [--dir ...] [--server-time ny-close]。to の日の終わり（翌日0時 UTC）までを範囲にする */
+/** --from 2026-10-01 --to 2026-10-23（または --days 7）[--provider mt5|mock|dukascopy] [--dir ...] [--server-time eet|ny-close|2] [--overwrite]。to の日の終わり（翌日0時 UTC）までを範囲にする */
 export function parseSyncArgs(
   argv: string[],
   opts: { now?: Date } = {},
@@ -62,7 +71,10 @@ export function parseSyncArgs(
     provider,
     dir: get("dir") ?? process.env.CANDLE_CSV_DIR ?? "",
     serverTime: parseServerTime(
-      get("server-time") ?? process.env.MT5_SERVER_TIME ?? "ny-close",
+      get("server-time") ??
+        process.env.MT5_SERVER_TIME ??
+        String(DEFAULT_SERVER_TIME),
     ),
+    overwrite: argv.includes("--overwrite"),
   };
 }
