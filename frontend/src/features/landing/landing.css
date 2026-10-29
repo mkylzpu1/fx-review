@@ -238,21 +238,41 @@
   margin-top: 0;
 }
 @media (max-width: 860px) {
-  .lp-glass {
-    display: none;
-  }
   .lp-chap[data-side="right"] .lp-chap-text,
   .lp-chap .lp-chap-text {
     text-align: left;
-  }
-  .lp-chap[data-side="right"] {
-    flex-direction: row;
   }
   .lp-chap[data-side="center"] .lp-chap-text {
     text-align: center;
   }
   .lp-chap[data-side="right"] .lp-chap-sub {
     margin-left: 0;
+  }
+  /* 図があるチャプターは、文章の下に図を縦に並べる（スマホでも図を見せる） */
+  .lp-chap:has(.lp-glass) {
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: 18px;
+    padding: 64px 20px 20px;
+  }
+  .lp-chap:has(.lp-glass) h2 {
+    font-size: clamp(2.6rem, 14vw, 4rem);
+  }
+  .lp-chap:has(.lp-glass) .lp-chap-sub {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+  .lp-glass {
+    width: 100%;
+    max-width: 460px;
+    align-self: center;
+    padding: 14px;
+    border-radius: 20px;
+    /* スマホではぼかしを軽くして負荷を抑える */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 }
 .lp-hint {
