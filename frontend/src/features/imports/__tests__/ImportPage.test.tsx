@@ -31,6 +31,7 @@ const previewOf = (
     total: 211,
     newCount: 200,
     duplicateCount: 11,
+    manualDuplicateCount: 0,
     completesOpenCount: 0,
     openCount: 0,
     errorCount: 1,
@@ -70,6 +71,7 @@ const committed: CommitResult = {
   skipped: 11,
   overwritten: 0,
   completedOpen: 0,
+  manualSkipped: 0,
   errorCount: 1,
   files: [],
   entryRange: { from: "2026-10-01T13:10:00Z", to: "2026-10-23T06:21:00Z" },
@@ -144,6 +146,44 @@ describe("CSV取り込み", () => {
         duplicateMode: "overwrite",
       }),
     );
+  });
+
+  it("手入力と重複する取引があれば、件数と「保存しない」説明を出す。無ければ出さない", async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce(
+      previewOf({ manualDuplicateCount: 3, newCount: 197 }),
+    );
+    renderPage();
+    await chooseFile();
+    await screen.findByText("取り込み内容");
+    expect(screen.getByText("手入力と重複")).toBeInTheDocument();
+    expect(screen.getByText("3件")).toBeInTheDocument();
+    expect(
+      screen.getByText(/手入力したトレードと同じ取引.*保存しません/),
+    ).toBeInTheDocument();
+  });
+
+  it("手入力と重複する取引が無ければ、その件数の表示は出さない", async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce(previewOf());
+    renderPage();
+    await chooseFile();
+    await screen.findByText("取り込み内容");
+    expect(screen.queryByText("手入力と重複")).toBeNull();
+  });
+
+  it("完了後、手入力と同じ取引のため保存しなかった件数を出す", async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce(previewOf());
+    renderPage();
+    await chooseFile();
+    await screen.findByText("取り込み内容");
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      ...committed,
+      manualSkipped: 2,
+    });
+    await userEvent.click(screen.getByRole("button", { name: "取り込む" }));
+    expect(await screen.findByText("取り込みました")).toBeInTheDocument();
+    expect(
+      screen.getByText(/手入力と同じ取引のため保存しない/),
+    ).toHaveTextContent("2件");
   });
 
   it("重複が無ければ扱いの選択は出さない", async () => {

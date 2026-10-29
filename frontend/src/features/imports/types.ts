@@ -1,6 +1,7 @@
 /** バックエンド types/import.ts・services/import/importService.ts のレスポンスと対応 */
 export type DuplicateMode = "skip" | "overwrite";
-export type PreviewStatus = "new" | "duplicate" | "completes_open";
+export type PreviewStatus =
+  "new" | "duplicate" | "completes_open" | "manual_duplicate";
 
 export interface ImportFileInput {
   name: string;
@@ -41,6 +42,8 @@ export interface PreviewSummary {
   total: number;
   newCount: number;
   duplicateCount: number;
+  /** 手入力済みのトレードと同じ取引のため、保存しない件数 */
+  manualDuplicateCount: number;
   completesOpenCount: number;
   openCount: number;
   errorCount: number;
@@ -65,6 +68,8 @@ export interface CommitResult {
   skipped: number;
   overwritten: number;
   completedOpen: number;
+  /** 手入力済みのトレードと同じ取引のため、保存しなかった件数 */
+  manualSkipped: number;
   errorCount: number;
   files: ImportFileResult[];
   entryRange: EntryRange | null;

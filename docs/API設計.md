@@ -265,6 +265,8 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 - 5m / 15m / 1h はUTC区切り、4h / 1d はニューヨーク17:00区切り（`constants/candles.ts`）。取引のない時間は足を補完しない
 - 範囲が広すぎる（足の本数が2000を超える、または集計に使う1分足が30万行を超える）ときは `400 VALIDATION_ERROR`（範囲を狭めるか、大きい時間足にする）
 - 足は手元の同期スクリプト（`npm run candles:sync`）で入れる。Lambdaでの自動同期はしない
+- 足の時刻はUTCで保存する。MT5が書き出すCSVの時刻はMT5のサーバー時刻なので、取り込み時にUTCへ直す。直し方は `MT5_SERVER_TIME`（または `--server-time`）で選ぶ。`eet`（既定。欧州の夏時間に連動。冬 UTC+2 / 夏 UTC+3）/ `ny-close`（米国の夏時間に連動）/ 数値（固定のUTCオフセット）。`eet` と `ny-close` は、3月の2〜3週間と10月末〜11月初めの1週間だけ1時間食い違う。設定を直したあとは `npm run candles:sync -- --days 30 --overwrite` で古い足も上書きする
+- 画面の日時はすべてJST表示・JST入力（保存はUTC）。楽天CSVの日時もJSTとして読む
 
 #### 複数の範囲をまとめて取得
 
@@ -337,6 +339,7 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 | `new` | 未取り込み | 追加する |
 | `duplicate` | 同じ `source_key` が取り込み済み（削除済みのトレードも含む） | `skip`: 何もしない / `overwrite`: 価格・損益を更新 |
 | `completes_open` | 未決済で取り込み済みだった新規が、今回のCSVで決済済みになった | どちらのモードでも決済を埋める（根拠・メモ・SL・TPは残す。保存済みのMFE/MAEは消し、次の同期で再計算） |
+| `manual_duplicate` | 手入力（`source = manual`・未削除）のトレードと同じ取引。通貨ペア・売買・ロットが同じで、エントリー時刻が30分以内・価格が0.05円以内（双方に決済時刻があれば、それも30分以内）。手入力1件に対応づけるCSVは1件だけ（時刻が近い順）。基準は `constants/import.ts` | どちらのモードでも保存・更新しない（手入力の内容はそのまま）。`source_key` が同じものや `completes_open` の判定が先で、残った `new` だけを照合する |
 
 ### 注文履歴CSV（SL・TPの紐づけ）
 `/imports/preview` と `/imports/commit` に、楽天FX証券の**注文履歴CSV**（`注文No.` 列があり `約定No.` 列が無いもの）を送ると、約定履歴とは別の処理になる（ファイルの形で自動判定。両方を混ぜるとエラー）。レスポンスには `kind: "orders"` が付く。`duplicateMode` は無視される。
@@ -367,11 +370,12 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 ### `POST /imports/commit` レスポンス `data`
 
 ```json
-{ "imported": 200, "skipped": 11, "overwritten": 0, "completedOpen": 0, "errorCount": 0, "files": [], "entryRange": {} }
+{ "imported": 200, "skipped": 11, "overwritten": 0, "completedOpen": 0, "manualSkipped": 0, "errorCount": 0, "files": [], "entryRange": {} }
 ```
 
 - `skipped`: `skip` のとき、取り込み済みのため除いた件数
 - `overwritten`: `overwrite` のとき、更新した件数
+- `manualSkipped`: 手入力のトレードと同じ取引のため、保存しなかった件数（preview の `summary.manualDuplicateCount` に対応）
 - 取り込み後、`npm run candles:sync -- --from <entryRange.from の日付> --to <entryRange.to の日付>` で足を同期するとチャートとMFE/MAEが出る
 
 ## FXレビュー: P4 エンドポイント（分析）

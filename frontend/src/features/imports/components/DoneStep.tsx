@@ -20,6 +20,12 @@ export function DoneStep({ result }: { result: CommitResult }) {
               <span className="num">{result.skipped}件</span>
             </li>
           )}
+          {result.manualSkipped > 0 && (
+            <li>
+              手入力と同じ取引のため保存しない:{" "}
+              <span className="num">{result.manualSkipped}件</span>
+            </li>
+          )}
           {result.overwritten > 0 && (
             <li>
               CSVの値で上書き:{" "}

@@ -10,6 +10,7 @@ const STATUS_LABEL: Record<PreviewStatus, string> = {
   new: "新規",
   duplicate: "取り込み済み",
   completes_open: "決済を反映",
+  manual_duplicate: "手入力と重複",
 };
 
 /** 取り込み候補（サーバーが返した先頭100件）。状態は色だけでなく文字でも示す */

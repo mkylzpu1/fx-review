@@ -46,6 +46,7 @@ export function PreviewStep({
 }: Props) {
   const { summary, files, trades, errors } = preview;
   const hasDuplicates = summary.duplicateCount > 0;
+  const hasManualDuplicates = summary.manualDuplicateCount > 0;
   const nothing = summary.total === 0;
 
   return (
@@ -74,12 +75,22 @@ export function PreviewStep({
 
       <section className="card space-y-3">
         <h2 className="text-base font-bold">取り込み内容</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div
+          className={`grid grid-cols-2 gap-2 ${hasManualDuplicates ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}
+        >
           <Count label="新しく取り込む" value={summary.newCount} />
           <Count label="取り込み済み" value={summary.duplicateCount} />
+          {hasManualDuplicates && (
+            <Count label="手入力と重複" value={summary.manualDuplicateCount} />
+          )}
           <Count label="決済を反映" value={summary.completesOpenCount} />
           <Count label="未決済" value={summary.openCount} />
         </div>
+        {hasManualDuplicates && (
+          <p className="text-xs text-ink-mute">
+            手入力したトレードと同じ取引（ペア・売買・ロットが同じで、エントリー時刻が30分以内・価格が5pips以内）は、保存しません。手入力の内容はそのまま残ります。
+          </p>
+        )}
         {summary.overlappedRows > 0 && (
           <p className="text-xs text-ink-mute">
             複数のファイルで重なっていた約定 {summary.overlappedRows}
