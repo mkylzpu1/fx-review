@@ -46,3 +46,15 @@ export interface ImportFileResult {
   rowCount: number;
   message: string | null;
 }
+
+/** 手入力済みのトレード（CSVの取引と同じものか照合するための最小の項目） */
+export interface ManualTrade {
+  id: string;
+  pair: string;
+  side: "buy" | "sell";
+  lots: number;
+  /** UTCのISO文字列 */
+  entryAt: string;
+  entryPrice: number;
+  exitAt: string | null;
+}

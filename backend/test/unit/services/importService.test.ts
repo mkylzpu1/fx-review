@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("../../../src/stores/importStore", () => ({
   importStore: {
     findBySourceKeys: vi.fn(),
+    findManualTrades: vi.fn(),
     insertMany: vi.fn(),
     overwriteMany: vi.fn(),
   },
@@ -48,6 +49,7 @@ describe("importService.preview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(importStore.findBySourceKeys).mockResolvedValue([]);
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([]);
     vi.mocked(importStore.insertMany).mockImplementation(
       async (_u, t) => t.length,
     );
@@ -89,6 +91,47 @@ describe("importService.preview", () => {
     });
   });
 
+  it("手入力済みのトレードと同じ取引は manual_duplicate（保存しない）", async () => {
+    // pair(1): 買い 150.000 / 日本時間 22:11 = UTC 13:11
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([
+      {
+        id: "manual-1",
+        pair: "USDJPY",
+        side: "buy",
+        lots: 1,
+        entryAt: "2026-10-01T13:12:00Z", // 1分ずれて手入力
+        entryPrice: 150,
+        exitAt: null,
+      },
+    ]);
+    const r = await importService.preview("u", [
+      file([...pair(1), ...pair(11)]),
+    ]);
+    const by = Object.fromEntries(
+      r.trades.map((t) => [t.sourceKey, t.importStatus]),
+    );
+    expect(by).toEqual({
+      "rakuten:1:2": "manual_duplicate",
+      "rakuten:11:12": "new",
+    });
+    expect(r.summary).toMatchObject({
+      newCount: 1,
+      manualDuplicateCount: 1,
+    });
+    // 照合する範囲（取り込み候補の最初〜最後 ± 30分）で手入力を読む
+    expect(importStore.findManualTrades).toHaveBeenCalledWith(
+      "u",
+      "2026-10-01T12:41:00.000Z",
+      "2026-10-01T13:51:00.000Z",
+    );
+  });
+
+  it("取り込み済み（duplicate）は手入力と照合しない", async () => {
+    existing("rakuten:1:2");
+    await importService.preview("u", [file(pair(1))]);
+    expect(importStore.findManualTrades).not.toHaveBeenCalled();
+  });
+
   it("別形式のファイルだけエラーにし、他のファイルは読む", async () => {
     const r = await importService.preview("u", [
       file(pair(1)),
@@ -128,6 +171,7 @@ describe("importService.commit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(importStore.findBySourceKeys).mockResolvedValue([]);
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([]);
     vi.mocked(importStore.insertMany).mockImplementation(
       async (_u, t) => t.length,
     );
@@ -168,6 +212,38 @@ describe("importService.commit", () => {
     expect(upd[0]).toMatchObject({ completesOpen: true });
     expect(upd[0].trade.sourceKey).toBe("rakuten:1:2");
     expect(r).toMatchObject({ imported: 0, completedOpen: 1 });
+  });
+
+  it("手入力と同じ取引は、skip でも overwrite でも保存・更新しない", async () => {
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([
+      {
+        id: "manual-1",
+        pair: "USDJPY",
+        side: "buy",
+        lots: 1,
+        entryAt: "2026-10-01T13:11:00Z",
+        entryPrice: 150,
+        exitAt: null,
+      },
+    ]);
+    for (const mode of ["skip", "overwrite"] as const) {
+      vi.mocked(importStore.insertMany).mockClear();
+      vi.mocked(importStore.overwriteMany).mockClear();
+      const r = await importService.commit(
+        "u",
+        [file([...pair(1), ...pair(11)])],
+        mode,
+      );
+      const inserted = vi.mocked(importStore.insertMany).mock.calls[0][1];
+      expect(inserted.map((t) => t.sourceKey)).toEqual(["rakuten:11:12"]);
+      expect(vi.mocked(importStore.overwriteMany).mock.calls[0][1]).toEqual([]);
+      expect(r).toMatchObject({
+        imported: 1,
+        manualSkipped: 1,
+        skipped: 0,
+        overwritten: 0,
+      });
+    }
   });
 
   it("同時実行で先に入った行は取り込んだ件数に数えず、除いた件数に足す", async () => {

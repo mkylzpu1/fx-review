@@ -1,5 +1,5 @@
 import { sql } from "../lib/db";
-import type { ImportTrade } from "../types/import";
+import type { ImportTrade, ManualTrade } from "../types/import";
 
 export interface ExistingTrade {
   id: string;
@@ -31,6 +31,38 @@ export const importStore = {
       );
     }
     return out;
+  },
+
+  /**
+   * 手入力のトレード（未削除）のうち、エントリーが [fromIso, toIso] にあるもの。
+   * CSVの取引と同じものか照合するために読む（下書きも含める）
+   */
+  async findManualTrades(
+    userId: string,
+    fromIso: string,
+    toIso: string,
+  ): Promise<ManualTrade[]> {
+    const rows = await sql<
+      (Omit<ManualTrade, "entryAt" | "exitAt"> & {
+        entryAt: Date | string;
+        exitAt: Date | string | null;
+      })[]
+    >`
+      SELECT id, pair, side, lots::float8 as lots,
+        entry_at as "entryAt", entry_price::float8 as "entryPrice",
+        exit_at as "exitAt"
+      FROM trades
+      WHERE user_id = ${userId} AND source = 'manual' AND deleted_at IS NULL
+        AND entry_at >= ${fromIso}::timestamptz
+        AND entry_at <= ${toIso}::timestamptz
+    `;
+    const iso = (v: Date | string) =>
+      new Date(v).toISOString().replace(/\.\d{3}Z$/, "Z");
+    return rows.map((r) => ({
+      ...r,
+      entryAt: iso(r.entryAt),
+      exitAt: r.exitAt === null ? null : iso(r.exitAt),
+    }));
   },
 
   /** 新規取り込み（1トランザクション）。同時実行で重なった行は入れず、入れた件数を返す */

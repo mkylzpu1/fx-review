@@ -5,6 +5,8 @@ import type {
   ImportRowError,
   ImportTrade,
 } from "../../types/import";
+import { MANUAL_MATCH_TIME_MINUTES } from "../../constants/import";
+import { matchManualTrades } from "./manualMatch";
 import { pairExecutions, toSourceKey } from "./pairing";
 import { parseRakutenFile } from "./rakutenCsv";
 
@@ -16,7 +18,12 @@ export const PREVIEW_TRADE_LIMIT = 100;
 export const ERROR_LIMIT = 200;
 
 export type DuplicateMode = "skip" | "overwrite";
-export type PreviewStatus = "new" | "duplicate" | "completes_open";
+export type PreviewStatus =
+  | "new"
+  | "duplicate"
+  | "completes_open"
+  /** 手入力済みのトレードと同じ取引。保存しない */
+  | "manual_duplicate";
 
 export interface ImportFileInput {
   name: string;
@@ -32,6 +39,8 @@ export interface PreviewSummary {
   total: number;
   newCount: number;
   duplicateCount: number;
+  /** 手入力済みのトレードと同じ取引のため、保存しない件数 */
+  manualDuplicateCount: number;
   /** 未決済で取り込み済みだったトレードが、今回のCSVで決済済みになる件数 */
   completesOpenCount: number;
   openCount: number;
@@ -55,6 +64,8 @@ export interface CommitResult {
   skipped: number;
   overwritten: number;
   completedOpen: number;
+  /** 手入力済みのトレードと同じ取引のため、保存しなかった件数 */
+  manualSkipped: number;
   errorCount: number;
   files: ImportFileResult[];
   entryRange: { from: string; to: string } | null;
@@ -104,7 +115,7 @@ async function analyze(
     ]),
   );
 
-  const classified = pairing.trades.map((t) => {
+  const classified: Analysis["classified"] = pairing.trades.map((t) => {
     const same = existing.get(t.sourceKey);
     if (same)
       return { ...t, importStatus: "duplicate" as const, existingId: same.id };
@@ -120,6 +131,28 @@ async function analyze(
       };
     return { ...t, importStatus: "new" as const, existingId: null };
   });
+
+  // 新規に取り込むはずのものが、手入力済みのトレードと同じ取引なら、保存しない
+  const fresh = classified.filter((t) => t.importStatus === "new");
+  if (fresh.length > 0) {
+    const range = entryRange(fresh)!;
+    const margin = MANUAL_MATCH_TIME_MINUTES * 60_000;
+    const manual = await importStore.findManualTrades(
+      userId,
+      new Date(Date.parse(range.from) - margin).toISOString(),
+      new Date(Date.parse(range.to) + margin).toISOString(),
+    );
+    const matched = matchManualTrades(fresh, manual);
+    classified.forEach((t, i) => {
+      const manualId = matched.get(t.sourceKey);
+      if (t.importStatus === "new" && manualId)
+        classified[i] = {
+          ...t,
+          importStatus: "manual_duplicate",
+          existingId: manualId,
+        };
+    });
+  }
 
   return {
     files: parsed.map((p) => p.file),
@@ -155,6 +188,7 @@ export const importService = {
         total: a.classified.length,
         newCount: count("new"),
         duplicateCount: count("duplicate"),
+        manualDuplicateCount: count("manual_duplicate"),
         completesOpenCount: count("completes_open"),
         openCount: a.classified.filter((t) => t.status === "open").length,
         errorCount: a.errors.length,
@@ -171,6 +205,7 @@ export const importService = {
    * - skip: 取り込み済みを除いて新規だけ入れる
    * - overwrite: 取り込み済みの価格・損益だけCSVの値で更新する（根拠・メモ・SL・TPは残す）
    * 未決済→決済済みへの更新（completes_open）は、どちらのモードでも行う。
+   * 手入力済みのトレードと同じ取引（manual_duplicate）は、どちらのモードでも保存せず、手入力の内容も変えない。
    */
   async commit(
     userId: string,
@@ -182,6 +217,9 @@ export const importService = {
     const dups = a.classified.filter((t) => t.importStatus === "duplicate");
     const completes = a.classified.filter(
       (t) => t.importStatus === "completes_open",
+    );
+    const manualDups = a.classified.filter(
+      (t) => t.importStatus === "manual_duplicate",
     );
 
     const inserted = await importStore.insertMany(userId, fresh);
@@ -206,6 +244,7 @@ export const importService = {
       skipped: mode === "skip" ? dups.length + (fresh.length - inserted) : 0,
       overwritten: mode === "overwrite" ? dups.length : 0,
       completedOpen: completes.length,
+      manualSkipped: manualDups.length,
       errorCount: a.errors.length,
       files: a.files,
       entryRange: entryRange(a.classified),
