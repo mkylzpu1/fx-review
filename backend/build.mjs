@@ -27,7 +27,7 @@ await esbuild.build({
   entryPoints: handlers,
   bundle: true,
   platform: "node",
-  target: "node20",
+  target: "node24",
   outdir: "dist",
   outbase: "src",
   format: "cjs",

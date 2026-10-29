@@ -24,7 +24,7 @@ export function readBackupText(text: string, size: number): BackupReadResult {
     return {
       ok: false,
       message:
-        "JSONとして読み込めませんでした。FXレビューで保存したバックアップを選んでください。",
+        "JSONとして読み込めませんでした。とれみるで保存したバックアップを選んでください。",
     };
   }
   const app =
@@ -35,7 +35,7 @@ export function readBackupText(text: string, size: number): BackupReadResult {
     return {
       ok: false,
       message:
-        "FXレビューのバックアップではありません。設定の「JSONを保存」で保存したファイルを選んでください。",
+        "とれみるのバックアップではありません。設定の「JSONを保存」で保存したファイルを選んでください。",
     };
   return { ok: true, body };
 }

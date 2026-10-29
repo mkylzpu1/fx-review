@@ -71,7 +71,7 @@ export function GuidePage() {
             <div className="space-y-2">
               <h1 className="text-xl font-bold leading-tight">ご利用ガイド</h1>
               <p className="text-sm leading-relaxed text-ink-sub">
-                FXレビューを使い始めるための、3つのステップです。このアプリは、自分のパソコンの中だけで動かします。
+                とれみるを使い始めるための、3つのステップです。このアプリは、自分のパソコンの中だけで動かします。
               </p>
             </div>
             <ol className="grid gap-3 sm:grid-cols-3">

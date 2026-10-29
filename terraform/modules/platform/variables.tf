@@ -16,7 +16,7 @@ variable "aws_region" {
 
 variable "lambda_runtime" {
   type        = string
-  default     = "nodejs20.x"
+  default     = "nodejs24.x"
   description = "Node.js Lambda runtime version."
 }
 

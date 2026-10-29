@@ -25,3 +25,4 @@ frontend/.env.local
 backend/.tmp-scripts/
 # DBバックアップ（個人のトレードデータを含むのでコミットしない）
 backups/
+dist-site/

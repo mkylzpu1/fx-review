@@ -12,7 +12,7 @@ describe("backupFile", () => {
     );
   });
 
-  it("FXレビューのバックアップは受け付ける", () => {
+  it("とれみるのバックアップは受け付ける", () => {
     const r = readBackupText('{"app":"fx-review","version":1,"data":{}}', 40);
     expect(r.ok).toBe(true);
   });

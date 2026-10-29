@@ -100,17 +100,14 @@ const bandAt = (p: number, [a, b, c, d]: Chapter["band"]) =>
 function Actions() {
   return (
     <div className="lp-actions">
-      <Link to={ROUTES.LOGIN} className="lp-btn">
-        ログインして始める
-      </Link>
-      <Link to={ROUTES.GUIDE} className="lp-link">
+      <Link to={ROUTES.GUIDE} className="lp-btn">
         ご利用ガイドを見る
       </Link>
     </div>
   );
 }
 
-/** FXレビューの紹介ページ（ログイン不要）。ローソク足の街の上を、カメラが飛ぶ */
+/** とれみるの紹介ページ（ログイン不要）。ローソク足の街の上を、カメラが飛ぶ */
 export function LandingPage() {
   const worldRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -126,7 +123,7 @@ export function LandingPage() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = "FXレビュー｜トレードを見返して、次に活かす";
+    document.title = "とれみる｜トレードを見返して、次に活かす";
     return () => {
       document.title = prev;
     };
@@ -250,14 +247,13 @@ export function LandingPage() {
     <div className="lp">
       <nav className="lp-nav">
         <div className="lp-nav-in">
-          <a href="/lp" className="lp-brand">
+          <Link to={ROUTES.LP} className="lp-brand">
             <BrandMark size={20} />
-            FXレビュー
-          </a>
+            とれみる
+          </Link>
           <div className="lp-nav-links">
-            <Link to={ROUTES.GUIDE}>ご利用ガイド</Link>
-            <Link to={ROUTES.LOGIN} className="lp-pill-sm">
-              ログイン
+            <Link to={ROUTES.GUIDE} className="lp-pill-sm">
+              ご利用ガイド
             </Link>
           </div>
         </div>
@@ -267,7 +263,7 @@ export function LandingPage() {
         <section
           ref={worldRef}
           className="lp-world"
-          aria-label="FXレビューの紹介"
+          aria-label="とれみるの紹介"
         >
           <div ref={stageRef} className="lp-stage">
             <canvas ref={canvasRef} aria-hidden="true" />
@@ -376,10 +372,10 @@ export function LandingPage() {
       <footer className="lp-footer">
         <span>
           <BrandMark size={16} />
-          FXレビュー
+          とれみる
         </span>
         <a
-          href="/lp"
+          href="#top"
           onClick={(e) => {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: "smooth" });
@@ -393,7 +389,7 @@ export function LandingPage() {
         <div ref={loaderBar} className="lp-loader-bar" />
         <b>
           <BrandMark size={22} />
-          FXレビュー
+          とれみる
         </b>
         <span ref={loaderNum} className="lp-loader-num">
           000

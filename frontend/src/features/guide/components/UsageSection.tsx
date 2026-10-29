@@ -1,8 +1,21 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/constants/routes";
 import { Callout, Code, GuideSection, Step, StepList } from "./GuideParts";
 
 const LINK = "font-bold text-accent-link underline";
+
+/** 公開サイト（LPとガイドだけ）ではアプリ本体の画面に飛べないので、リンクにせず太字にする */
+const PUBLIC_SITE = import.meta.env.VITE_PUBLIC_SITE === "1";
+
+function AppLink({ to, children }: { to: string; children: ReactNode }) {
+  if (PUBLIC_SITE) return <b>{children}</b>;
+  return (
+    <Link to={to} className={LINK}>
+      {children}
+    </Link>
+  );
+}
 export const USAGE_STEPS = [
   "use-record",
   "use-chart",
@@ -26,9 +39,7 @@ export function UsageSection() {
         <Step id="use-record" no={1} title="トレードを記録する">
           <p>
             楽天FX証券の約定履歴CSVは、まとめて取り込めます。
-            <Link to={ROUTES.TRADE_IMPORT} className={LINK}>
-              CSVを取り込む
-            </Link>
+            <AppLink to={ROUTES.TRADE_IMPORT}>CSVを取り込む</AppLink>
             を開き、「①ファイルを選ぶ → ②内容を確認 → ③取り込む」と進みます。
           </p>
           <p>
@@ -66,38 +77,27 @@ export function UsageSection() {
         <Step id="use-review" no={3} title="計画・ルール・振り返りを書く">
           <p>
             トレード詳細の右側のタブに、計画と結果、ルールを守れたか、振り返りを残します。ルールは、
-            <Link to={ROUTES.RULES} className={LINK}>
-              ルール
-            </Link>
+            <AppLink to={ROUTES.RULES}>ルール</AppLink>
             の画面で作ります。
           </p>
         </Step>
         <Step id="use-stats" no={4} title="統計で、自分のクセを見る">
           <p>
-            <Link to={ROUTES.STATS} className={LINK}>
-              統計
-            </Link>
+            <AppLink to={ROUTES.STATS}>統計</AppLink>
             で、勝率・損益・ルールの守れた度合いを確認します。週ごとの振り返りも、ここから開けます。
           </p>
         </Step>
         <Step id="use-ai" no={5} title="AIに「どう改善する？」と聞く">
           <p>
-            <Link to={ROUTES.EXPORT} className={LINK}>
-              エクスポート
-            </Link>
+            <AppLink to={ROUTES.EXPORT}>エクスポート</AppLink>
             で、期間と含める項目を選び、「コピー」を押します。AIの入力欄に貼り付けて、改善点を聞きます。
           </p>
         </Step>
         <Step id="use-rule" no={6} title="改善案をルールにして、10件で確かめる">
           <p>
             AIの答えから使えるものを選び、
-            <Link to={ROUTES.NOTES} className={LINK}>
-              学習メモ
-            </Link>
-            と
-            <Link to={ROUTES.RULES} className={LINK}>
-              ルール
-            </Link>
+            <AppLink to={ROUTES.NOTES}>学習メモ</AppLink>と
+            <AppLink to={ROUTES.RULES}>ルール</AppLink>
             に残します。次の10件のトレードで、効果があったかを確かめます。
           </p>
         </Step>

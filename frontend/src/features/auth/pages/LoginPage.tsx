@@ -9,7 +9,7 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-bg">
       <div className="card p-8 w-full max-w-sm">
         <h1 className="text-2xl font-bold text-ink mb-2 text-center">
-          FXレビュー
+          とれみる
         </h1>
         <p className="text-ink-sub text-sm text-center mb-8">
           Googleアカウントでログイン

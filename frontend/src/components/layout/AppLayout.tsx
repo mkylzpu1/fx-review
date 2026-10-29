@@ -40,7 +40,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             className="flex items-center gap-2 text-base font-bold"
           >
             <BrandMark />
-            FXレビュー
+            とれみる
           </Link>
           <nav
             aria-label="メイン"
