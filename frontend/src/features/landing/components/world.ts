@@ -102,7 +102,7 @@ export function createWorld(
     antialias: false,
     powerPreference: "high-performance",
   });
-  const pr = Math.min(window.devicePixelRatio, small ? 1.5 : 2);
+  const pr = Math.min(window.devicePixelRatio, small ? 1.25 : 1.5);
   renderer.setPixelRatio(pr);
   renderer.setClearColor(BG);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -351,7 +351,7 @@ export function createWorld(
   }
 
   // --- ちり ---
-  const dustN = small ? 700 : 1800;
+  const dustN = small ? 300 : 800;
   const dp = new Float32Array(dustN * 3);
   const rd = mulberry32(5);
   for (let i = 0; i < dustN; i++) {
@@ -426,9 +426,23 @@ export function createWorld(
   let alive = true;
   const clock = new THREE.Clock();
 
+  // 画面外・非表示タブでは描画を止める（無駄なGPU負荷を避ける）
+  let visible = true;
+  const io = new IntersectionObserver(
+    ([e]) => {
+      visible = e.isIntersecting;
+    },
+    { threshold: 0 },
+  );
+  io.observe(canvas);
+
   const frame = () => {
     if (!alive) return;
     raf = requestAnimationFrame(frame);
+    if (!visible || document.hidden) {
+      clock.getDelta();
+      return;
+    }
     const dt = Math.min(clock.getDelta(), 0.05);
     const time = reduceMotion ? 0 : clock.elapsedTime;
     if (started && startAt === -99) startAt = time;
@@ -479,6 +493,7 @@ export function createWorld(
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onMove);
+      io.disconnect();
       unit.dispose();
       beamGeo.dispose();
       gateGeo.dispose();
