@@ -35,6 +35,40 @@ function getVerifier() {
   return verifier;
 }
 
+/** 手元から来たリクエストのHostとして認めるもの（ポート番号は無視する） */
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * IS_LOCAL=true（認証を省くモード）を使ってよい状況かを確かめる。使えないときは例外を投げる。
+ *
+ * 守りは2つ:
+ * 1. 本物のAWS Lambda上（sam local ではない）では、IS_LOCAL=true でも認証を省かない。
+ *    設定ミスで本番が「誰でも入れる」状態になるのを防ぐ。
+ * 2. Hostヘッダーが手元のもの（localhost など）でなければ拒否する。
+ *    悪意のあるサイトが自分のドメインを 127.0.0.1 に向けて手元のAPIを呼ぶ
+ *    「DNSリバインディング」を防ぐ。Hostが無い（テストなどで直接呼ぶ）場合は通す。
+ */
+export function assertLocalModeAllowed(
+  env: NodeJS.ProcessEnv,
+  hostHeader: string | undefined,
+): void {
+  const onRealLambda =
+    Boolean(env.AWS_LAMBDA_FUNCTION_NAME) && env.AWS_SAM_LOCAL !== "true";
+  if (onRealLambda) {
+    logger.error(
+      "本物のLambda上で IS_LOCAL=true が設定されています。拒否します",
+    );
+    throw new UnauthorizedError("認証設定が不正です");
+  }
+  if (hostHeader) {
+    const host = hostHeader.toLowerCase().replace(/:\d+$/, "");
+    if (!LOCAL_HOSTS.has(host)) {
+      logger.warn("IS_LOCAL: 手元以外のHostからのリクエストを拒否", { host });
+      throw new UnauthorizedError("手元（localhost）からのみ利用できます");
+    }
+  }
+}
+
 /**
  * リクエストのAuthorizationヘッダーからJWTを検証し、ユーザー情報を返す。
  * IS_LOCAL=true の場合はモックユーザーを返す（ローカル開発用）。
@@ -43,6 +77,10 @@ export async function verifyAuth(
   event: APIGatewayProxyEvent,
 ): Promise<AuthUser> {
   if (IS_LOCAL) {
+    assertLocalModeAllowed(
+      process.env,
+      event.headers?.["Host"] ?? event.headers?.["host"],
+    );
     logger.debug("IS_LOCAL=true: モックユーザーで認証をバイパス");
     return {
       userId: "local-user-id",
