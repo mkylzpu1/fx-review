@@ -42,17 +42,29 @@ describe("ご利用ガイド", () => {
   it("「できた」を押すと進み具合が増え、覚えておく", () => {
     const { unmount } = renderIt();
     const setup = screen.getByRole("region", { name: /セットアップ/ });
-    expect(within(setup).getByText("0 / 8 完了")).toBeInTheDocument();
+    expect(within(setup).getByText("0 / 9 完了")).toBeInTheDocument();
     fireEvent.click(
       within(setup).getAllByRole("button", { name: "できた" })[0],
     );
-    expect(within(setup).getByText("1 / 8 完了")).toBeInTheDocument();
+    expect(within(setup).getByText("1 / 9 完了")).toBeInTheDocument();
     unmount();
     renderIt();
     expect(
       within(screen.getByRole("region", { name: /セットアップ/ })).getByText(
-        "1 / 8 完了",
+        "1 / 9 完了",
       ),
+    ).toBeInTheDocument();
+  });
+
+  it("セットアップに、アプリをクローンする手順がある", () => {
+    renderIt();
+    expect(
+      screen.getByRole("heading", {
+        name: /アプリをパソコンにダウンロードする/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("git clone https://github.com/mkylzpu1/fx-review.git"),
     ).toBeInTheDocument();
   });
 
