@@ -373,8 +373,6 @@ export function createWorld(
     renderer.setSize(w, h, false);
     composer.setPixelRatio(pr);
     composer.setSize(w, h);
-    // ブルームは半分の解像度で計算する（にじみなので見た目はほぼ変わらず、負荷は大きく下がる）
-    bloom.setSize(w * pr * 0.5, h * pr * 0.5);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   };
