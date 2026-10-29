@@ -65,7 +65,7 @@
 /* 3Dの世界 */
 .lp-world {
   position: relative;
-  height: 1150vh;
+  height: 1050vh;
 }
 .lp-stage {
   position: sticky;
@@ -709,8 +709,13 @@
   max-width: 760px;
   margin-bottom: 4svh;
 }
+.lp-show-head h2,
+.lp-feat-text h3,
+.lp-closing h2 {
+  text-wrap: balance;
+}
 .lp-show-head h2 {
-  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-size: clamp(1.8rem, 4.4vw, 3.2rem);
   line-height: 1.2;
 }
 .lp-show-head p {

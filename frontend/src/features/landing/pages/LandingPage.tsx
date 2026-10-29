@@ -10,6 +10,7 @@ import {
   RulesVisual,
   WeeklyVisual,
 } from "../components/Visuals";
+import { Showcase } from "../components/Showcase";
 import type { WorldHandle } from "../components/world";
 import "../landing.css";
 
@@ -29,13 +30,13 @@ const CHAPTERS: Chapter[] = [
     id: "hero",
     label: "はじめに",
     side: "center",
-    band: [-1, -0.5, 0.07, 0.11],
+    band: [-1, -0.5, 0.078, 0.122],
   },
   {
     id: "statement",
     label: "整っていく",
     side: "center",
-    band: [0.11, 0.14, 0.17, 0.21],
+    band: [0.122, 0.156, 0.189, 0.233],
   },
   {
     id: "import",
@@ -43,7 +44,7 @@ const CHAPTERS: Chapter[] = [
     title: "取り込む",
     body: "楽天FX証券の約定履歴CSVから、トレードをまとめて登録。注文履歴CSVを重ねれば、SL・TPも自動で反映されます。",
     side: "left",
-    band: [0.22, 0.26, 0.3, 0.34],
+    band: [0.244, 0.289, 0.333, 0.378],
     visual: <ImportVisual />,
   },
   {
@@ -52,7 +53,7 @@ const CHAPTERS: Chapter[] = [
     title: "見返す",
     body: "MT5の1分足で、エントリーから決済までを再現。最大含み益・含み損や、決済後にどこまで伸びたかも線で見えます。",
     side: "right",
-    band: [0.35, 0.39, 0.43, 0.47],
+    band: [0.389, 0.433, 0.478, 0.522],
     visual: <ReviewVisual />,
   },
   {
@@ -61,7 +62,7 @@ const CHAPTERS: Chapter[] = [
     title: "確かめる",
     body: "自分で決めたルールが発注前チェックになり、守った時と破った時の成績を並べて比べられます。",
     side: "left",
-    band: [0.48, 0.52, 0.56, 0.6],
+    band: [0.533, 0.578, 0.622, 0.667],
     visual: <RulesVisual />,
   },
   {
@@ -70,7 +71,7 @@ const CHAPTERS: Chapter[] = [
     title: "週で見る",
     body: "セッション・曜日・時間帯・ロットなど条件別の統計と週次レビューで、勝ち負けの偏りを数字で見つけます。",
     side: "right",
-    band: [0.61, 0.65, 0.69, 0.73],
+    band: [0.678, 0.722, 0.767, 0.811],
     visual: <WeeklyVisual />,
   },
   {
@@ -79,14 +80,8 @@ const CHAPTERS: Chapter[] = [
     title: "AIに聞く",
     body: "記録をまとめて出力し、AIに「どう改善すべきか」を分析してもらえます。",
     side: "left",
-    band: [0.74, 0.78, 0.82, 0.86],
+    band: [0.822, 0.867, 2, 3],
     visual: <AiVisual />,
-  },
-  {
-    id: "closing",
-    label: "はじめる",
-    side: "center",
-    band: [0.88, 0.92, 2, 3],
   },
 ];
 
@@ -103,6 +98,18 @@ function Actions() {
       <Link to={ROUTES.GUIDE} className="lp-btn">
         ご利用ガイドを見る
       </Link>
+      <a
+        href="#showcase"
+        className="lp-link"
+        onClick={(e) => {
+          e.preventDefault();
+          document
+            .getElementById("showcase")
+            ?.scrollIntoView({ behavior: "auto" });
+        }}
+      >
+        実際の画面を見る
+      </a>
     </div>
   );
 }
@@ -292,16 +299,6 @@ export function LandingPage() {
                       <p className="lp-chap-sub">{c.body}</p>
                     </>
                   )}
-                  {c.id === "closing" && (
-                    <>
-                      <h2>
-                        次のトレードの前に、
-                        <br />
-                        <span className="lp-grad">見返そう。</span>
-                      </h2>
-                      <Actions />
-                    </>
-                  )}
                 </div>
                 {c.visual && <div className="lp-glass">{c.visual}</div>}
               </div>
@@ -346,6 +343,8 @@ export function LandingPage() {
         </section>
       )}
 
+      <Showcase />
+
       <section className="lp-local">
         <div className="lp-local-in" data-in="true">
           <h2>自分のパソコンの中で動かします。</h2>
@@ -353,6 +352,15 @@ export function LandingPage() {
             トレードの記録は、自分のパソコンの中のデータベースに入ります。MT5とつなぐ最初の準備だけ、ご利用ガイドの手順どおりに進めてください。
           </p>
         </div>
+      </section>
+
+      <section className="lp-closing">
+        <h2>
+          次のトレードの前に、
+          <br />
+          <span className="lp-grad">見返そう。</span>
+        </h2>
+        <Actions />
       </section>
 
       <footer className="lp-footer">
