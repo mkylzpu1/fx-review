@@ -100,10 +100,7 @@ const bandAt = (p: number, [a, b, c, d]: Chapter["band"]) =>
 function Actions() {
   return (
     <div className="lp-actions">
-      <Link to={ROUTES.LOGIN} className="lp-btn">
-        ログインして始める
-      </Link>
-      <Link to={ROUTES.GUIDE} className="lp-link">
+      <Link to={ROUTES.GUIDE} className="lp-btn">
         ご利用ガイドを見る
       </Link>
     </div>
@@ -250,14 +247,13 @@ export function LandingPage() {
     <div className="lp">
       <nav className="lp-nav">
         <div className="lp-nav-in">
-          <a href="/lp" className="lp-brand">
+          <Link to={ROUTES.LP} className="lp-brand">
             <BrandMark size={20} />
             とれみる
-          </a>
+          </Link>
           <div className="lp-nav-links">
-            <Link to={ROUTES.GUIDE}>ご利用ガイド</Link>
-            <Link to={ROUTES.LOGIN} className="lp-pill-sm">
-              ログイン
+            <Link to={ROUTES.GUIDE} className="lp-pill-sm">
+              ご利用ガイド
             </Link>
           </div>
         </div>
@@ -379,7 +375,7 @@ export function LandingPage() {
           とれみる
         </span>
         <a
-          href="/lp"
+          href="#top"
           onClick={(e) => {
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: "smooth" });
