@@ -59,6 +59,15 @@ const RGB_SHIFT = {
 interface Inst {
   m: THREE.Matrix4;
   c?: THREE.Color;
+  /** 生え方の計算用（位置・大きさ・伸びる起点の高さ） */
+  x: number;
+  py: number;
+  pz: number;
+  sx: number;
+  sy: number;
+  sz: number;
+  ay: number;
+  g: number;
 }
 
 export function createWorld(
@@ -150,24 +159,39 @@ export function createWorld(
       const top = Math.max(o, c);
       const isUp = c >= o;
       const col = hdr(isUp ? GREEN : RED, isUp ? 2.4 : 2.2);
-      const body = { m: mat(x, by, z, w, bh, w) };
-      const bodyMir = { m: mat(x, -by, z, w, -bh, w) };
-      (isUp ? up : dn).push(body);
-      (isUp ? upMir : dnMir).push(bodyMir);
-      caps.push({ m: mat(x, top + 0.08, z, w + 0.1, 0.18, w + 0.1), c: col });
-      capsMir.push({
-        m: mat(x, -top - 0.08, z, w + 0.1, -0.18, w + 0.1),
-        c: col.clone().multiplyScalar(0.3),
+      const I = (
+        py: number,
+        sx: number,
+        sy: number,
+        ay: number,
+        c?: THREE.Color,
+      ): Inst => ({
+        m: mat(x, py, z, sx, sy, sx),
+        c,
+        x,
+        py,
+        pz: z,
+        sx,
+        sy,
+        sz: sx,
+        ay,
+        g: 1,
       });
-      wicks.push({
-        m: mat(x, (hi + lo) / 2, z, 0.16, hi - lo, 0.16),
-        c: hdr(isUp ? GREEN : RED, 1.1),
-      });
+      (isUp ? up : dn).push(I(by, w, bh, by));
+      (isUp ? upMir : dnMir).push(I(-by, w, -bh, -by));
+      caps.push(I(top + 0.08, w + 0.1, 0.18, by, col));
+      capsMir.push(
+        I(-top - 0.08, w + 0.1, -0.18, -by, col.clone().multiplyScalar(0.3)),
+      );
+      wicks.push(
+        I((hi + lo) / 2, 0.16, hi - lo, by, hdr(isUp ? GREEN : RED, 1.1)),
+      );
       pts.push(new THREE.Vector3(x, ema, rz));
     }
     emaPts[ri] = pts;
   });
 
+  const parts: { im: THREE.InstancedMesh; items: Inst[] }[] = [];
   const unit = new THREE.BoxGeometry(1, 1, 1);
   const mk = (
     geo: THREE.BufferGeometry,
@@ -183,6 +207,7 @@ export function createWorld(
     if (im.instanceColor) im.instanceColor.needsUpdate = true;
     im.frustumCulled = false;
     scene.add(im);
+    parts.push({ im, items });
     return im;
   };
 
@@ -229,6 +254,31 @@ export function createWorld(
   mk(unit, capMat, caps);
   mk(unit, capMirMat, capsMir);
   mk(unit, wickMat, wicks);
+
+  // --- 進むにつれてローソク足が育つ ---
+  const GROW_W = 44;
+  const END_X = X0 + (N - 1) * SP;
+  const M4 = new THREE.Matrix4();
+  const PV = new THREE.Vector3();
+  const SV = new THREE.Vector3();
+  const setReveal = (front: number) => {
+    parts.forEach(({ im, items }) => {
+      let dirty = false;
+      items.forEach((it, i) => {
+        const t = THREE.MathUtils.clamp((front - it.x) / GROW_W, 0, 1);
+        const g = Math.max(0.0001, 1 - Math.pow(1 - t, 3));
+        if (g === it.g) return;
+        it.g = g;
+        PV.set(it.x, it.ay + (it.py - it.ay) * g, it.pz);
+        SV.set(it.sx, it.sy * g, it.sz);
+        M4.compose(PV, q, SV);
+        im.setMatrixAt(i, M4);
+        dirty = true;
+      });
+      if (dirty) im.instanceMatrix.needsUpdate = true;
+    });
+  };
+  setReveal(reduceMotion ? 1e9 : 60);
 
   // --- 床と格子 ---
   const floor = new THREE.Mesh(
@@ -433,6 +483,22 @@ export function createWorld(
     const u = Math.min(0.9999, Math.max(0.0001, pS));
     const fogK = THREE.MathUtils.smoothstep(u, 0.7, 1);
     (scene.fog as THREE.FogExp2).density = fogBase * (1 - 0.8 * fogK);
+
+    // 進行に合わせて、右（未来）へ向かってローソク足と移動平均線が伸びる
+    const front = reduceMotion
+      ? 1e9
+      : THREE.MathUtils.lerp(
+          60,
+          END_X + GROW_W + 8,
+          THREE.MathUtils.clamp(u / 0.85, 0, 1),
+        );
+    setReveal(front);
+    const frac = THREE.MathUtils.clamp((front - X0) / (END_X - X0), 0.02, 1);
+    const emaGeo = tubes[0].geometry;
+    if (emaGeo.index) {
+      const per = emaGeo.index.count / (N * 2);
+      emaGeo.setDrawRange(0, Math.floor(frac * N * 2) * per);
+    }
     path.getPointAt(u, pos);
     look.getPointAt(u, tgt);
     path.getTangentAt(u, tan0);
@@ -455,7 +521,8 @@ export function createWorld(
     shift.uniforms.uAmount.value = 0.001 + vel * 0.003 + (1 - ease) * 0.004;
     dust.position.y = Math.sin(time * 0.3) * 0.6;
     comets.forEach((c, i) => {
-      const base = reduceMotion ? i / COMETS : (time * 0.045 + i / COMETS) % 1;
+      const base =
+        (reduceMotion ? i / COMETS : (time * 0.045 + i / COMETS) % 1) * frac;
       emaCurve.getPointAt(base, cp);
       c.head.position.copy(cp).setY(cp.y + 0.8);
       c.trail.forEach((t, k) => {
