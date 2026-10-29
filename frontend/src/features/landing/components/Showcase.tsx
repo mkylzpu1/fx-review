@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { ShowExport } from "./ShowExport";
 import { ShowImport } from "./ShowImport";
 import { ShowRules } from "./ShowRules";
-import { ShowShare } from "./ShowShare";
 import { ShotFrame } from "./ShotFrame";
 import { ShowWeekly } from "./ShowWeekly";
 
@@ -52,7 +51,14 @@ const FEATURES: Feature[] = [
       "損益額・口座・感情タグ・振り返りの記述は、共有されない",
       "URLは24時間で自動的に消える（公開の設定は、ご利用ガイドの手順C）",
     ],
-    ui: <ShowShare />,
+    ui: (
+      <ShotFrame
+        name="share"
+        alt="公開されたチャートの実際の画面。1分足と1時間足を2画面で並べ、左上に計画と根拠・メモ、EMAの切り替えや時間足の切り替えができる"
+        width={3022}
+        height={1722}
+      />
+    ),
   },
   {
     id: "rules",
