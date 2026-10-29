@@ -44,7 +44,7 @@ function ResetButton() {
 export function GuidePage() {
   return (
     <GuideProgressProvider>
-      <div className="mx-auto max-w-5xl lg:grid lg:grid-cols-[14rem_1fr] lg:gap-10">
+      <div className="lg:grid lg:grid-cols-[14rem_1fr] lg:gap-10">
         <aside className="hidden lg:block">
           <nav
             aria-label="ガイドの目次"
