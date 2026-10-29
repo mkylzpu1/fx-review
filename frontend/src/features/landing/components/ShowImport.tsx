@@ -75,7 +75,7 @@ export function ShowImport() {
       {step === 1 && (
         <div className="space-y-3">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[22rem] text-sm">
+            <table className="w-full text-sm">
               <caption className="sr-only">取り込む内容の確認</caption>
               <thead>
                 <tr className="border-b border-line text-left text-xs text-ink-mute">

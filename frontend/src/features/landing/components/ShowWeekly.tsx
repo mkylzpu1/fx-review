@@ -23,7 +23,7 @@ export function ShowWeekly() {
         </span>
       </div>
 
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <dl className="grid grid-cols-4 gap-2">
         {[
           ["トレード数", "9件"],
           ["勝率", "67%"],

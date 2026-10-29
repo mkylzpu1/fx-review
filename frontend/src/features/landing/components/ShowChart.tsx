@@ -262,7 +262,7 @@ export function ShowChart() {
       <div className="overflow-x-auto rounded-card border border-line bg-card">
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="block min-w-[600px]"
+          className="block w-full"
           role="img"
           aria-label="見本のローソク足チャート"
         >

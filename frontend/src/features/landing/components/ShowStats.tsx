@@ -116,7 +116,7 @@ export function ShowStats() {
         ))}
       </div>
 
-      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <dl className="grid grid-cols-3 gap-2">
         {METRICS.map(([k, v, note]) => (
           <div key={k} className="rounded-card border border-line p-3">
             <dt className="text-xs text-ink-mute">{k}</dt>

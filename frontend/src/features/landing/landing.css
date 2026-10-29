@@ -724,34 +724,43 @@
   line-height: 1.8;
   color: var(--mute);
 }
+.lp-win-host {
+  width: 100%;
+}
+.lp-win {
+  max-width: none;
+}
 .lp-feat {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: clamp(28px, 5vw, 64px);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(24px, 4svh, 44px);
   padding: 8svh 0;
   border-top: 1px solid var(--edge);
 }
-.lp-feat[data-flip="true"] .lp-feat-text {
-  order: 2;
-}
+/* 文章は上に2列で置き、画面はPC版の幅いっぱいで下に見せる */
 .lp-feat-text {
-  position: sticky;
-  top: 12svh;
+  display: grid;
+  grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  column-gap: clamp(28px, 5vw, 64px);
+  align-items: start;
 }
 .lp-feat-text h3 {
+  grid-column: 1;
   font-size: clamp(1.6rem, 3vw, 2.4rem);
   line-height: 1.3;
   font-weight: 800;
 }
 .lp-feat-text p {
+  grid-column: 1;
   margin-top: 16px;
   font-size: 16px;
   line-height: 1.85;
   color: #d4dae1;
 }
 .lp-feat-text ul {
-  margin-top: 20px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
   display: grid;
   gap: 10px;
 }
@@ -802,14 +811,13 @@
   color: var(--mute);
 }
 @media (max-width: 860px) {
-  .lp-feat {
+  .lp-feat-text {
     grid-template-columns: minmax(0, 1fr);
   }
-  .lp-feat[data-flip="true"] .lp-feat-text {
-    order: 0;
-  }
-  .lp-feat-text {
-    position: static;
+  .lp-feat-text ul {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 20px;
   }
 }
 .lp-closing {

@@ -107,8 +107,8 @@ export function Showcase() {
         </p>
       </header>
 
-      {FEATURES.map((f, i) => (
-        <article key={f.id} className="lp-feat" data-flip={i % 2 === 1}>
+      {FEATURES.map((f) => (
+        <article key={f.id} className="lp-feat">
           <div className="lp-feat-text">
             <h3>{f.title}</h3>
             <p>{f.lead}</p>
