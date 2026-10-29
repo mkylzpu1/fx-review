@@ -27,6 +27,9 @@ Parameters:
   DatabaseUrl:
     Type: String
     Default: "postgresql://postgres:postgres@host.docker.internal:5433/postgres"
+  # 注意: このテンプレートは手元（sam local）専用。IsLocal=true は認証（Cognito）を省く設定。
+  # このテンプレートを AWS に sam deploy しないこと。念のため backend/src/lib/cognito.ts は、
+  # 本物のLambda上では IsLocal=true でも認証を省かない。
   IsLocal:
     Type: String
     Default: "true"
