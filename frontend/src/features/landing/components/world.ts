@@ -266,11 +266,17 @@ export function createWorld(
       let dirty = false;
       items.forEach((it, i) => {
         const t = THREE.MathUtils.clamp((front - it.x) / GROW_W, 0, 1);
-        const g = Math.max(0.0001, 1 - Math.pow(1 - t, 3));
+        // まだ育っていないものは、潰れた線ではなく完全に隠す
+        const g = t === 0 ? 0 : 1 - Math.pow(1 - t, 3);
         if (g === it.g) return;
         it.g = g;
-        PV.set(it.x, it.ay + (it.py - it.ay) * g, it.pz);
-        SV.set(it.sx, it.sy * g, it.sz);
+        if (g === 0) {
+          PV.set(it.x, it.py, it.pz);
+          SV.set(1e-6, 1e-6, 1e-6);
+        } else {
+          PV.set(it.x, it.ay + (it.py - it.ay) * g, it.pz);
+          SV.set(it.sx, it.sy * g, it.sz);
+        }
         M4.compose(PV, q, SV);
         im.setMatrixAt(i, M4);
         dirty = true;
