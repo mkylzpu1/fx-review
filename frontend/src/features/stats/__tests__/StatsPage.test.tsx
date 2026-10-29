@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -194,6 +194,48 @@ describe("統計", () => {
     await userEvent.click(box.getByRole("button", { name: "R" }));
     expect(box.getAllByTestId("day-bar")).toHaveLength(1);
     expect(box.getByText("+1.00R")).toBeInTheDocument();
+  });
+
+  it("日々の成長: カーソルを合わせた日の詳細がポップアップで出る", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(stats());
+    renderPage();
+    const box = within(
+      (await screen.findByRole("heading", { name: "日々の成長" })).closest(
+        "section",
+      )!,
+    );
+    const svg = box.getByRole("img", { name: /日々の成長/ });
+    vi.spyOn(svg, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      top: 0,
+      right: 640,
+      bottom: 300,
+      width: 640,
+      height: 300,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    expect(box.queryByTestId("daily-tooltip")).not.toBeInTheDocument();
+
+    // 左半分 = 1日目
+    fireEvent.mouseMove(svg, { clientX: 150 });
+    let tip = within(box.getByTestId("daily-tooltip"));
+    expect(tip.getByText("2026/10/01(木)")).toBeInTheDocument();
+    expect(tip.getByText("2件（勝ち1・負け1）")).toBeInTheDocument();
+    expect(tip.getAllByText("+¥2,000")).toHaveLength(2); // その日・累積
+    expect(tip.getByText("+20.0 pips")).toBeInTheDocument();
+
+    // 右半分 = 2日目（Rが無い日は「—」）
+    fireEvent.mouseMove(svg, { clientX: 500 });
+    tip = within(box.getByTestId("daily-tooltip"));
+    expect(tip.getByText("2026/10/02(金)")).toBeInTheDocument();
+    expect(tip.getByText("−¥800")).toBeInTheDocument();
+    expect(tip.getByText("—")).toBeInTheDocument();
+    expect(tip.getByText("+¥1,200")).toBeInTheDocument();
+
+    fireEvent.mouseLeave(svg);
+    expect(box.queryByTestId("daily-tooltip")).not.toBeInTheDocument();
   });
 
   it("0件なら空状態と取り込みへの導線", async () => {

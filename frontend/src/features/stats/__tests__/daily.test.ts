@@ -4,6 +4,7 @@ import {
   dayCounts,
   dayValue,
   formatAxis,
+  fullDate,
   formatMetric,
   shortDate,
 } from "../utils/daily";
@@ -42,6 +43,7 @@ describe("日々の成長 utils", () => {
     expect(formatMetric(12, "pips")).toBe("+12.0 pips");
     expect(formatAxis(12345.6, "pnl")).toBe("12,346");
     expect(shortDate("2026-10-05")).toBe("10/5");
+    expect(fullDate("2026-10-05")).toBe("2026/10/05(月)");
   });
 
   it("プラス・マイナスの日数を数える（ゼロとR無しは数えない）", () => {

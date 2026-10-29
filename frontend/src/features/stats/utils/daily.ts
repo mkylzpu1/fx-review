@@ -53,3 +53,11 @@ export function dayCounts(daily: DailyPoint[], m: DailyMetric) {
   }
   return { days: daily.length, plus, minus };
 }
+
+const DOW = ["日", "月", "火", "水", "木", "金", "土"];
+
+/** 「2026/10/21(火)」 */
+export function fullDate(date: string): string {
+  const dow = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return `${date.replace(/-/g, "/")}(${DOW[dow]})`;
+}
