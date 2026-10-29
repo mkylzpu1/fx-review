@@ -392,16 +392,14 @@ export function createWorld(
     return THREE.MathUtils.lerp(emaPts[0][i].y, emaPts[0][i + 1].y, f - i);
   };
   // [カメラx, 線からの高さ, カメラz, 注視x, 注視の高さ, 注視z]
+  // 酔わないよう、距離をとって同じ側からゆっくり進む
   const KEYS = [
-    [-45, 45, 95, 30, 5, 0], // 全景（斜め前から）
-    [30, 26, 58, 105, 6, 0], // 寄っていく
-    [110, 10, 34, 175, 8, 0], // 横から並走
-    [185, -30, 26, 250, 18, 0], // ローアングルで見上げる
-    [255, 22, 40, 320, 4, 0], // 持ち上がる
-    [325, 58, 28, 385, -4, 0], // 真上近くから見下ろす
-    [395, 42, -40, 450, 4, 0], // 高さを保ったまま裏側へ回り込む
-    [465, 18, -36, 520, 6, 0], // 裏側から並走
-    [545, 70, 105, 480, 8, 0], // 引いて全体を見渡す
+    [-60, 60, 130, 40, 5, 0], // 全景
+    [80, 40, 100, 160, 5, 0],
+    [200, 30, 90, 280, 10, 0],
+    [320, 70, 80, 400, 0, 0],
+    [440, 55, 105, 500, 5, 0],
+    [550, 85, 140, 470, 8, 0], // 引いて全体を見渡す
   ];
   const path = new THREE.CatmullRomCurve3(
     KEYS.map(
@@ -452,7 +450,7 @@ export function createWorld(
     if (started && startAt === -99) startAt = time;
 
     const d = control.progress - pS;
-    pS += reduceMotion ? d : d * Math.min(1, dt * 3);
+    pS += reduceMotion ? d : d * Math.min(1, dt * 1.6);
     vel += (Math.min(1, Math.abs(d) * 45) - vel) * Math.min(1, dt * 4);
     mouseS.lerp(mouse, Math.min(1, dt * 3));
 
@@ -467,16 +465,16 @@ export function createWorld(
     const ease = 1 - Math.pow(1 - it, 3);
     renderer.toneMappingExposure = 1.05 * (0.15 + 0.85 * ease);
 
-    const bank = THREE.MathUtils.clamp((tan1.z - tan0.z) * -7, -0.35, 0.35);
+    const bank = THREE.MathUtils.clamp((tan1.z - tan0.z) * -7, -0.06, 0.06);
     camera.position.copy(pos);
     camera.up.set(0, Math.cos(bank), Math.sin(bank));
     camera.lookAt(tgt);
-    camera.translateX(mouseS.x * 1.6);
-    camera.translateY(-mouseS.y * 0.9);
-    camera.fov = 58 + vel * 14 + (1 - ease) * 34;
+    camera.translateX(mouseS.x * 0.6);
+    camera.translateY(-mouseS.y * 0.4);
+    camera.fov = 50 + vel * 3 + (1 - ease) * 14;
     camera.updateProjectionMatrix();
 
-    shift.uniforms.uAmount.value = 0.0012 + vel * 0.012 + (1 - ease) * 0.01;
+    shift.uniforms.uAmount.value = 0.001 + vel * 0.003 + (1 - ease) * 0.004;
     dust.position.y = Math.sin(time * 0.3) * 0.6;
     beams.forEach((b, i) => {
       (b.material as THREE.MeshBasicMaterial).opacity =
