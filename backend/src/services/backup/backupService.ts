@@ -21,7 +21,7 @@ const shape = Object.fromEntries(
 /** POST /backup/restore のボディ */
 export const BackupFileSchema = z.object({
   app: z.literal(BACKUP_APP, {
-    errorMap: () => ({ message: "FXレビューのバックアップではありません" }),
+    errorMap: () => ({ message: "とれみるのバックアップではありません" }),
   }),
   version: z.literal(BACKUP_VERSION, {
     errorMap: () => ({ message: "対応していないバックアップのバージョンです" }),

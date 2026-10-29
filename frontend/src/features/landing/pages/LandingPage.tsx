@@ -110,7 +110,7 @@ function Actions() {
   );
 }
 
-/** FXレビューの紹介ページ（ログイン不要）。ローソク足の街の上を、カメラが飛ぶ */
+/** とれみるの紹介ページ（ログイン不要）。ローソク足の街の上を、カメラが飛ぶ */
 export function LandingPage() {
   const worldRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -126,7 +126,7 @@ export function LandingPage() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = "FXレビュー｜トレードを見返して、次に活かす";
+    document.title = "とれみる｜トレードを見返して、次に活かす";
     return () => {
       document.title = prev;
     };
@@ -252,7 +252,7 @@ export function LandingPage() {
         <div className="lp-nav-in">
           <a href="/lp" className="lp-brand">
             <BrandMark size={20} />
-            FXレビュー
+            とれみる
           </a>
           <div className="lp-nav-links">
             <Link to={ROUTES.GUIDE}>ご利用ガイド</Link>
@@ -267,7 +267,7 @@ export function LandingPage() {
         <section
           ref={worldRef}
           className="lp-world"
-          aria-label="FXレビューの紹介"
+          aria-label="とれみるの紹介"
         >
           <div ref={stageRef} className="lp-stage">
             <canvas ref={canvasRef} aria-hidden="true" />
@@ -376,7 +376,7 @@ export function LandingPage() {
       <footer className="lp-footer">
         <span>
           <BrandMark size={16} />
-          FXレビュー
+          とれみる
         </span>
         <a
           href="/lp"
@@ -393,7 +393,7 @@ export function LandingPage() {
         <div ref={loaderBar} className="lp-loader-bar" />
         <b>
           <BrandMark size={22} />
-          FXレビュー
+          とれみる
         </b>
         <span ref={loaderNum} className="lp-loader-num">
           000

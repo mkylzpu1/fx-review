@@ -2,9 +2,9 @@
 const FAVICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0E1116"/><g stroke-linecap="round"><path d="M20 12v40" stroke="#6EE7C8" stroke-width="3"/><rect x="13" y="24" width="14" height="20" rx="2" fill="#6EE7C8"/><path d="M44 8v40" stroke="#FF7A8A" stroke-width="3"/><rect x="37" y="14" width="14" height="22" rx="2" fill="#FF7A8A"/></g></svg>';
 
-const SITE_NAME = "FXレビュー";
+const SITE_NAME = "とれみる";
 const DESCRIPTION =
-  "FXレビューの評価用ファイルです。エントリーの計画とチャートを見られます。このリンクは24時間で自動的に消えます。";
+  "とれみるの評価用ファイルです。エントリーの計画とチャートを見られます。このリンクは24時間で自動的に消えます。";
 
 /**
  * 公開ページの <head> に入れる、アイコンとリンクのプレビュー（LINE・Slack・Xなど）用のタグ。
