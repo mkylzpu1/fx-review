@@ -69,6 +69,8 @@ interface Props {
    * 親の「縦軸固定」の表示を、実際の状態に合わせるため
    */
   onAutoScaleChange?: (auto: boolean) => void;
+  /** true のとき、初期表示で読み込んだ足の全体を見せる（画像の書き出し用。既定は、エントリー前後の決まった本数） */
+  fitAll?: boolean;
 }
 
 const EDGE_BARS = 30;
@@ -128,6 +130,7 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
       onNeedMore,
       excursion = null,
       onAutoScaleChange,
+      fitAll = false,
     },
     handleRef,
   ) {
@@ -365,7 +368,8 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
           data.entryTime === null
             ? -1
             : data.candles.findIndex((c) => c.time === data.entryTime);
-        if (idx >= 0)
+        if (fitAll) ts.fitContent();
+        else if (idx >= 0)
           ts.setVisibleLogicalRange({
             from: idx - INITIAL_BARS_BEFORE,
             to: idx + INITIAL_BARS_AFTER,
@@ -401,6 +405,7 @@ export const TradeChart = forwardRef<TradeChartHandle, Props>(
       pipSize,
       overlays.markers,
       overlays.afterShade,
+      fitAll,
     ]);
 
     // 縦軸の自動追従 / 固定（足の差し替えより後に動かして、描画済みの範囲で固定する）
