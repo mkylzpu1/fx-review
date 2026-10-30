@@ -6,7 +6,7 @@ import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { usePairs } from "@/features/settings/hooks/useSettingsApi";
-import { PERIODS, periodFrom } from "@/features/stats/utils/period";
+import { periodFrom } from "@/features/stats/utils/period";
 import type { PeriodKey } from "@/features/stats/types";
 import { formatPips, formatR, formatYenSigned } from "@/utils/format";
 import { CandleSyncButton } from "../components/CandleSyncButton";
@@ -23,7 +23,27 @@ import { summarize } from "../utils/summary";
 import type { Trade, TradeSort } from "../types";
 
 const LIMIT = 20;
-const DEFAULT_PERIOD: PeriodKey = "today";
+const DEFAULT_PERIOD: PeriodKey = "month";
+/** 一覧の期間ボタンの並び（統計画面の並びとは別） */
+const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
+  { value: "all", label: "すべて" },
+  { value: "today", label: "今日" },
+  { value: "month", label: "今月" },
+  { value: "30d", label: "過去30日" },
+  { value: "90d", label: "過去90日" },
+];
+const PERIOD_KEY = "fx-review:trade-list-period";
+/** 前回選んだ期間。無い・不正な値・読み出せないときは初期値（今月） */
+const loadPeriod = (): PeriodKey => {
+  try {
+    const v = localStorage.getItem(PERIOD_KEY);
+    return PERIOD_OPTIONS.some((o) => o.value === v)
+      ? (v as PeriodKey)
+      : DEFAULT_PERIOD;
+  } catch {
+    return DEFAULT_PERIOD;
+  }
+};
 type ResultTab = "all" | "win" | "loss";
 const TABS: { value: ResultTab; label: string; tone?: "profit" | "loss" }[] = [
   { value: "all", label: "すべて" },
@@ -122,8 +142,16 @@ const toneOf = (v: number | null | undefined) =>
   !v ? "text-ink" : v > 0 ? "text-profit" : "text-loss";
 
 export function TradesPage() {
-  // 開いたときは今日のトレードを見る（期間は上のボタンで切り替える）
-  const [period, setPeriod] = useState<PeriodKey>(DEFAULT_PERIOD);
+  // 開いたときは前回選んだ期間（初めては今月）。期間は上のボタンで切り替える
+  const [period, setPeriodState] = useState<PeriodKey>(loadPeriod);
+  const setPeriod = (v: PeriodKey) => {
+    setPeriodState(v);
+    try {
+      localStorage.setItem(PERIOD_KEY, v);
+    } catch {
+      /* 保存できなくても表示には影響しない */
+    }
+  };
   const [tab, setTab] = useState<ResultTab>("all");
   const [pair, setPair] = useState("");
   const [deviationOnly, setDeviationOnly] = useState(false);
@@ -197,7 +225,7 @@ export function TradesPage() {
           <Seg
             label="期間"
             value={period}
-            options={PERIODS}
+            options={PERIOD_OPTIONS}
             onChange={reset(setPeriod)}
           />
           <span aria-hidden="true" className="mx-1.5 h-6 w-px bg-line" />

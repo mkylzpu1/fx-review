@@ -49,7 +49,10 @@ function renderPage() {
 }
 
 describe("トレード一覧", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
 
   it("0件ならはじめの案内を出す", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(page([]));
@@ -237,5 +240,56 @@ describe("トレード一覧", () => {
       "pointer-events-none",
     );
     expect(table.closest("[aria-busy='true']")).toBeNull();
+  });
+  it("期間ボタンは「すべて・今日・今月・過去30日・過去90日」の順で、初期値は今月", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
+    renderPage();
+    await screen.findByRole("table");
+    const group = screen.getByRole("group", { name: "期間" });
+    const buttons = within(group).getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual([
+      "すべて",
+      "今日",
+      "今月",
+      "過去30日",
+      "過去90日",
+    ]);
+    expect(within(group).getByRole("button", { name: "今月" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("選んだ期間をlocalStorageに保存し、開き直しても保持する。不正な値は今月に戻す", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
+    const first = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <TradesPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByRole("table");
+    await userEvent.click(screen.getByRole("button", { name: "過去30日" }));
+    expect(localStorage.getItem("fx-review:trade-list-period")).toBe("30d");
+    first.unmount();
+
+    renderPage();
+    await screen.findByRole("table");
+    expect(screen.getByRole("button", { name: "過去30日" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("保存された期間が不正なら、初期値の今月にする", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
+    localStorage.setItem("fx-review:trade-list-period", "bogus");
+    renderPage();
+    await screen.findByRole("table");
+    expect(screen.getByRole("button", { name: "今月" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });
