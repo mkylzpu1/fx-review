@@ -22,6 +22,8 @@ export interface TradeListQuery {
   q?: string;
   pair?: string;
   from?: string;
+  /** エントリー日時の上限（ISO日時・含む） */
+  to?: string;
   pending?: boolean;
   sort?: TradeSort;
   page?: number;
@@ -69,9 +71,11 @@ const ALL_CONCURRENCY = 4;
  */
 export function useAllTrades(
   q: Omit<TradeListQuery, "page" | "limit" | "sort">,
+  options: { enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: ["trades", "all", q] as const,
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const fetchPage = (page: number) =>
         apiClient.get<Page<Trade>>(

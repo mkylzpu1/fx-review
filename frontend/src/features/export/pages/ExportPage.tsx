@@ -3,6 +3,7 @@ import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { toast } from "@/stores/toastStore";
 import { useExport } from "../hooks/useExport";
+import { BlogZipPanel } from "../blog/BlogZipPanel";
 import type { ExportFormat, ExportRange, Include, IncludeKey } from "../types";
 import { downloadText } from "../utils/download";
 import {
@@ -24,6 +25,7 @@ export function ExportPage() {
     include,
   );
 
+  const [showBlog, setShowBlog] = useState(false);
   const toggle = (k: IncludeKey) => setInclude((p) => ({ ...p, [k]: !p[k] }));
 
   const copy = async () => {
@@ -167,6 +169,17 @@ export function ExportPage() {
             </pre>
           )}
         </section>
+      </div>
+
+      <div className="space-y-2">
+        <button
+          className="btn"
+          aria-expanded={showBlog}
+          onClick={() => setShowBlog((v) => !v)}
+        >
+          ブログ用zip {showBlog ? "▲" : "▼"}
+        </button>
+        {showBlog && <BlogZipPanel />}
       </div>
     </div>
   );
