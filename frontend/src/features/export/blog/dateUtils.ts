@@ -79,12 +79,7 @@ export function isWeekRange(from: string, to: string): boolean {
 }
 
 export type RangePreset =
-  | "today"
-  | "yesterday"
-  | "last7"
-  | "thisMonth"
-  | "thisWeek"
-  | "lastWeek";
+  "today" | "yesterday" | "last7" | "thisMonth" | "thisWeek" | "lastWeek";
 
 /** プリセット → 期間（そのタイムゾーンの暦日） */
 export function presetRange(

@@ -32,6 +32,7 @@ describe("buildZip", () => {
     expect(r.fileName).toBe("tremiru-blog_2026-10-28_2026-10-29.zip");
     const files = unzipSync(r.bytes);
     expect(Object.keys(files).sort()).toEqual([
+      "00_READ_ME_FIRST.md",
       "days/2026-10-28/day.json",
       "days/2026-10-29/charts/01_USDJPY_1m.png",
       "days/2026-10-29/day.json",
@@ -50,6 +51,13 @@ describe("buildZip", () => {
     expect(
       Array.from(files["days/2026-10-29/charts/01_USDJPY_1m.png"]),
     ).toEqual(Array.from(png));
+  });
+  it("Claude向けの指示書が同梱され、このzipの期間とファイル名が入っている", () => {
+    const r = buildZip([makeTrade({ entryAt: "2026-10-28T01:00:00Z" })], opts);
+    const md = strFromU8(unzipSync(r.bytes)["00_READ_ME_FIRST.md"]);
+    expect(md).toContain("1週間のトレード = 1記事");
+    expect(md).toContain("tremiru-blog_2026-10-28_2026-10-29.zip");
+    expect(md).toContain("src/content/weeks/2026-10-28.json");
   });
   it("0件のときは空のzipを作らない", () => {
     const r = buildZip([], opts);

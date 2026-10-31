@@ -6,6 +6,7 @@ import {
   toJson,
   type BuildOptions,
 } from "./buildDayJson";
+import { INSTRUCTIONS_FILE, buildInstructions } from "./buildInstructions";
 import type { Trade } from "@/features/trades/types";
 
 export const zipFileName = (from: string, to: string) =>
@@ -51,7 +52,14 @@ export function buildZip(
   if (built.days.length === 0)
     return { bytes: new Uint8Array(), fileName, empty: true, manifest };
 
+  // 指示書は契約（manifest / day.json）の外にある補助ファイル。ブログ側の取り込みは読まない
+  const instructions = buildInstructions({
+    manifest,
+    days: built.days,
+    zipFileName: fileName,
+  });
   const files: Zippable = {
+    [INSTRUCTIONS_FILE]: [strToU8(instructions), { level: 6 }],
     "manifest.json": [strToU8(toJson(manifest)), { level: 6 }],
   };
   for (const day of built.days) {
