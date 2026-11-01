@@ -282,6 +282,41 @@ describe("トレード一覧", () => {
     );
   });
 
+  it("日付で期間を指定すると from/to（日本時間・終了日は当日末まで含む）で取得し、期間ボタンは未選択になる", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
+    renderPage();
+    await screen.findByRole("table");
+    await userEvent.type(screen.getByLabelText("開始日"), "2026-09-01");
+    await userEvent.type(screen.getByLabelText("終了日"), "2026-09-30");
+    await waitFor(() => {
+      const last = vi.mocked(apiClient.get).mock.calls.at(-1)?.[0] as string;
+      const sp = new URLSearchParams(last.split("?")[1]);
+      expect(sp.get("from")).toBe("2026-08-31T15:00:00.000Z");
+      expect(sp.get("to")).toBe("2026-09-30T14:59:59.999Z");
+    });
+    expect(screen.getByRole("button", { name: "今月" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(localStorage.getItem("fx-review:trade-list-date-from")).toBe(
+      "2026-09-01",
+    );
+  });
+
+  it("期間ボタンを押すと日付指定は解除される", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
+    renderPage();
+    await screen.findByRole("table");
+    await userEvent.type(screen.getByLabelText("開始日"), "2026-09-01");
+    await userEvent.click(screen.getByRole("button", { name: "過去30日" }));
+    expect(screen.getByLabelText("開始日")).toHaveValue("");
+    await waitFor(() => {
+      const last = vi.mocked(apiClient.get).mock.calls.at(-1)?.[0] as string;
+      expect(last).not.toContain("to=");
+    });
+    expect(localStorage.getItem("fx-review:trade-list-date-from")).toBe("");
+  });
+
   it("結果タブ・ルール逸脱・並び順をlocalStorageに保存し、開き直しても保持する", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
     const first = render(

@@ -71,6 +71,7 @@ export function Pagination({ page, limit, total, onChange }: PaginationProps) {
       </button>
       <span className="num text-sm text-ink-mute">全{last}ページ</span>
       <form
+        noValidate
         className="flex items-center gap-1.5"
         onSubmit={(e) => {
           e.preventDefault();
