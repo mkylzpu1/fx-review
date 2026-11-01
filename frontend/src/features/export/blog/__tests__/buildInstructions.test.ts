@@ -58,34 +58,29 @@ describe("buildInstructions", () => {
     expect(warn).toContain("2026-10-28 #1 【根拠メモ未入力】");
     expect(week).toMatch(/## メモ未入力・警告の一覧[\s\S]*- なし/);
   });
-  it("日記調（僕）・highlight/diary/carryover・推測の線引きを含む", () => {
-    expect(week).toContain("日記");
-    expect(week).toContain("僕");
-    for (const k of ["highlight", "diary", "carryover", "aiView"])
-      expect(week).toContain(`\`${k}\``);
-    expect(week).toContain("推測と分かる書き方");
-    expect(week).toContain("創作しません");
-  });
-  it("「メモには〜」と出典を示さず、本人として直接書くルールを含む", () => {
-    expect(week).toContain("「メモには〜」と書かない");
-    expect(week).toContain("本人の代わりに、本人として書いています");
-    expect(week).toContain("何も書き残していない");
-  });
-
-  it("今週の見どころ（picks）を、AIが全トレードを見て1〜5件選ぶ指示を含む", () => {
-    const md = week;
-    expect(md).toContain("`picks`");
-    expect(md).toContain("1〜5件");
-    expect(md).toContain("全トレード");
-    expect(md).toContain("1件ずつ違う観点");
-    expect(md).toContain("同じトレードを2回選ばない");
-    expect(md).toContain("数字・単位は書かない");
-    expect(md).toContain("見どころ（`picks`）に選んだトレード");
+  it("記事の書き方はブログ側のガイドラインを唯一の正本として指し、ここには書かない", () => {
+    expect(week).toContain("唯一の正本");
+    expect(week).toContain("docs/article-guidelines.md");
+    expect(week).toContain("docs/week.schema.json");
+    expect(week).toContain("`picks`");
+    // 書き方のルール本文は、二重管理を避けるため指示書に持たない
+    for (const dup of [
+      "「メモには〜」と書かない",
+      "1件ずつ違う観点",
+      "同じトレードを2回選ばない",
+      "推測と分かる書き方",
+      "日記調",
+    ])
+      expect(week).not.toContain(dup);
   });
 
-  it("メモが無い項目を創作しない、数字を書かないルールを含む", () => {
-    expect(week).toContain("null");
-    expect(week).toContain("数字");
+  it("ブログ側が未対応のキー（例: picks）は足さず、ユーザーに伝える", () => {
+    expect(week).toContain("ブログ側がまだ対応していません");
+    expect(week).toContain("見どころ（`picks`）に選んだトレード");
+  });
+
+  it("トークンを含まない・キーは変えず TODO だけ書き換える", () => {
+    expect(week).toContain("TODO");
     expect(week).not.toMatch(/github_pat_|ghp_/);
   });
 });
