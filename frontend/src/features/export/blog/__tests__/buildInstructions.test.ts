@@ -66,6 +66,17 @@ describe("buildInstructions", () => {
     expect(week).toContain("推測と分かる書き方");
     expect(week).toContain("創作しません");
   });
+  it("今週の見どころ（picks）を、AIが全トレードを見て1〜5件選ぶ指示を含む", () => {
+    const md = week;
+    expect(md).toContain("`picks`");
+    expect(md).toContain("1〜5件");
+    expect(md).toContain("全トレード");
+    expect(md).toContain("1件ずつ違う観点");
+    expect(md).toContain("同じトレードを2回選ばない");
+    expect(md).toContain("数字・単位は書かない");
+    expect(md).toContain("見どころ（`picks`）に選んだトレード");
+  });
+
   it("メモが無い項目を創作しない、数字を書かないルールを含む", () => {
     expect(week).toContain("null");
     expect(week).toContain("数字");
