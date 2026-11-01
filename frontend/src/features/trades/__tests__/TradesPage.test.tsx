@@ -282,6 +282,57 @@ describe("トレード一覧", () => {
     );
   });
 
+  it("結果タブ・ルール逸脱・並び順をlocalStorageに保存し、開き直しても保持する", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
+    const first = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <TradesPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByRole("table");
+    await userEvent.click(screen.getByRole("button", { name: "負け" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "ルール逸脱のみ" }),
+    );
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: "並べ替え" }),
+      "pnl_asc",
+    );
+    expect(localStorage.getItem("fx-review:trade-list-result")).toBe("loss");
+    expect(localStorage.getItem("fx-review:trade-list-deviation")).toBe("1");
+    expect(localStorage.getItem("fx-review:trade-list-sort")).toBe("pnl_asc");
+    first.unmount();
+
+    renderPage();
+    await screen.findByRole("table");
+    expect(screen.getByRole("button", { name: "負け" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: "ルール逸脱のみ" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("combobox", { name: "並べ替え" })).toHaveValue(
+      "pnl_asc",
+    );
+  });
+
+  it("保存された結果タブ・並び順が不正なら、初期値（すべて・新しい順）にする", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
+    localStorage.setItem("fx-review:trade-list-result", "bogus");
+    localStorage.setItem("fx-review:trade-list-sort", "bogus");
+    renderPage();
+    await screen.findByRole("table");
+    expect(
+      screen.getByRole("button", { name: "すべて", pressed: true }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "並べ替え" })).toHaveValue(
+      "entry_desc",
+    );
+  });
+
   it("保存された期間が不正なら、初期値の今月にする", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
     localStorage.setItem("fx-review:trade-list-period", "bogus");

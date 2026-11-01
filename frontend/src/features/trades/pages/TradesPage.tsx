@@ -74,6 +74,36 @@ const SORTS: { value: TradeSort; label: string }[] = [
   { value: "pnl_desc", label: "損益が大きい順" },
   { value: "pnl_asc", label: "損益が小さい順" },
 ];
+const TAB_KEY = "fx-review:trade-list-result";
+const DEVIATION_KEY = "fx-review:trade-list-deviation";
+const PAIR_KEY = "fx-review:trade-list-pair";
+const SORT_KEY = "fx-review:trade-list-sort";
+const readStored = (key: string): string | null => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+const writeStored = (key: string, v: string) => {
+  try {
+    localStorage.setItem(key, v);
+  } catch {
+    /* 保存できなくても表示には影響しない */
+  }
+};
+/** 前回選んだ結果タブ。無い・不正な値は「すべて」 */
+const loadTab = (): ResultTab => {
+  const v = readStored(TAB_KEY);
+  return TABS.some((o) => o.value === v) ? (v as ResultTab) : "all";
+};
+const loadDeviation = (): boolean => readStored(DEVIATION_KEY) === "1";
+/** ペアは設定から消えている場合があるので、ここでは文字列のまま読み、画面側で存在を確かめる */
+const loadPair = (): string => readStored(PAIR_KEY) ?? "";
+const loadSort = (): TradeSort => {
+  const v = readStored(SORT_KEY);
+  return SORTS.some((o) => o.value === v) ? (v as TradeSort) : "entry_desc";
+};
 
 const selectCls =
   "h-[38px] appearance-none rounded-chip border border-field bg-transparent pl-3.5 pr-8 text-[13px] text-ink-sub hover:bg-surface [&>option]:bg-card [&>option]:text-ink";
@@ -152,10 +182,27 @@ export function TradesPage() {
       /* 保存できなくても表示には影響しない */
     }
   };
-  const [tab, setTab] = useState<ResultTab>("all");
-  const [pair, setPair] = useState("");
-  const [deviationOnly, setDeviationOnly] = useState(false);
-  const [sort, setSort] = useState<TradeSort>("entry_desc");
+  // 結果タブ・ルール逸脱・ペア・並び順も、期間と同じく前回の選択を引き継ぐ
+  const [tab, setTabState] = useState<ResultTab>(loadTab);
+  const setTab = (v: ResultTab) => {
+    setTabState(v);
+    writeStored(TAB_KEY, v);
+  };
+  const [pairRaw, setPairState] = useState(loadPair);
+  const setPair = (v: string) => {
+    setPairState(v);
+    writeStored(PAIR_KEY, v);
+  };
+  const [deviationOnly, setDeviationState] = useState(loadDeviation);
+  const setDeviationOnly = (v: boolean) => {
+    setDeviationState(v);
+    writeStored(DEVIATION_KEY, v ? "1" : "0");
+  };
+  const [sort, setSortState] = useState<TradeSort>(loadSort);
+  const setSort = (v: TradeSort) => {
+    setSortState(v);
+    writeStored(SORT_KEY, v);
+  };
   const [page, setPage] = useState(1);
   const [tf, setTfState] = useState<MiniTf>(loadTf);
   const setTf = (v: MiniTf) => {
@@ -179,6 +226,11 @@ export function TradesPage() {
   }, [search]);
 
   const pairs = usePairs();
+  // 保存していたペアが設定から消えていたら「すべて」に戻す（読み込み前は保存値のまま）
+  const pair =
+    pairRaw && pairs.data && !pairs.data.some((p) => p.symbol === pairRaw)
+      ? ""
+      : pairRaw;
   const counts = useQueue("all", 1, 1);
 
   // 「過去90日」などの from は現在時刻から作るため、再描画のたびに計算し直すと値が毎回変わり、
