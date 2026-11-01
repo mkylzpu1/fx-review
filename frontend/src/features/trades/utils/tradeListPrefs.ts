@@ -28,6 +28,52 @@ export const loadPeriod = (): PeriodKey => {
     return DEFAULT_PERIOD;
   }
 };
+
+/** 期間を日付で指定したとき（YYYY-MM-DD・日本時間）。どちらか入っていれば期間ボタンより優先する */
+export const DATE_FROM_KEY = "fx-review:trade-list-date-from";
+export const DATE_TO_KEY = "fx-review:trade-list-date-to";
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** YYYY-MM-DD として実在する日付か（2月30日などは不可） */
+export const isValidDateStr = (v: string): boolean => {
+  if (!DATE_RE.test(v)) return false;
+  const [y, m, d] = v.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return (
+    t.getUTCFullYear() === y &&
+    t.getUTCMonth() === m - 1 &&
+    t.getUTCDate() === d
+  );
+};
+const jstMidnightMs = (v: string): number => {
+  const [y, m, d] = v.split("-").map(Number);
+  return Date.UTC(y, m - 1, d) - JST_OFFSET_MS;
+};
+/** 日付指定 → API の from / to（ISO）。from は当日0時、to は当日の最後（含む）。どちらも日本時間 */
+export function dateRangeToIso(
+  dateFrom: string,
+  dateTo: string,
+): { from?: string; to?: string } {
+  return {
+    from: isValidDateStr(dateFrom)
+      ? new Date(jstMidnightMs(dateFrom)).toISOString()
+      : undefined,
+    to: isValidDateStr(dateTo)
+      ? new Date(jstMidnightMs(dateTo) + DAY_MS - 1).toISOString()
+      : undefined,
+  };
+}
+/** 前回入れた日付。無い・不正な値は空（指定なし） */
+export const loadDateFrom = (): string => {
+  const v = readStored(DATE_FROM_KEY) ?? "";
+  return isValidDateStr(v) ? v : "";
+};
+export const loadDateTo = (): string => {
+  const v = readStored(DATE_TO_KEY) ?? "";
+  return isValidDateStr(v) ? v : "";
+};
+
 export const TABS: {
   value: ResultTab;
   label: string;
@@ -82,5 +128,7 @@ export function loadListPrefs() {
     deviationOnly: loadDeviation(),
     pair: loadPair(),
     sort: loadSort(),
+    dateFrom: loadDateFrom(),
+    dateTo: loadDateTo(),
   };
 }

@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
 import { periodFrom } from "@/features/stats/utils/period";
-import { loadListPrefs } from "../utils/tradeListPrefs";
+import { dateRangeToIso, loadListPrefs } from "../utils/tradeListPrefs";
 import type {
   Page,
   QueueFilter,
@@ -173,11 +173,15 @@ export async function findNextInList(
   const prefs = loadListPrefs();
   // 設定から消えたペアは一覧と同じく「すべて」として扱う
   const pair = knownPairs.includes(prefs.pair) ? prefs.pair : "";
+  // 日付で期間を指定していれば、一覧と同じくそちらを優先する
+  const custom = dateRangeToIso(prefs.dateFrom, prefs.dateTo);
+  const useCustom = prefs.dateFrom !== "" || prefs.dateTo !== "";
   const filters: TradeListQuery = {
     result: prefs.tab === "all" ? undefined : prefs.tab,
     deviationOnly: prefs.deviationOnly,
     pair: pair || undefined,
-    from: periodFrom(prefs.period),
+    from: useCustom ? custom.from : periodFrom(prefs.period),
+    to: useCustom ? custom.to : undefined,
     sort: prefs.sort,
     limit: 100,
   };
