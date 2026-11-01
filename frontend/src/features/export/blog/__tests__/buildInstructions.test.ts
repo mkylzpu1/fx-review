@@ -58,8 +58,16 @@ describe("buildInstructions", () => {
     expect(warn).toContain("2026-10-28 #1 【根拠メモ未入力】");
     expect(week).toMatch(/## メモ未入力・警告の一覧[\s\S]*- なし/);
   });
+  it("日記調（僕）・highlight/diary/carryover・推測の線引きを含む", () => {
+    expect(week).toContain("日記");
+    expect(week).toContain("僕");
+    for (const k of ["highlight", "diary", "carryover", "aiView"])
+      expect(week).toContain(`\`${k}\``);
+    expect(week).toContain("推測と分かる書き方");
+    expect(week).toContain("創作しません");
+  });
   it("メモが無い項目を創作しない、数字を書かないルールを含む", () => {
-    expect(week).toContain("創作しない");
+    expect(week).toContain("null");
     expect(week).toContain("数字");
     expect(week).not.toMatch(/github_pat_|ghp_/);
   });
