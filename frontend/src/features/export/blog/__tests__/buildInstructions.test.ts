@@ -66,6 +66,12 @@ describe("buildInstructions", () => {
     expect(week).toContain("推測と分かる書き方");
     expect(week).toContain("創作しません");
   });
+  it("「メモには〜」と出典を示さず、本人として直接書くルールを含む", () => {
+    expect(week).toContain("「メモには〜」と書かない");
+    expect(week).toContain("本人の代わりに、本人として書いています");
+    expect(week).toContain("何も書き残していない");
+  });
+
   it("今週の見どころ（picks）を、AIが全トレードを見て1〜5件選ぶ指示を含む", () => {
     const md = week;
     expect(md).toContain("`picks`");
