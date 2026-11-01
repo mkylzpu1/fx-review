@@ -92,6 +92,23 @@ describe("ブログ用zip画面", () => {
     expect(dlButton()).toBeDisabled();
   });
 
+  it("1記事=1週間: 月〜日でない期間にはヒントが出て、月〜日の1週間なら出ない。週のプリセットがある", async () => {
+    mockApi([]);
+    renderPanel();
+    setDates("2026-10-28", "2026-10-29");
+    expect(await screen.findByText(/1週間ではありません/)).toBeInTheDocument();
+    setDates("2026-10-26", "2026-11-01");
+    await waitFor(() =>
+      expect(screen.queryByText(/1週間ではありません/)).toBeNull(),
+    );
+    expect(
+      screen.getByRole("button", { name: "先週（月〜日）" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "今週（月〜日）" }),
+    ).toBeInTheDocument();
+  });
+
   it("31日を超える期間はエラー、31日ちょうどはエラーにならない", async () => {
     mockApi([]);
     renderPanel();

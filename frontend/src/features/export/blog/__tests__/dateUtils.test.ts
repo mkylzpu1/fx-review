@@ -6,6 +6,8 @@ import {
   fetchBounds,
   localDate,
   localDateTime,
+  isWeekRange,
+  mondayOf,
   presetRange,
   validateRange,
 } from "../dateUtils";
@@ -53,6 +55,29 @@ describe("期間", () => {
       to: "2026-10-30",
     });
     expect(presetRange("thisMonth", "Asia/Tokyo", now).from).toBe("2026-10-01");
+  });
+  it("今週・先週は月曜〜日曜の1週間（JSTの金曜 2026-10-30 の場合）", () => {
+    const now = new Date("2026-10-29T16:00:00Z");
+    expect(presetRange("thisWeek", "Asia/Tokyo", now)).toEqual({
+      from: "2026-10-26",
+      to: "2026-11-01",
+    });
+    expect(presetRange("lastWeek", "Asia/Tokyo", now)).toEqual({
+      from: "2026-10-19",
+      to: "2026-10-25",
+    });
+  });
+  it("週の境目: 日曜は直前の月曜の週、月曜はその日から始まる週", () => {
+    expect(mondayOf("2026-11-01")).toBe("2026-10-26"); // 日曜
+    expect(mondayOf("2026-10-26")).toBe("2026-10-26"); // 月曜
+    expect(mondayOf("2026-10-27")).toBe("2026-10-26"); // 火曜
+    expect(mondayOf("2026-03-01")).toBe("2026-02-23"); // 月またぎ
+  });
+  it("isWeekRange: 月〜日のちょうど7日だけ true", () => {
+    expect(isWeekRange("2026-10-26", "2026-11-01")).toBe(true);
+    expect(isWeekRange("2026-10-27", "2026-11-02")).toBe(false); // 火〜月
+    expect(isWeekRange("2026-10-26", "2026-10-31")).toBe(false); // 6日
+    expect(isWeekRange("2026-10-26", "2026-11-02")).toBe(false); // 8日
   });
   it("取得範囲は前後に余裕を持たせる", () => {
     expect(fetchBounds("2026-10-29", "2026-10-29")).toEqual({

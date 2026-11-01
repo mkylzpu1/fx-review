@@ -9,6 +9,8 @@ import type { BlogWarning } from "./bundleSchema";
 import { buildDayBundles } from "./buildDayJson";
 import { buildZip } from "./buildZip";
 import {
+  daysInclusive,
+  isWeekRange,
   localDateTime,
   presetRange,
   todayIn,
@@ -25,6 +27,8 @@ import { useCandleAvailability } from "./useCandleAvailability";
 import { DEFAULT_TIMEZONE, useBlogTrades } from "./useBlogTrades";
 
 const PRESETS: { value: RangePreset; label: string }[] = [
+  { value: "lastWeek", label: "先週（月〜日）" },
+  { value: "thisWeek", label: "今週（月〜日）" },
   { value: "today", label: "今日" },
   { value: "yesterday", label: "昨日" },
   { value: "last7", label: "直近7日" },
@@ -160,6 +164,9 @@ export function BlogZipPanel() {
         <p className="mt-1 text-xs text-ink-mute">
           期間のトレードを、日ごとのJSONと、トレードごとのチャート画像（1分足・15分足・1時間足）にまとめます。損益額（円）は含みますが、口座残高・ID・メールは含みません。
         </p>
+        <p className="mt-1 text-xs text-ink-mute">
+          ブログは1記事＝1週間分（月〜日）です。zipには、Claudeに渡すだけで投稿まで進められる指示書（00_READ_ME_FIRST.md）も入ります。
+        </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -216,6 +223,12 @@ export function BlogZipPanel() {
       {q.rangeError && (
         <p role="alert" className="text-sm text-loss">
           {q.rangeError}
+        </p>
+      )}
+      {!q.rangeError && !isWeekRange(from, to) && (
+        <p className="text-xs text-ink-mute">
+          今の期間は{daysInclusive(from, to)}
+          日間で、月〜日の1週間ではありません。1記事＝1週間分のため、「先週」「今週」での書き出しをおすすめします。
         </p>
       )}
       {q.isLoading && <LoadingSpinner fullScreen={false} />}

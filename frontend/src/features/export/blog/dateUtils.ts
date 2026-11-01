@@ -67,7 +67,19 @@ export function validateRange(from: string, to: string): string | null {
   return null;
 }
 
-export type RangePreset = "today" | "yesterday" | "last7" | "thisMonth";
+/** その日を含む週の月曜（暦の計算だけ。週は月曜始まり） */
+export function mondayOf(date: string): string {
+  const dow = new Date(`${date}T00:00:00Z`).getUTCDay(); // 日=0 … 土=6
+  return addDays(date, -((dow + 6) % 7));
+}
+
+/** 月曜〜日曜のちょうど1週間か（ブログは1記事=1週間分） */
+export function isWeekRange(from: string, to: string): boolean {
+  return mondayOf(from) === from && addDays(from, 6) === to;
+}
+
+export type RangePreset =
+  "today" | "yesterday" | "last7" | "thisMonth" | "thisWeek" | "lastWeek";
 
 /** プリセット → 期間（そのタイムゾーンの暦日） */
 export function presetRange(
@@ -87,6 +99,14 @@ export function presetRange(
       return { from: addDays(today, -6), to: today };
     case "thisMonth":
       return { from: `${today.slice(0, 8)}01`, to: today };
+    case "thisWeek": {
+      const mon = mondayOf(today);
+      return { from: mon, to: addDays(mon, 6) };
+    }
+    case "lastWeek": {
+      const mon = addDays(mondayOf(today), -7);
+      return { from: mon, to: addDays(mon, 6) };
+    }
   }
 }
 
