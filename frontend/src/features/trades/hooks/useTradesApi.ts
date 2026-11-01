@@ -7,6 +7,8 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
+import { periodFrom } from "@/features/stats/utils/period";
+import { loadListPrefs } from "../utils/tradeListPrefs";
 import type {
   Page,
   QueueFilter,
@@ -149,26 +151,57 @@ export function useRestoreTrade() {
   });
 }
 
+export type NextInList =
+  | { kind: "next"; id: string }
+  /** 一覧の最後のトレードだった */
+  | { kind: "last" };
+
+/** 一覧を次のページへたどる上限（無限ループ防止。100件×50ページ=5,000件） */
+const NEXT_MAX_PAGES = 50;
+
 /**
- * 「保存して次の未入力へ」用。保存する前に、新しい順の未入力キューから
- * 現在のトレードの次のIDを求める（保存後はキューから外れることがあるため）。
+ * 「保存して次のトレードへ」用。/trades で選んでいる絞り込み・並び順（前回の保存値）と同じ条件で
+ * 一覧を取り、いま開いているトレードの次のIDを返す。保存で並びや絞り込みの結果が変わることがあるため、
+ * 保存する前に求めておく。一覧に今のトレードが無いとき（直接開いた・絞り込みから外れている）は先頭から始める。
+ * 検索ワードは保存していないので使わない。
  */
-export async function findNextUnfilledId(
+export async function findNextInList(
   qc: QueryClient,
   currentId: string,
-): Promise<string | null> {
-  const queue = await qc.fetchQuery({
-    queryKey: ["trades", "queue-next"],
-    queryFn: () =>
-      apiClient.get<QueueResult>(
-        `/trades/queue${toQueryString({ filter: "all", limit: 100 })}`,
-      ),
-    staleTime: 0,
-  });
-  const ids = queue.items.map((t) => t.id);
-  const i = ids.indexOf(currentId);
-  const next = i >= 0 ? ids[i + 1] : ids[0];
-  return next ?? ids.find((id) => id !== currentId) ?? null;
+  knownPairs: string[],
+): Promise<NextInList> {
+  const prefs = loadListPrefs();
+  // 設定から消えたペアは一覧と同じく「すべて」として扱う
+  const pair = knownPairs.includes(prefs.pair) ? prefs.pair : "";
+  const filters: TradeListQuery = {
+    result: prefs.tab === "all" ? undefined : prefs.tab,
+    deviationOnly: prefs.deviationOnly,
+    pair: pair || undefined,
+    from: periodFrom(prefs.period),
+    sort: prefs.sort,
+    limit: 100,
+  };
+  const ids: string[] = [];
+  for (let page = 1; page <= NEXT_MAX_PAGES; page++) {
+    const res = await qc.fetchQuery({
+      queryKey: ["trades", "list-next", { ...filters, page }],
+      queryFn: () =>
+        apiClient.get<Page<Trade>>(
+          `/trades${toQueryString({ ...filters, page })}`,
+        ),
+      staleTime: 0,
+    });
+    ids.push(...res.items.map((t) => t.id));
+    const i = ids.indexOf(currentId);
+    // 今のトレードの次まで取れたら終わり
+    if (i >= 0 && ids.length > i + 1) return { kind: "next", id: ids[i + 1] };
+    if (ids.length >= res.total || res.items.length === 0) {
+      if (i >= 0) return { kind: "last" };
+      const first = ids.find((id) => id !== currentId);
+      return first ? { kind: "next", id: first } : { kind: "last" };
+    }
+  }
+  return { kind: "last" };
 }
 
 const QUEUE_FILTERS: QueueFilter[] = ["all", "sl_tp", "no_rationale", "open"];

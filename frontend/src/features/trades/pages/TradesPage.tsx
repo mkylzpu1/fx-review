@@ -20,36 +20,27 @@ import {
   type TradeListQuery,
 } from "../hooks/useTradesApi";
 import { summarize } from "../utils/summary";
+import {
+  DEFAULT_PERIOD,
+  DEVIATION_KEY,
+  PAIR_KEY,
+  PERIOD_KEY,
+  PERIOD_OPTIONS,
+  SORT_KEY,
+  SORTS,
+  TAB_KEY,
+  TABS,
+  loadDeviation,
+  loadPair,
+  loadPeriod,
+  loadSort,
+  loadTab,
+  writeStored,
+  type ResultTab,
+} from "../utils/tradeListPrefs";
 import type { Trade, TradeSort } from "../types";
 
 const LIMIT = 20;
-const DEFAULT_PERIOD: PeriodKey = "month";
-/** 一覧の期間ボタンの並び（統計画面の並びとは別） */
-const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
-  { value: "all", label: "すべて" },
-  { value: "today", label: "今日" },
-  { value: "month", label: "今月" },
-  { value: "30d", label: "過去30日" },
-  { value: "90d", label: "過去90日" },
-];
-const PERIOD_KEY = "fx-review:trade-list-period";
-/** 前回選んだ期間。無い・不正な値・読み出せないときは初期値（今月） */
-const loadPeriod = (): PeriodKey => {
-  try {
-    const v = localStorage.getItem(PERIOD_KEY);
-    return PERIOD_OPTIONS.some((o) => o.value === v)
-      ? (v as PeriodKey)
-      : DEFAULT_PERIOD;
-  } catch {
-    return DEFAULT_PERIOD;
-  }
-};
-type ResultTab = "all" | "win" | "loss";
-const TABS: { value: ResultTab; label: string; tone?: "profit" | "loss" }[] = [
-  { value: "all", label: "すべて" },
-  { value: "win", label: "勝ち", tone: "profit" },
-  { value: "loss", label: "負け", tone: "loss" },
-];
 const TF_OPTIONS: { value: MiniTf; label: string }[] = [
   { value: "auto", label: "自動" },
   { value: "1m", label: "1分" },
@@ -68,43 +59,6 @@ const loadTf = (): MiniTf => {
     return "auto";
   }
 };
-const SORTS: { value: TradeSort; label: string }[] = [
-  { value: "entry_desc", label: "新しい順" },
-  { value: "entry_asc", label: "古い順" },
-  { value: "pnl_desc", label: "損益が大きい順" },
-  { value: "pnl_asc", label: "損益が小さい順" },
-];
-const TAB_KEY = "fx-review:trade-list-result";
-const DEVIATION_KEY = "fx-review:trade-list-deviation";
-const PAIR_KEY = "fx-review:trade-list-pair";
-const SORT_KEY = "fx-review:trade-list-sort";
-const readStored = (key: string): string | null => {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-};
-const writeStored = (key: string, v: string) => {
-  try {
-    localStorage.setItem(key, v);
-  } catch {
-    /* 保存できなくても表示には影響しない */
-  }
-};
-/** 前回選んだ結果タブ。無い・不正な値は「すべて」 */
-const loadTab = (): ResultTab => {
-  const v = readStored(TAB_KEY);
-  return TABS.some((o) => o.value === v) ? (v as ResultTab) : "all";
-};
-const loadDeviation = (): boolean => readStored(DEVIATION_KEY) === "1";
-/** ペアは設定から消えている場合があるので、ここでは文字列のまま読み、画面側で存在を確かめる */
-const loadPair = (): string => readStored(PAIR_KEY) ?? "";
-const loadSort = (): TradeSort => {
-  const v = readStored(SORT_KEY);
-  return SORTS.some((o) => o.value === v) ? (v as TradeSort) : "entry_desc";
-};
-
 const selectCls =
   "h-[38px] appearance-none rounded-chip border border-field bg-transparent pl-3.5 pr-8 text-[13px] text-ink-sub hover:bg-surface [&>option]:bg-card [&>option]:text-ink";
 

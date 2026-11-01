@@ -24,11 +24,7 @@ import { isoToJstInput, SIDE_LABEL, formatJst } from "@/utils/format";
 import { ChartPanel } from "../components/ChartPanel";
 import { TradeFormBody } from "../components/TradeFormBody";
 import { useChartUiStore } from "../chartUiStore";
-import {
-  findNextUnfilledId,
-  useSaveTrade,
-  useTrade,
-} from "../hooks/useTradesApi";
+import { findNextInList, useSaveTrade, useTrade } from "../hooks/useTradesApi";
 import { buildPlanPreview } from "../utils/planPreview";
 import {
   emptyForm,
@@ -231,18 +227,22 @@ function TradeFormInner({ trade, settings, pairs, tags, rules }: InnerProps) {
   };
 
   const saveAndNext = async () => {
-    // 保存するとキューから外れることがあるため、先に「次」を求めておく
-    const nextId = trade
-      ? await findNextUnfilledId(qc, trade.id).catch(() => null)
+    // 保存すると一覧の並びや絞り込みの結果が変わることがあるため、先に「次」を求めておく
+    const next = trade
+      ? await findNextInList(
+          qc,
+          trade.id,
+          pairs.map((p) => p.symbol),
+        ).catch(() => null)
       : null;
     const savedId = await submit(false);
     if (!savedId) return;
-    if (nextId) {
-      toast.success("保存しました。次の未入力トレードを開きます");
-      setLeaveTo(ROUTES.TRADE_EDIT.replace(":id", nextId));
+    if (next?.kind === "next") {
+      toast.success("保存しました。次のトレードを開きます");
+      setLeaveTo(ROUTES.TRADE_EDIT.replace(":id", next.id));
     } else {
-      toast.success("保存しました。入力のないトレードはもうありません");
-      setLeaveTo(ROUTES.TRADE_QUEUE);
+      toast.success("保存しました。一覧の最後のトレードです");
+      setLeaveTo(ROUTES.TRADES);
     }
   };
 
@@ -341,7 +341,7 @@ function TradeFormInner({ trade, settings, pairs, tags, rules }: InnerProps) {
             disabled={save.isPending}
             onClick={() => void saveAndNext()}
           >
-            保存して次の未入力へ
+            保存して次のトレードへ
           </button>
         )}
       </div>
