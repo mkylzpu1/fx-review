@@ -1,5 +1,5 @@
 import { SegmentedControl as Seg } from "@/components/common/SegmentedControl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
@@ -25,6 +25,7 @@ import {
   DATE_TO_KEY,
   DEFAULT_PERIOD,
   DEVIATION_KEY,
+  PAGE_KEY,
   PAIR_KEY,
   PERIOD_KEY,
   PERIOD_OPTIONS,
@@ -36,6 +37,7 @@ import {
   loadDateFrom,
   loadDateTo,
   loadDeviation,
+  loadPage,
   loadPair,
   loadPeriod,
   loadSort,
@@ -177,7 +179,12 @@ export function TradesPage() {
     writeStored(DATE_TO_KEY, v);
   };
   const customRange = dateFrom !== "" || dateTo !== "";
-  const [page, setPage] = useState(1);
+  // ページ番号も前回のまま開く（詳細から戻ったときに同じページを見られる）
+  const [page, setPageState] = useState(loadPage);
+  const setPage = (v: number) => {
+    setPageState(v);
+    writeStored(PAGE_KEY, String(v));
+  };
   const [tf, setTfState] = useState<MiniTf>(loadTf);
   const setTf = (v: MiniTf) => {
     setTfState(v);
@@ -191,10 +198,16 @@ export function TradesPage() {
   const [q, setQ] = useState("");
 
   // 検索は入力が止まってから反映する
+  // 検索語が変わったときだけ1ページ目へ戻す（開いた直後に保存したページを消さない）
+  const qRef = useRef("");
   useEffect(() => {
     const id = setTimeout(() => {
-      setQ(search.trim());
-      setPage(1);
+      const next = search.trim();
+      setQ(next);
+      if (next !== qRef.current) {
+        qRef.current = next;
+        setPage(1);
+      }
     }, 300);
     return () => clearTimeout(id);
   }, [search]);
@@ -225,7 +238,13 @@ export function TradesPage() {
     to: range.to,
   };
   const query: TradeListQuery = { ...filters, sort, page, limit: LIMIT };
-  const { data, isLoading, isError, isFetching, refetch } = useTrades(query);
+  const { data, isLoading, isError, isFetching, isPlaceholderData, refetch } =
+    useTrades(query);
+  // 保存していたページが、件数が減って最終ページを超えていたら最終ページに戻す
+  const lastPage = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
+  useEffect(() => {
+    if (data && !isPlaceholderData && page > lastPage) setPage(lastPage);
+  }, [data, isPlaceholderData, page, lastPage]);
   // 集計は表示ページではなく、絞り込み後の全件で出す（統計画面と同じ母集団）
   const all = useAllTrades(filters);
   const filtering =

@@ -317,6 +317,45 @@ describe("トレード一覧", () => {
     expect(localStorage.getItem("fx-review:trade-list-date-from")).toBe("");
   });
 
+  it("開いているページ番号をlocalStorageに保存し、開き直しても同じページで取得する", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(
+      page([trade({ id: "t1" })], 200),
+    );
+    const first = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <TradesPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByRole("table");
+    await userEvent.click(screen.getByRole("button", { name: "3ページ目" }));
+    expect(localStorage.getItem("fx-review:trade-list-page")).toBe("3");
+    first.unmount();
+
+    renderPage();
+    await screen.findByRole("table");
+    await new Promise((r) => setTimeout(r, 400)); // 検索の反映待ちを越えても1に戻らない
+    expect(screen.getByRole("button", { name: "3ページ目" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const urls = vi.mocked(apiClient.get).mock.calls.map((c) => c[0] as string);
+    expect(
+      urls.some((u) => u.includes("limit=20") && u.includes("page=3")),
+    ).toBe(true);
+  });
+
+  it("保存したページが最終ページを超えていたら最終ページに戻す", async () => {
+    localStorage.setItem("fx-review:trade-list-page", "9");
+    vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })], 45));
+    renderPage();
+    await screen.findByRole("table");
+    await waitFor(() =>
+      expect(localStorage.getItem("fx-review:trade-list-page")).toBe("3"),
+    );
+  });
+
   it("結果タブ・ルール逸脱・並び順をlocalStorageに保存し、開き直しても保持する", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
     const first = render(

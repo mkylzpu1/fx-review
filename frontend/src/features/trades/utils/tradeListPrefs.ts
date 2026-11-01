@@ -89,6 +89,12 @@ export const SORTS: { value: TradeSort; label: string }[] = [
   { value: "pnl_desc", label: "損益が大きい順" },
   { value: "pnl_asc", label: "損益が小さい順" },
 ];
+export const PAGE_KEY = "fx-review:trade-list-page";
+/** 前回開いていたページ。無い・不正な値（1未満・整数でない）は1ページ目 */
+export const loadPage = (): number => {
+  const n = Number(readStored(PAGE_KEY));
+  return Number.isInteger(n) && n >= 1 ? n : 1;
+};
 export const TAB_KEY = "fx-review:trade-list-result";
 export const DEVIATION_KEY = "fx-review:trade-list-deviation";
 export const PAIR_KEY = "fx-review:trade-list-pair";
