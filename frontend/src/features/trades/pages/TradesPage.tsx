@@ -21,6 +21,8 @@ import {
 } from "../hooks/useTradesApi";
 import { summarize } from "../utils/summary";
 import {
+  DATE_FROM_KEY,
+  DATE_TO_KEY,
   DEFAULT_PERIOD,
   DEVIATION_KEY,
   PAIR_KEY,
@@ -30,6 +32,9 @@ import {
   SORTS,
   TAB_KEY,
   TABS,
+  dateRangeToIso,
+  loadDateFrom,
+  loadDateTo,
   loadDeviation,
   loadPair,
   loadPeriod,
@@ -61,6 +66,9 @@ const loadTf = (): MiniTf => {
 };
 const selectCls =
   "h-[38px] appearance-none rounded-chip border border-field bg-transparent pl-3.5 pr-8 text-[13px] text-ink-sub hover:bg-surface [&>option]:bg-card [&>option]:text-ink";
+
+const dateCls =
+  "h-[30px] rounded-[7px] border-0 bg-transparent px-1 text-[13px] text-ink [color-scheme:dark]";
 
 function Chevron() {
   return (
@@ -157,6 +165,18 @@ export function TradesPage() {
     setSortState(v);
     writeStored(SORT_KEY, v);
   };
+  // 期間を日付で指定（日本時間）。どちらかが入っていれば上の期間ボタンより優先する
+  const [dateFrom, setDateFromState] = useState(loadDateFrom);
+  const [dateTo, setDateToState] = useState(loadDateTo);
+  const setDateFrom = (v: string) => {
+    setDateFromState(v);
+    writeStored(DATE_FROM_KEY, v);
+  };
+  const setDateTo = (v: string) => {
+    setDateToState(v);
+    writeStored(DATE_TO_KEY, v);
+  };
+  const customRange = dateFrom !== "" || dateTo !== "";
   const [page, setPage] = useState(1);
   const [tf, setTfState] = useState<MiniTf>(loadTf);
   const setTf = (v: MiniTf) => {
@@ -189,13 +209,20 @@ export function TradesPage() {
 
   // 「過去90日」などの from は現在時刻から作るため、再描画のたびに計算し直すと値が毎回変わり、
   // 取得条件（キャッシュのキー）が変わって、一覧と全件集計を何度も取り直してしまう。期間を選んだときだけ決める
-  const from = useMemo(() => periodFrom(period), [period]);
+  const range = useMemo(
+    () =>
+      customRange
+        ? dateRangeToIso(dateFrom, dateTo)
+        : { from: periodFrom(period), to: undefined },
+    [customRange, dateFrom, dateTo, period],
+  );
   const filters: TradeListQuery = {
     result: tab === "all" ? undefined : tab,
     deviationOnly,
     q: q || undefined,
     pair: pair || undefined,
-    from,
+    from: range.from,
+    to: range.to,
   };
   const query: TradeListQuery = { ...filters, sort, page, limit: LIMIT };
   const { data, isLoading, isError, isFetching, refetch } = useTrades(query);
@@ -206,6 +233,7 @@ export function TradesPage() {
     deviationOnly ||
     q !== "" ||
     pair !== "" ||
+    customRange ||
     period !== DEFAULT_PERIOD;
 
   const reset =
@@ -214,6 +242,25 @@ export function TradesPage() {
       set(v);
       setPage(1);
     };
+
+  // 期間ボタンを押したら、日付指定は解除してボタンの期間に戻す
+  const pickPeriod = (v: PeriodKey) => {
+    setDateFrom("");
+    setDateTo("");
+    setPeriod(v);
+    setPage(1);
+  };
+  // 開始日が終了日より後にならないよう、片方を変えたらもう片方を合わせる
+  const changeDateFrom = (v: string) => {
+    setDateFrom(v);
+    if (v && dateTo && v > dateTo) setDateTo(v);
+    setPage(1);
+  };
+  const changeDateTo = (v: string) => {
+    setDateTo(v);
+    if (v && dateFrom && v < dateFrom) setDateFrom(v);
+    setPage(1);
+  };
 
   const rows = data?.items ?? [];
   const items = all.data?.items ?? rows;
@@ -230,9 +277,9 @@ export function TradesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Seg
             label="期間"
-            value={period}
+            value={customRange ? ("custom" as PeriodKey) : period}
             options={PERIOD_OPTIONS}
-            onChange={reset(setPeriod)}
+            onChange={pickPeriod}
           />
           <span aria-hidden="true" className="mx-1.5 h-6 w-px bg-line" />
           <CandleSyncButton variant="header" />
@@ -431,6 +478,48 @@ export function TradesPage() {
           </select>
           <Chevron />
         </label>
+        <div
+          role="group"
+          aria-label="期間を日付で指定"
+          className={`inline-flex h-[38px] items-center gap-1.5 rounded-chip border px-2.5 text-[13px] ${
+            customRange ? "border-accent bg-accent/10" : "border-field"
+          }`}
+        >
+          <span className="text-xs text-ink-mute">日付</span>
+          <input
+            type="date"
+            aria-label="開始日"
+            className={dateCls}
+            value={dateFrom}
+            max={dateTo || undefined}
+            onChange={(e) => changeDateFrom(e.target.value)}
+          />
+          <span aria-hidden="true" className="text-ink-mute">
+            〜
+          </span>
+          <input
+            type="date"
+            aria-label="終了日"
+            className={dateCls}
+            value={dateTo}
+            min={dateFrom || undefined}
+            onChange={(e) => changeDateTo(e.target.value)}
+          />
+          {customRange && (
+            <button
+              type="button"
+              aria-label="日付指定をクリア"
+              className="ml-0.5 px-1 text-ink-mute hover:text-ink"
+              onClick={() => {
+                setDateFrom("");
+                setDateTo("");
+                setPage(1);
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
         <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
         <span className="text-xs text-ink-mute">チャートの時間足</span>
         <Seg
