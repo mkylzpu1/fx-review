@@ -3,6 +3,7 @@ import type { CandidateTrade, LinkUpdate } from "../types/orderImport";
 
 interface CandidateRow {
   id: string;
+  source: CandidateTrade["source"];
   side: "buy" | "sell";
   lots: number;
   entryAt: Date | string;
@@ -15,20 +16,24 @@ interface CandidateRow {
 
 /** 注文履歴の紐づけ用のSQL（ロジックは services/import/orderLinking に置く） */
 export const orderLinkStore = {
-  /** CSVから取り込んだ未削除のトレードのうち、指定日時以降にエントリーしたもの */
+  /**
+   * CSVから取り込んだトレードと手入力のトレード（どちらも未削除。下書きは除く）のうち、
+   * 指定日時以降にエントリーしたもの。手入力は注文日時より少し前に記録していることがあるため、
+   * 呼び出し側で許容幅の分だけ早い日時を渡す
+   */
   async findCandidates(
     userId: string,
     pair: string,
     fromIso: string,
   ): Promise<CandidateTrade[]> {
     const rows = await sql<CandidateRow[]>`
-      SELECT id, side, lots::float8 as lots, entry_at as "entryAt",
+      SELECT id, source, side, lots::float8 as lots, entry_at as "entryAt",
         entry_price::float8 as "entryPrice", exit_price::float8 as "exitPrice",
         sl_price::float8 as "slPrice", tp_price::float8 as "tpPrice",
         exit_method as "exitMethod"
       FROM trades
       WHERE user_id = ${userId} AND pair = ${pair}
-        AND source = 'rakuten_csv' AND deleted_at IS NULL
+        AND source IN ('rakuten_csv', 'manual') AND deleted_at IS NULL
         AND status IN ('open', 'closed')
         AND entry_at >= ${fromIso}
     `;

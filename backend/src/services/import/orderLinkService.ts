@@ -13,6 +13,7 @@ import {
   MAX_TOTAL_CHARS,
   type ImportFileInput,
 } from "./importService";
+import { MANUAL_MATCH_TIME_MINUTES } from "../../constants/import";
 import { groupOrders, linkPlansToTrades } from "./orderLinking";
 import { isOrderCsv, parseRakutenOrderFile } from "./rakutenOrderCsv";
 
@@ -70,7 +71,8 @@ async function analyze(userId: string, files: ImportFileInput[]) {
   const rows = parsed.flatMap((p) => p.rows);
   const groups = groupOrders(rows);
 
-  // ペアはUSDJPYのみ（指示書 §1）。照合の起点は一番古い注文日時
+  // ペアはUSDJPYのみ（指示書 §1）。照合の起点は一番古い注文日時。
+  // 手入力は注文日時より少し前に記録していることがあるので、許容幅の分だけさかのぼって読む
   let link: LinkResult = {
     updates: [],
     matched: 0,
@@ -78,7 +80,10 @@ async function analyze(userId: string, files: ImportFileInput[]) {
     slOnProfitSide: 0,
   };
   if (groups.plans.length > 0) {
-    const from = groups.plans.map((p) => p.orderedAt).sort()[0];
+    const oldest = groups.plans.map((p) => p.orderedAt).sort()[0];
+    const from = new Date(
+      Date.parse(oldest) - MANUAL_MATCH_TIME_MINUTES * 60_000,
+    ).toISOString();
     const candidates = await orderLinkStore.findCandidates(
       userId,
       groups.plans[0].pair,

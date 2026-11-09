@@ -7,6 +7,10 @@ import type {
   OrderRow,
   UnfilledOrder,
 } from "../../types/orderImport";
+import {
+  MANUAL_MATCH_PRICE_YEN,
+  MANUAL_MATCH_TIME_MINUTES,
+} from "../../constants/import";
 
 const UNITS_PER_LOT = 10_000;
 const EPS = 1e-6;
@@ -116,31 +120,48 @@ const onProfitSide = (side: "buy" | "sell", entry: number, sl: number) =>
   side === "buy" ? sl > entry : sl < entry;
 
 /**
- * 約定済みの注文を、取り込み済みのトレードに1対1で結びつけてSL・TP・決済の仕方を決める（純粋関数）。
+ * 手入力のトレードと「同じ取引」とみなす許容幅（constants/import.ts。手入力の照合と同じ基準）。
+ * 手入力は約定とぴったり同じ価格・時刻とは限らないため、CSV由来のトレードと違い幅を持たせる
+ */
+const MANUAL_PRICE_TOLERANCE = MANUAL_MATCH_PRICE_YEN + EPS;
+const MANUAL_TIME_TOLERANCE_MS = MANUAL_MATCH_TIME_MINUTES * 60_000;
+
+const byEntryAt = (a: CandidateTrade, b: CandidateTrade) =>
+  a.entryAt < b.entryAt ? -1 : a.entryAt > b.entryAt ? 1 : 0;
+
+/**
+ * 約定済みの注文を、取り込み済みのトレードと手入力のトレードに1対1で結びつけてSL・TP・決済の仕方を決める（純粋関数）。
  *
- * 結びつけ: 売買・数量・約定レートが同じで、トレードのエントリー日時が注文日時以降のもの
+ * 結びつけ（CSV由来）: 売買・数量・約定レートが同じで、トレードのエントリー日時が注文日時以降のもの
  * （約定日時は分単位で切り捨てなので同じ分も可）のうち、いちばん早いもの。
  * 決済済みのトレードは、約定した決済注文の約定レートが決済価格と合うことも条件にする。
  *
- * 更新: 入力済みのSL・TPは上書きしない。決済の仕方は、まだ初期値の manual のときだけ
- * TP・SLに直す。利益側の逆指値はSLにしない（SLの入力ルールと合わなくなるため）。
+ * 結びつけ（手入力）: CSV由来のトレードに結びつかなかった注文だけを対象にする。
+ * 売買・数量が同じで、エントリー価格の差が基準内、エントリー日時が「注文日時 − 基準」以降のもの。
+ * 決済済みなら、決済価格の差も基準内であること。候補が複数あるときは、
+ * 価格が近いもの → 時刻が近いもの の順に、注文全体で1対1になるように結びつける。
+ *
+ * 更新: 入力済みのSL・TPは上書きしない（手入力のSL・TPも同じ）。決済の仕方は、まだ初期値の
+ * manual のときだけTP・SLに直す。利益側の逆指値はSLにしない（SLの入力ルールと合わなくなるため）。
  */
 export function linkPlansToTrades(
   plans: OrderPlan[],
   trades: CandidateTrade[],
 ): LinkResult {
-  const used = new Set<string>();
-  const sorted = [...trades].sort((a, b) =>
-    a.entryAt < b.entryAt ? -1 : a.entryAt > b.entryAt ? 1 : 0,
+  const sortedPlans = [...plans].sort(
+    (a, b) => a.entryOrderNo - b.entryOrderNo,
   );
-  const updates: LinkUpdate[] = [];
-  const unmatched: OrderPlan[] = [];
-  let matched = 0;
-  let slOnProfitSide = 0;
+  const csvTrades = trades
+    .filter((t) => t.source === "rakuten_csv")
+    .sort(byEntryAt);
+  const manualTrades = trades.filter((t) => t.source === "manual");
+  const used = new Set<string>();
+  const linked = new Map<number, CandidateTrade>();
 
-  for (const p of [...plans].sort((a, b) => a.entryOrderNo - b.entryOrderNo)) {
+  // 1. CSV由来のトレード（価格は約定と一致するので、完全一致で結びつける）
+  for (const p of sortedPlans) {
     const orderedMinute = p.orderedAt.slice(0, 16); // 分まで
-    const t = sorted.find(
+    const t = csvTrades.find(
       (c) =>
         !used.has(c.id) &&
         c.side === p.side &&
@@ -151,11 +172,64 @@ export function linkPlansToTrades(
           p.exitRate === null ||
           same(c.exitPrice, p.exitRate)),
     );
+    if (!t) continue;
+    used.add(t.id);
+    linked.set(p.entryOrderNo, t);
+  }
+
+  // 2. 手入力のトレード（結びつかなかった注文だけ。許容幅の中で、近いものから1対1に）
+  const pairs: {
+    plan: OrderPlan;
+    trade: CandidateTrade;
+    priceGap: number;
+    timeGap: number;
+  }[] = [];
+  for (const p of sortedPlans) {
+    if (linked.has(p.entryOrderNo)) continue;
+    const orderedMs = Date.parse(p.orderedAt);
+    for (const c of manualTrades) {
+      if (c.side !== p.side || !same(c.lots, p.lots)) continue;
+      const priceGap = Math.abs(c.entryPrice - p.entryRate);
+      if (priceGap > MANUAL_PRICE_TOLERANCE) continue;
+      const entryMs = Date.parse(c.entryAt);
+      if (entryMs < orderedMs - MANUAL_TIME_TOLERANCE_MS) continue;
+      if (
+        c.exitPrice !== null &&
+        p.exitRate !== null &&
+        Math.abs(c.exitPrice - p.exitRate) > MANUAL_PRICE_TOLERANCE
+      )
+        continue;
+      pairs.push({
+        plan: p,
+        trade: c,
+        priceGap: Math.round(priceGap * 1e5),
+        timeGap: Math.abs(entryMs - orderedMs),
+      });
+    }
+  }
+  pairs.sort(
+    (a, b) =>
+      a.priceGap - b.priceGap ||
+      a.timeGap - b.timeGap ||
+      a.plan.entryOrderNo - b.plan.entryOrderNo,
+  );
+  for (const { plan, trade } of pairs) {
+    if (linked.has(plan.entryOrderNo) || used.has(trade.id)) continue;
+    used.add(trade.id);
+    linked.set(plan.entryOrderNo, trade);
+  }
+
+  const updates: LinkUpdate[] = [];
+  const unmatched: OrderPlan[] = [];
+  let matched = 0;
+  let slOnProfitSide = 0;
+
+  for (const p of sortedPlans) {
+    const t = linked.get(p.entryOrderNo);
     if (!t) {
       unmatched.push(p);
       continue;
     }
-    used.add(t.id);
     matched++;
 
     let slPrice: number | null = null;

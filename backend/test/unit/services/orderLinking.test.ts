@@ -62,6 +62,7 @@ const T = "2026/10/26 09:19"; // JST → 00:19Z
 const trade = (
   o: Partial<CandidateTrade> & Pick<CandidateTrade, "id">,
 ): CandidateTrade => ({
+  source: "rakuten_csv",
   side: "sell",
   lots: 1,
   entryAt: "2026-10-26T00:19:00Z",
@@ -392,5 +393,110 @@ describe("linkPlansToTrades", () => {
         exitMethod: "sl",
       },
     ]);
+  });
+
+  describe("手入力のトレード", () => {
+    // 注文: 売り 157.120 / 日本時間 09:19 = UTC 00:19、SL 157.220（約定 157.221）、TP 156.860
+    const manual = (o: Partial<CandidateTrade> & Pick<CandidateTrade, "id">) =>
+      trade({ source: "manual", ...o });
+
+    it("価格・時刻が少しずれていても結びつけ、SL・TP・決済の仕方を入れる", () => {
+      const r = linkPlansToTrades(ifo(4431), [
+        manual({
+          id: "m",
+          entryPrice: 157.13, // 1pipずれ
+          entryAt: "2026-10-26T00:17:00Z", // 注文の2分前に記録
+          exitPrice: 157.2, // 約定 157.221 と 2pipsずれ
+        }),
+      ]);
+      expect(r.matched).toBe(1);
+      expect(r.updates).toEqual([
+        {
+          tradeId: "m",
+          entryOrderNo: 4431,
+          slPrice: 157.22,
+          tpPrice: 156.86,
+          exitMethod: "sl",
+        },
+      ]);
+    });
+
+    it("未決済の手入力にも、SL・TPを入れる（決済の仕方は決済が入ってから）", () => {
+      const r = linkPlansToTrades(ifo(4431), [
+        manual({ id: "m", exitMethod: "open" }),
+      ]);
+      expect(r.updates).toEqual([
+        {
+          tradeId: "m",
+          entryOrderNo: 4431,
+          slPrice: 157.22,
+          tpPrice: 156.86,
+          exitMethod: null,
+        },
+      ]);
+    });
+
+    it("入力済みのSLは残し、空のTPだけ補う", () => {
+      const r = linkPlansToTrades(ifo(4431), [
+        manual({ id: "m", slPrice: 157.3, exitMethod: "open" }),
+      ]);
+      expect(r.updates).toEqual([
+        {
+          tradeId: "m",
+          entryOrderNo: 4431,
+          slPrice: null,
+          tpPrice: 156.86,
+          exitMethod: null,
+        },
+      ]);
+    });
+
+    it("許容幅（価格5pips・注文の30分前）を超えるものは結びつけない", () => {
+      const r = linkPlansToTrades(ifo(4431), [
+        manual({ id: "price", entryPrice: 157.18 }),
+        manual({ id: "early", entryAt: "2026-10-25T23:48:00Z" }),
+        manual({ id: "exit", exitPrice: 157.3 }),
+        manual({ id: "side", side: "buy" }),
+        manual({ id: "lots", lots: 2 }),
+      ]);
+      expect(r.matched).toBe(0);
+      expect(r.unmatched).toHaveLength(1);
+    });
+
+    it("CSV由来のトレードに結びつく注文は、手入力より優先してCSV由来に結びつける", () => {
+      const r = linkPlansToTrades(ifo(4431), [
+        manual({ id: "m", entryAt: "2026-10-26T00:18:00Z" }),
+        trade({ id: "csv" }),
+      ]);
+      expect(r.updates.map((u) => u.tradeId)).toEqual(["csv"]);
+    });
+
+    it("CSV由来が無い注文だけ、手入力に結びつける", () => {
+      const plans = [...ifo(10), ...ifo(20, "2026/10/26 09:25")];
+      const r = linkPlansToTrades(plans, [
+        trade({ id: "csv", entryAt: "2026-10-26T00:19:00Z" }),
+        manual({ id: "m", entryAt: "2026-10-26T00:26:00Z" }),
+      ]);
+      expect(r.updates.map((u) => [u.entryOrderNo, u.tradeId])).toEqual([
+        [10, "csv"],
+        [20, "m"],
+      ]);
+    });
+
+    it("候補が複数あるときは、価格・時刻が近いものから1対1に結びつける", () => {
+      const plans = [...ifo(10), ...ifo(20, "2026/10/26 09:25")];
+      const r = linkPlansToTrades(plans, [
+        manual({ id: "m1", entryAt: "2026-10-26T00:26:00Z" }),
+        manual({
+          id: "m2",
+          entryPrice: 157.14,
+          entryAt: "2026-10-26T00:20:00Z",
+        }),
+      ]);
+      expect(r.updates.map((u) => [u.entryOrderNo, u.tradeId])).toEqual([
+        [10, "m2"],
+        [20, "m1"],
+      ]);
+    });
   });
 });

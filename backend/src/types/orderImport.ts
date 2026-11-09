@@ -60,6 +60,8 @@ export interface OrderRowError {
 /** 照合に使う、取り込み済みトレードの必要な項目 */
 export interface CandidateTrade {
   id: string;
+  /** CSV取り込みは価格が約定と一致するが、手入力は少しずれることがある */
+  source: "manual" | "rakuten_csv";
   side: "buy" | "sell";
   lots: number;
   entryAt: string;
