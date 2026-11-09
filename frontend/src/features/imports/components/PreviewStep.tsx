@@ -91,6 +91,12 @@ export function PreviewStep({
             手入力したトレードと同じ取引（ペア・売買・ロットが同じで、エントリー時刻が30分以内・価格が5pips以内）は、保存しません。手入力の内容はそのまま残ります。
           </p>
         )}
+        {summary.completesManualCount > 0 && (
+          <p className="text-xs text-ink-mute">
+            そのうち手入力が未決済の {summary.completesManualCount}
+            件は、CSVの決済（決済日時・決済価格・損益）だけ手入力に反映します。
+          </p>
+        )}
         {summary.overlappedRows > 0 && (
           <p className="text-xs text-ink-mute">
             複数のファイルで重なっていた約定 {summary.overlappedRows}

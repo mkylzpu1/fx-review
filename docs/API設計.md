@@ -339,7 +339,7 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 | `new` | 未取り込み | 追加する |
 | `duplicate` | 同じ `source_key` が取り込み済み（削除済みのトレードも含む） | `skip`: 何もしない / `overwrite`: 価格・損益を更新 |
 | `completes_open` | 未決済で取り込み済みだった新規が、今回のCSVで決済済みになった | どちらのモードでも決済を埋める（根拠・メモ・SL・TPは残す。保存済みのMFE/MAEは消し、次の同期で再計算） |
-| `manual_duplicate` | 手入力（`source = manual`・未削除）のトレードと同じ取引。通貨ペア・売買・ロットが同じで、エントリー時刻が30分以内・価格が0.05円以内（双方に決済時刻があれば、それも30分以内）。手入力1件に対応づけるCSVは1件だけ（時刻が近い順）。基準は `constants/import.ts` | どちらのモードでも保存・更新しない（手入力の内容はそのまま）。`source_key` が同じものや `completes_open` の判定が先で、残った `new` だけを照合する |
+| `manual_duplicate` | 手入力（`source = manual`・未削除）のトレードと同じ取引。通貨ペア・売買・ロットが同じで、エントリー時刻が30分以内・価格が0.05円以内（双方に決済時刻があれば、それも30分以内）。手入力1件に対応づけるCSVは1件だけ（時刻が近い順）。基準は `constants/import.ts` | どちらのモードでもCSV側は保存しない。手入力の内容もそのままだが、**手入力が未決済（`status = open`・決済日時なし）でCSVが決済済みのときだけ**、決済日時・決済価格・損益を手入力に埋め、`status = closed`・決済の仕方 `manual` にする（エントリー・SL・TP・根拠・メモ・タグは変えない。保存済みのMFE/MAEは消し、次の同期で再計算）。下書き、すでに決済済みの手入力、CSVが未決済のものは変えない。`source_key` が同じものや `completes_open` の判定が先で、残った `new` だけを照合する |
 
 ### 注文履歴CSV（SL・TPの紐づけ）
 `/imports/preview` と `/imports/commit` に、楽天FX証券の**注文履歴CSV**（`注文No.` 列があり `約定No.` 列が無いもの）を送ると、約定履歴とは別の処理になる（ファイルの形で自動判定。両方を混ぜるとエラー）。レスポンスには `kind: "orders"` が付く。`duplicateMode` は無視される。
@@ -370,12 +370,13 @@ RRが設定の最低値未満でも保存はできる（警告は画面側）。
 ### `POST /imports/commit` レスポンス `data`
 
 ```json
-{ "imported": 200, "skipped": 11, "overwritten": 0, "completedOpen": 0, "manualSkipped": 0, "errorCount": 0, "files": [], "entryRange": {} }
+{ "imported": 200, "skipped": 11, "overwritten": 0, "completedOpen": 0, "manualSkipped": 0, "completedManual": 0, "errorCount": 0, "files": [], "entryRange": {} }
 ```
 
 - `skipped`: `skip` のとき、取り込み済みのため除いた件数
 - `overwritten`: `overwrite` のとき、更新した件数
 - `manualSkipped`: 手入力のトレードと同じ取引のため、保存しなかった件数（preview の `summary.manualDuplicateCount` に対応）
+- `completedManual`: `manualSkipped` のうち、手入力の未決済トレードにCSVの決済を埋めた件数（preview の `summary.completesManualCount` に対応）
 - 取り込み後、`npm run candles:sync -- --from <entryRange.from の日付> --to <entryRange.to の日付>` で足を同期するとチャートとMFE/MAEが出る
 
 ## FXレビュー: P4 エンドポイント（分析）

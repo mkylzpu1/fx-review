@@ -44,6 +44,8 @@ export interface PreviewSummary {
   duplicateCount: number;
   /** 手入力済みのトレードと同じ取引のため、保存しない件数 */
   manualDuplicateCount: number;
+  /** そのうち、手入力が未決済で、CSVの決済を手入力に埋める件数 */
+  completesManualCount: number;
   completesOpenCount: number;
   openCount: number;
   errorCount: number;
@@ -70,6 +72,8 @@ export interface CommitResult {
   completedOpen: number;
   /** 手入力済みのトレードと同じ取引のため、保存しなかった件数 */
   manualSkipped: number;
+  /** 手入力の未決済トレードに、CSVの決済を埋めた件数（manualSkipped の内数） */
+  completedManual: number;
   errorCount: number;
   files: ImportFileResult[];
   entryRange: EntryRange | null;

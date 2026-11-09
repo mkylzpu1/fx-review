@@ -32,6 +32,7 @@ const previewOf = (
     newCount: 200,
     duplicateCount: 11,
     manualDuplicateCount: 0,
+    completesManualCount: 0,
     completesOpenCount: 0,
     openCount: 0,
     errorCount: 1,
@@ -72,6 +73,7 @@ const committed: CommitResult = {
   overwritten: 0,
   completedOpen: 0,
   manualSkipped: 0,
+  completedManual: 0,
   errorCount: 1,
   files: [],
   entryRange: { from: "2026-10-01T13:10:00Z", to: "2026-10-23T06:21:00Z" },
@@ -162,6 +164,22 @@ describe("CSV取り込み", () => {
     ).toBeInTheDocument();
   });
 
+  it("手入力が未決済で決済を反映する取引があれば、その件数と説明を出す。無ければ出さない", async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce(
+      previewOf({
+        manualDuplicateCount: 3,
+        completesManualCount: 2,
+        newCount: 197,
+      }),
+    );
+    renderPage();
+    await chooseFile();
+    await screen.findByText("取り込み内容");
+    expect(
+      screen.getByText(/手入力が未決済の 2\s*件は、CSVの決済/),
+    ).toBeInTheDocument();
+  });
+
   it("手入力と重複する取引が無ければ、その件数の表示は出さない", async () => {
     vi.mocked(apiClient.post).mockResolvedValueOnce(previewOf());
     renderPage();
@@ -184,6 +202,23 @@ describe("CSV取り込み", () => {
     expect(
       screen.getByText(/手入力と同じ取引のため保存しない/),
     ).toHaveTextContent("2件");
+  });
+
+  it("完了後、手入力の未決済に決済を反映した件数を出す", async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce(previewOf());
+    renderPage();
+    await chooseFile();
+    await screen.findByText("取り込み内容");
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      ...committed,
+      manualSkipped: 3,
+      completedManual: 2,
+    });
+    await userEvent.click(screen.getByRole("button", { name: "取り込む" }));
+    expect(await screen.findByText("取り込みました")).toBeInTheDocument();
+    expect(screen.getByText(/手入力の未決済に決済を反映/)).toHaveTextContent(
+      "2件",
+    );
   });
 
   it("重複が無ければ扱いの選択は出さない", async () => {
