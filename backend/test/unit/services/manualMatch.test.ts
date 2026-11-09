@@ -26,6 +26,7 @@ const manual = (o: Partial<ManualTrade> & Pick<ManualTrade, "id">) =>
     entryAt: "2026-10-29T03:00:00Z",
     entryPrice: 150.0,
     exitAt: "2026-10-29T04:00:00Z",
+    status: "closed",
     ...o,
   }) as ManualTrade;
 

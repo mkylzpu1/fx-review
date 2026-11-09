@@ -6,6 +6,7 @@ vi.mock("../../../src/stores/importStore", () => ({
     findManualTrades: vi.fn(),
     insertMany: vi.fn(),
     overwriteMany: vi.fn(),
+    completeManualMany: vi.fn(),
   },
 }));
 
@@ -15,6 +16,7 @@ import {
   importService,
 } from "../../../src/services/import/importService";
 import { ValidationError } from "../../../src/lib/errors";
+import type { ManualTrade } from "../../../src/types/import";
 import {
   buildSample,
   csvOf,
@@ -38,6 +40,19 @@ const pair = (n: number) => [
   f({ no: n + 1, kind: "決済", side: "売" }),
 ];
 
+/** 手入力のトレード（pair(1) と同じ取引。日本時間 22:11 = UTC 13:11 の買い 150.000） */
+const manualOf = (o: Partial<ManualTrade> = {}): ManualTrade => ({
+  id: "manual-1",
+  pair: "USDJPY",
+  side: "buy",
+  lots: 1,
+  entryAt: "2026-10-01T13:11:00Z",
+  entryPrice: 150,
+  exitAt: null,
+  status: "open",
+  ...o,
+});
+
 const existing = (...keys: string[]) =>
   vi
     .mocked(importStore.findBySourceKeys)
@@ -54,6 +69,9 @@ describe("importService.preview", () => {
       async (_u, t) => t.length,
     );
     vi.mocked(importStore.overwriteMany).mockResolvedValue(0);
+    vi.mocked(importStore.completeManualMany).mockImplementation(
+      async (_u, items) => items.length,
+    );
   });
 
   it("サンプル形式211件が全件新規として集計され、保存はしない", async () => {
@@ -102,6 +120,7 @@ describe("importService.preview", () => {
         entryAt: "2026-10-01T13:12:00Z", // 1分ずれて手入力
         entryPrice: 150,
         exitAt: null,
+        status: "draft",
       },
     ]);
     const r = await importService.preview("u", [
@@ -124,6 +143,19 @@ describe("importService.preview", () => {
       "2026-10-01T12:41:00.000Z",
       "2026-10-01T13:51:00.000Z",
     );
+  });
+
+  it("手入力が未決済でCSVが決済済みなら、決済を埋める件数を数える（行には出さない）", async () => {
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([manualOf()]);
+    const r = await importService.preview("u", [
+      file([...pair(1), ...pair(11)]),
+    ]);
+    expect(r.summary).toMatchObject({
+      manualDuplicateCount: 1,
+      completesManualCount: 1,
+    });
+    expect(r.trades[0]).not.toHaveProperty("completesManual");
+    expect(importStore.completeManualMany).not.toHaveBeenCalled();
   });
 
   it("取り込み済み（duplicate）は手入力と照合しない", async () => {
@@ -176,6 +208,9 @@ describe("importService.commit", () => {
       async (_u, t) => t.length,
     );
     vi.mocked(importStore.overwriteMany).mockResolvedValue(0);
+    vi.mocked(importStore.completeManualMany).mockImplementation(
+      async (_u, items) => items.length,
+    );
   });
 
   it("skip: 新規だけ入れ、取り込み済みは触らない", async () => {
@@ -214,21 +249,14 @@ describe("importService.commit", () => {
     expect(r).toMatchObject({ imported: 0, completedOpen: 1 });
   });
 
-  it("手入力と同じ取引は、skip でも overwrite でも保存・更新しない", async () => {
+  it("手入力と同じ取引は、skip でも overwrite でも保存しない。下書きは決済も埋めない", async () => {
     vi.mocked(importStore.findManualTrades).mockResolvedValue([
-      {
-        id: "manual-1",
-        pair: "USDJPY",
-        side: "buy",
-        lots: 1,
-        entryAt: "2026-10-01T13:11:00Z",
-        entryPrice: 150,
-        exitAt: null,
-      },
+      manualOf({ status: "draft" }),
     ]);
     for (const mode of ["skip", "overwrite"] as const) {
       vi.mocked(importStore.insertMany).mockClear();
       vi.mocked(importStore.overwriteMany).mockClear();
+      vi.mocked(importStore.completeManualMany).mockClear();
       const r = await importService.commit(
         "u",
         [file([...pair(1), ...pair(11)])],
@@ -237,13 +265,74 @@ describe("importService.commit", () => {
       const inserted = vi.mocked(importStore.insertMany).mock.calls[0][1];
       expect(inserted.map((t) => t.sourceKey)).toEqual(["rakuten:11:12"]);
       expect(vi.mocked(importStore.overwriteMany).mock.calls[0][1]).toEqual([]);
+      expect(
+        vi.mocked(importStore.completeManualMany).mock.calls[0][1],
+      ).toEqual([]);
       expect(r).toMatchObject({
         imported: 1,
         manualSkipped: 1,
+        completedManual: 0,
         skipped: 0,
         overwritten: 0,
       });
     }
+  });
+
+  it("手入力が未決済でCSVが決済済みなら、skip でも overwrite でも決済だけ手入力に埋める", async () => {
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([manualOf()]);
+    for (const mode of ["skip", "overwrite"] as const) {
+      vi.mocked(importStore.insertMany).mockClear();
+      vi.mocked(importStore.overwriteMany).mockClear();
+      vi.mocked(importStore.completeManualMany).mockClear();
+      const r = await importService.commit(
+        "u",
+        [file([...pair(1), ...pair(11)])],
+        mode,
+      );
+      // CSV側は保存しない（手入力1件に対応づく分）。もう1件は新規として入る
+      const inserted = vi.mocked(importStore.insertMany).mock.calls[0][1];
+      expect(inserted.map((t) => t.sourceKey)).toEqual(["rakuten:11:12"]);
+      expect(vi.mocked(importStore.overwriteMany).mock.calls[0][1]).toEqual([]);
+      const done = vi.mocked(importStore.completeManualMany).mock.calls[0][1];
+      expect(done).toHaveLength(1);
+      expect(done[0].id).toBe("manual-1");
+      expect(done[0].trade).toMatchObject({
+        sourceKey: "rakuten:1:2",
+        exitPrice: 150,
+        pnlJpy: 100,
+        status: "closed",
+      });
+      expect(done[0].trade.exitAt).not.toBeNull();
+      expect(r).toMatchObject({
+        imported: 1,
+        manualSkipped: 1,
+        completedManual: 1,
+      });
+    }
+  });
+
+  it("手入力がすでに決済済みなら、CSVの決済で書き換えない", async () => {
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([
+      manualOf({ status: "closed", exitAt: "2026-10-01T13:12:00Z" }),
+    ]);
+    const r = await importService.commit("u", [file(pair(1))], "overwrite");
+    expect(vi.mocked(importStore.completeManualMany).mock.calls[0][1]).toEqual(
+      [],
+    );
+    expect(r).toMatchObject({ manualSkipped: 1, completedManual: 0 });
+  });
+
+  it("CSVが未決済なら、手入力の決済は埋めない", async () => {
+    vi.mocked(importStore.findManualTrades).mockResolvedValue([manualOf()]);
+    const r = await importService.commit(
+      "u",
+      [file([f({ no: 1, kind: "新規", side: "買" })])],
+      "skip",
+    );
+    expect(vi.mocked(importStore.completeManualMany).mock.calls[0][1]).toEqual(
+      [],
+    );
+    expect(r).toMatchObject({ manualSkipped: 1, completedManual: 0 });
   });
 
   it("同時実行で先に入った行は取り込んだ件数に数えず、除いた件数に足す", async () => {

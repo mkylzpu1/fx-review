@@ -41,6 +41,8 @@ export interface PreviewSummary {
   duplicateCount: number;
   /** 手入力済みのトレードと同じ取引のため、保存しない件数 */
   manualDuplicateCount: number;
+  /** そのうち、手入力が未決済で、今回のCSVの決済を手入力に埋める件数 */
+  completesManualCount: number;
   /** 未決済で取り込み済みだったトレードが、今回のCSVで決済済みになる件数 */
   completesOpenCount: number;
   openCount: number;
@@ -66,6 +68,8 @@ export interface CommitResult {
   completedOpen: number;
   /** 手入力済みのトレードと同じ取引のため、保存しなかった件数 */
   manualSkipped: number;
+  /** 手入力の未決済トレードに、CSVの決済を埋めた件数（manualSkipped の内数） */
+  completedManual: number;
   errorCount: number;
   files: ImportFileResult[];
   entryRange: { from: string; to: string } | null;
@@ -77,6 +81,8 @@ interface Analysis {
   classified: (ImportTrade & {
     importStatus: PreviewStatus;
     existingId: string | null;
+    /** manual_duplicate のうち、手入力が未決済でCSVが決済済み（決済を手入力に埋める） */
+    completesManual: boolean;
   })[];
   overlappedRows: number;
 }
@@ -118,7 +124,12 @@ async function analyze(
   const classified: Analysis["classified"] = pairing.trades.map((t) => {
     const same = existing.get(t.sourceKey);
     if (same)
-      return { ...t, importStatus: "duplicate" as const, existingId: same.id };
+      return {
+        ...t,
+        importStatus: "duplicate" as const,
+        existingId: same.id,
+        completesManual: false,
+      };
     const openBefore =
       t.status === "closed"
         ? existing.get(toSourceKey(t.entryNo, null))
@@ -128,8 +139,14 @@ async function analyze(
         ...t,
         importStatus: "completes_open" as const,
         existingId: openBefore.id,
+        completesManual: false,
       };
-    return { ...t, importStatus: "new" as const, existingId: null };
+    return {
+      ...t,
+      importStatus: "new" as const,
+      existingId: null,
+      completesManual: false,
+    };
   });
 
   // 新規に取り込むはずのものが、手入力済みのトレードと同じ取引なら、保存しない
@@ -143,6 +160,7 @@ async function analyze(
       new Date(Date.parse(range.to) + margin).toISOString(),
     );
     const matched = matchManualTrades(fresh, manual);
+    const manualById = new Map(manual.map((m) => [m.id, m]));
     classified.forEach((t, i) => {
       const manualId = matched.get(t.sourceKey);
       if (t.importStatus === "new" && manualId)
@@ -150,6 +168,14 @@ async function analyze(
           ...t,
           importStatus: "manual_duplicate",
           existingId: manualId,
+          // 手入力が未決済（open）で、CSVが決済済みなら、決済だけ手入力に埋める。
+          // 下書きと、すでに決済済みの手入力は変えない
+          completesManual:
+            t.status === "closed" &&
+            t.exitAt !== null &&
+            t.exitPrice !== null &&
+            manualById.get(manualId)?.status === "open" &&
+            manualById.get(manualId)?.exitAt === null,
         };
     });
   }
@@ -181,7 +207,7 @@ export const importService = {
         x.entryAt < y.entryAt ? 1 : x.entryAt > y.entryAt ? -1 : 0,
       )
       .slice(0, PREVIEW_TRADE_LIMIT)
-      .map(({ existingId: _ignored, ...t }) => t);
+      .map(({ existingId: _ignored, completesManual: _ignoredToo, ...t }) => t);
     return {
       files: a.files,
       summary: {
@@ -189,6 +215,8 @@ export const importService = {
         newCount: count("new"),
         duplicateCount: count("duplicate"),
         manualDuplicateCount: count("manual_duplicate"),
+        completesManualCount: a.classified.filter((t) => t.completesManual)
+          .length,
         completesOpenCount: count("completes_open"),
         openCount: a.classified.filter((t) => t.status === "open").length,
         errorCount: a.errors.length,
@@ -205,7 +233,9 @@ export const importService = {
    * - skip: 取り込み済みを除いて新規だけ入れる
    * - overwrite: 取り込み済みの価格・損益だけCSVの値で更新する（根拠・メモ・SL・TPは残す）
    * 未決済→決済済みへの更新（completes_open）は、どちらのモードでも行う。
-   * 手入力済みのトレードと同じ取引（manual_duplicate）は、どちらのモードでも保存せず、手入力の内容も変えない。
+   * 手入力済みのトレードと同じ取引（manual_duplicate）は、どちらのモードでも保存しない。
+   * 手入力の内容も変えないが、手入力が未決済（open）でCSVが決済済みのときだけ、
+   * 決済日時・決済価格・損益を手入力に埋める（エントリー・SL・TP・根拠・メモは残す）。
    */
   async commit(
     userId: string,
@@ -238,6 +268,12 @@ export const importService = {
         : []),
     ];
     await importStore.overwriteMany(userId, toUpdate);
+    const completedManual = await importStore.completeManualMany(
+      userId,
+      manualDups
+        .filter((t) => t.completesManual)
+        .map((t) => ({ id: t.existingId!, trade: t })),
+    );
 
     return {
       imported: inserted,
@@ -245,6 +281,7 @@ export const importService = {
       overwritten: mode === "overwrite" ? dups.length : 0,
       completedOpen: completes.length,
       manualSkipped: manualDups.length,
+      completedManual,
       errorCount: a.errors.length,
       files: a.files,
       entryRange: entryRange(a.classified),

@@ -50,7 +50,7 @@ export const importStore = {
     >`
       SELECT id, pair, side, lots::float8 as lots,
         entry_at as "entryAt", entry_price::float8 as "entryPrice",
-        exit_at as "exitAt"
+        exit_at as "exitAt", status
       FROM trades
       WHERE user_id = ${userId} AND source = 'manual' AND deleted_at IS NULL
         AND entry_at >= ${fromIso}::timestamptz
@@ -139,6 +139,38 @@ export const importStore = {
             mfe_pips = NULL, mae_pips = NULL, after_max_pips = NULL,
             updated_at = NOW()
           WHERE user_id = ${userId} AND id = ${id}
+          RETURNING id
+        `;
+        n += res.length;
+      }
+      return n;
+    });
+  },
+
+  /**
+   * 手入力の未決済トレードに、CSVの決済（決済日時・決済価格・損益）だけを入れる。
+   * エントリー・SL・TP・根拠・メモ・タグは変えない。決済の仕方は初期値の manual にする
+   * （注文履歴の取り込みで、TP・SLに直せるようにするため）。
+   * 保有中の最大含み益/損は古い値になるので消す（次の同期で再計算される）。
+   * 条件（手入力・未削除・open・決済日時なし）に合わないものは更新せず、更新した件数を返す。
+   */
+  async completeManualMany(
+    userId: string,
+    items: { id: string; trade: ImportTrade }[],
+  ): Promise<number> {
+    if (items.length === 0) return 0;
+    return sql.begin(async (tx) => {
+      let n = 0;
+      for (const { id, trade: t } of items) {
+        const res = await tx`
+          UPDATE trades SET
+            exit_at = ${t.exitAt}, exit_price = ${t.exitPrice},
+            pnl_jpy = ${t.pnlJpy}, status = 'closed', exit_method = 'manual',
+            mfe_pips = NULL, mae_pips = NULL, after_max_pips = NULL,
+            updated_at = NOW()
+          WHERE user_id = ${userId} AND id = ${id}
+            AND source = 'manual' AND deleted_at IS NULL
+            AND status = 'open' AND exit_at IS NULL
           RETURNING id
         `;
         n += res.length;

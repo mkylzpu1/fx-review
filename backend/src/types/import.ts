@@ -57,4 +57,6 @@ export interface ManualTrade {
   entryAt: string;
   entryPrice: number;
   exitAt: string | null;
+  /** 下書きは決済を埋める対象にしない（open のものだけ埋める） */
+  status: "draft" | "open" | "closed";
 }
