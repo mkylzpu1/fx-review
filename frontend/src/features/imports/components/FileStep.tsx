@@ -25,13 +25,45 @@ interface Props {
   onNext: () => void;
 }
 
-function todayLocalDateInputValue(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function toDateInputValue(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
+
+function todayLocalDateInputValue(): string {
+  return toDateInputValue(new Date());
+}
+
+/** 月曜始まりの週の開始日 */
+function startOfWeek(d: Date): Date {
+  const copy = new Date(d);
+  const day = copy.getDay(); // 0=日, 1=月, ...
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  copy.setDate(copy.getDate() + diffToMonday);
+  return copy;
+}
+
+function startOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+/** 開始日のクイック選択。終了日は常に当日まで（ブリッジの仕様） */
+const DATE_PRESETS: { id: string; label: string; startDate: () => Date }[] = [
+  { id: "today", label: "今日", startDate: () => new Date() },
+  { id: "thisWeek", label: "今週", startDate: () => startOfWeek(new Date()) },
+  {
+    id: "lastWeek",
+    label: "先週",
+    startDate: () => {
+      const d = startOfWeek(new Date());
+      d.setDate(d.getDate() - 7);
+      return d;
+    },
+  },
+  { id: "thisMonth", label: "今月", startDate: () => startOfMonth(new Date()) },
+];
 
 type AutoStage = "execution" | "order" | null;
 
@@ -41,6 +73,7 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [bridgeDate, setBridgeDate] = useState(todayLocalDateInputValue);
+  const [datePreset, setDatePreset] = useState<string | null>("today");
   const rakutenImport = useRakutenImport();
   const previewApi = useImportPreview();
   const commitApi = useImportCommit();
@@ -138,6 +171,28 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
           <p className="text-xs text-ink-mute">
             WebTraderにログインした状態で、開始日を選んでボタンを押すと、約定履歴→注文履歴の順にダウンロードして、このままfx-reviewに取り込みます（終了日は当日まで）。
           </p>
+          <div
+            role="radiogroup"
+            aria-label="開始日のクイック選択"
+            className="flex flex-wrap gap-2"
+          >
+            {DATE_PRESETS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                role="radio"
+                aria-checked={datePreset === p.id}
+                disabled={autoStage !== null}
+                className={`btn ${datePreset === p.id ? "border-accent bg-surface" : ""}`}
+                onClick={() => {
+                  setDatePreset(p.id);
+                  setBridgeDate(toDateInputValue(p.startDate()));
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="date"
@@ -145,7 +200,10 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
               aria-label="開始日"
               value={bridgeDate}
               disabled={autoStage !== null}
-              onChange={(e) => setBridgeDate(e.target.value)}
+              onChange={(e) => {
+                setBridgeDate(e.target.value);
+                setDatePreset(null);
+              }}
             />
             <button
               className="btn"
