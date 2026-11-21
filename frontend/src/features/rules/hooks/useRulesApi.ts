@@ -33,6 +33,18 @@ export function useUpdateRule() {
   });
 }
 
+export function useDeleteRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete<{ id: string }>(`/rules/${id}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ruleKeys.all });
+      // 判定結果（逸脱）が変わるため、トレード側の表示も取り直す
+      void qc.invalidateQueries({ queryKey: ["trades"] });
+    },
+  });
+}
+
 export function useRuleDetail(id: string | undefined) {
   return useQuery({
     queryKey: [...ruleKeys.all, "detail", id ?? ""] as const,

@@ -7,19 +7,28 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { toast } from "@/stores/toastStore";
 import { RuleEditor } from "../components/RuleEditor";
-import { useCreateRule, useRules, useUpdateRule } from "../hooks/useRulesApi";
+import {
+  useCreateRule,
+  useDeleteRule,
+  useRules,
+  useUpdateRule,
+} from "../hooks/useRulesApi";
 import { AUTO_KEY_LABEL, type Rule, type RuleInput } from "../types";
 
 const SAVE_ERROR =
   "保存できませんでした。通信を確認して、もう一度試してください。入力内容は残っています。";
+const DELETE_ERROR =
+  "削除できませんでした。通信を確認して、もう一度試してください。";
 
 export function RulesPage() {
   const { data: rules, isLoading, isError, refetch } = useRules();
   const create = useCreateRule();
   const update = useUpdateRule();
+  const del = useDeleteRule();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string>();
   const [disabling, setDisabling] = useState<Rule>();
+  const [deleting, setDeleting] = useState<Rule>();
 
   if (isLoading) return <LoadingSpinner fullScreen={false} />;
   if (isError || !rules) return <ErrorAlert onRetry={() => void refetch()} />;
@@ -58,6 +67,15 @@ export function RulesPage() {
         onError: () => toast.error(SAVE_ERROR),
       },
     );
+
+  const deleteRule = (rule: Rule) =>
+    del.mutate(rule.id, {
+      onSuccess: () => {
+        setDeleting(undefined);
+        toast.success("ルールを削除しました");
+      },
+      onError: () => toast.error(DELETE_ERROR),
+    });
 
   /** 隣のルールと並び順を入れ替える */
   const move = (index: number, delta: -1 | 1) => {
@@ -174,6 +192,12 @@ export function RulesPage() {
                     >
                       {rule.isActive ? "有効" : "無効"}
                     </button>
+                    <button
+                      className="btn"
+                      onClick={() => setDeleting(rule)}
+                    >
+                      削除
+                    </button>
                   </div>
                 </div>
               )}
@@ -189,6 +213,15 @@ export function RulesPage() {
         confirmLabel="無効にする"
         onConfirm={() => disabling && setActive(disabling, false)}
         onCancel={() => setDisabling(undefined)}
+      />
+
+      <ConfirmDialog
+        open={!!deleting}
+        title="このルールを削除しますか？"
+        description="この操作は取り消せません。過去のトレードの判定も削除されます。"
+        confirmLabel="削除する"
+        onConfirm={() => deleting && deleteRule(deleting)}
+        onCancel={() => setDeleting(undefined)}
       />
     </div>
   );

@@ -76,4 +76,24 @@ describe("ルール画面", () => {
       }),
     );
   });
+
+  it("削除は確認してからAPIを呼ぶ（キャンセルで呼ばない）", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ items: [rule()] });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "削除" }));
+    expect(screen.getByText("このルールを削除しますか？")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+    expect(apiClient.delete).not.toHaveBeenCalled();
+  });
+
+  it("削除の確認でOKすると DELETE /rules/{id} を呼ぶ", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ items: [rule()] });
+    vi.mocked(apiClient.delete).mockResolvedValue({ id: "r1" });
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "削除" }));
+    await userEvent.click(screen.getByRole("button", { name: "削除する" }));
+    await waitFor(() =>
+      expect(apiClient.delete).toHaveBeenCalledWith("/rules/r1"),
+    );
+  });
 });
