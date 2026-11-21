@@ -241,18 +241,21 @@ describe("トレード一覧", () => {
     );
     expect(table.closest("[aria-busy='true']")).toBeNull();
   });
-  it("期間ボタンは「すべて・今日・今月・過去30日・過去90日」の順で、初期値は今月", async () => {
+  it("期間ボタンは統計画面と同じバリエーション（今日・今週・先週・今月・先月・過去30日・過去90日・すべて）の順で、初期値は今月", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(page([trade({ id: "t1" })]));
     renderPage();
     await screen.findByRole("table");
     const group = screen.getByRole("group", { name: "期間" });
     const buttons = within(group).getAllByRole("button");
     expect(buttons.map((b) => b.textContent)).toEqual([
-      "すべて",
       "今日",
+      "今週",
+      "先週",
       "今月",
+      "先月",
       "過去30日",
       "過去90日",
+      "すべて",
     ]);
     expect(within(group).getByRole("button", { name: "今月" })).toHaveAttribute(
       "aria-pressed",

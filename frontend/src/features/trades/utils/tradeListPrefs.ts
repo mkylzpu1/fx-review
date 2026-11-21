@@ -8,13 +8,17 @@ import type { TradeSort } from "../types";
 export type ResultTab = "all" | "win" | "loss";
 
 export const DEFAULT_PERIOD: PeriodKey = "month";
-/** 一覧の期間ボタンの並び（統計画面の並びとは別） */
+/** 一覧の期間ボタンの並び（統計画面のPERIODSと同じバリエーション。「期間を指定」だけ、
+ * ここでは専用のボタンではなく隣の日付入力で代える） */
 export const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
-  { value: "all", label: "すべて" },
   { value: "today", label: "今日" },
+  { value: "thisWeek", label: "今週" },
+  { value: "lastWeek", label: "先週" },
   { value: "month", label: "今月" },
+  { value: "lastMonth", label: "先月" },
   { value: "30d", label: "過去30日" },
   { value: "90d", label: "過去90日" },
+  { value: "all", label: "すべて" },
 ];
 export const PERIOD_KEY = "fx-review:trade-list-period";
 /** 前回選んだ期間。無い・不正な値・読み出せないときは初期値（今月） */

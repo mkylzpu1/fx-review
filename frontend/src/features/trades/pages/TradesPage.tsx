@@ -6,7 +6,7 @@ import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { usePairs } from "@/features/settings/hooks/useSettingsApi";
-import { periodFrom } from "@/features/stats/utils/period";
+import { periodRange } from "@/features/stats/utils/period";
 import type { PeriodKey } from "@/features/stats/types";
 import { formatPips, formatR, formatYenSigned } from "@/utils/format";
 import { CandleSyncButton } from "../components/CandleSyncButton";
@@ -222,11 +222,9 @@ export function TradesPage() {
 
   // 「過去90日」などの from は現在時刻から作るため、再描画のたびに計算し直すと値が毎回変わり、
   // 取得条件（キャッシュのキー）が変わって、一覧と全件集計を何度も取り直してしまう。期間を選んだときだけ決める
+  // 「先週」「先月」のように終わりがある期間は、periodRangeのtoもそのまま使う（でないと今週分まで混ざる）
   const range = useMemo(
-    () =>
-      customRange
-        ? dateRangeToIso(dateFrom, dateTo)
-        : { from: periodFrom(period), to: undefined },
+    () => (customRange ? dateRangeToIso(dateFrom, dateTo) : periodRange(period)),
     [customRange, dateFrom, dateTo, period],
   );
   const filters: TradeListQuery = {
@@ -300,6 +298,48 @@ export function TradesPage() {
             options={PERIOD_OPTIONS}
             onChange={pickPeriod}
           />
+          <div
+            role="group"
+            aria-label="期間を日付で指定"
+            className={`inline-flex h-[38px] items-center gap-1.5 rounded-chip border px-2.5 text-[13px] ${
+              customRange ? "border-accent bg-accent/10" : "border-field"
+            }`}
+          >
+            <span className="text-xs text-ink-mute">日付</span>
+            <input
+              type="date"
+              aria-label="開始日"
+              className={dateCls}
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(e) => changeDateFrom(e.target.value)}
+            />
+            <span aria-hidden="true" className="text-ink-mute">
+              〜
+            </span>
+            <input
+              type="date"
+              aria-label="終了日"
+              className={dateCls}
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => changeDateTo(e.target.value)}
+            />
+            {customRange && (
+              <button
+                type="button"
+                aria-label="日付指定をクリア"
+                className="ml-0.5 px-1 text-ink-mute hover:text-ink"
+                onClick={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                  setPage(1);
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
           <span aria-hidden="true" className="mx-1.5 h-6 w-px bg-line" />
           <CandleSyncButton variant="header" />
           <Link
@@ -497,48 +537,6 @@ export function TradesPage() {
           </select>
           <Chevron />
         </label>
-        <div
-          role="group"
-          aria-label="期間を日付で指定"
-          className={`inline-flex h-[38px] items-center gap-1.5 rounded-chip border px-2.5 text-[13px] ${
-            customRange ? "border-accent bg-accent/10" : "border-field"
-          }`}
-        >
-          <span className="text-xs text-ink-mute">日付</span>
-          <input
-            type="date"
-            aria-label="開始日"
-            className={dateCls}
-            value={dateFrom}
-            max={dateTo || undefined}
-            onChange={(e) => changeDateFrom(e.target.value)}
-          />
-          <span aria-hidden="true" className="text-ink-mute">
-            〜
-          </span>
-          <input
-            type="date"
-            aria-label="終了日"
-            className={dateCls}
-            value={dateTo}
-            min={dateFrom || undefined}
-            onChange={(e) => changeDateTo(e.target.value)}
-          />
-          {customRange && (
-            <button
-              type="button"
-              aria-label="日付指定をクリア"
-              className="ml-0.5 px-1 text-ink-mute hover:text-ink"
-              onClick={() => {
-                setDateFrom("");
-                setDateTo("");
-                setPage(1);
-              }}
-            >
-              ×
-            </button>
-          )}
-        </div>
         <span aria-hidden="true" className="mx-1 h-6 w-px bg-line" />
         <span className="text-xs text-ink-mute">チャートの時間足</span>
         <Seg
