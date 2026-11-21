@@ -107,3 +107,24 @@ export function useRakutenImport() {
       runImport(v.kind, v.date),
   });
 }
+
+/**
+ * CSV自動取り込みが終わったあと、ChromeのタブをfxreviewアプリのタブへHammerspoonに
+ * 切り替えてもらう（WebTraderのタブに切り替わったままになっているため）。
+ * 手元に戻せなくても致命的ではないので、失敗しても黙って諦める（呼び出し元で
+ * エラーを気にする必要はない）。
+ */
+async function focusApp(): Promise<void> {
+  try {
+    await fetch(`${RAKUTEN_BRIDGE_URL}/focus-app`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch {
+    // Hammerspoonに届かなくても、取り込み自体は終わっているので無視してよい
+  }
+}
+
+export function useFocusApp() {
+  return useMutation({ mutationFn: focusApp });
+}

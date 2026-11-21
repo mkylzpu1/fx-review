@@ -4,6 +4,7 @@ import { ROUTES } from "@/constants/routes";
 import { toast } from "@/stores/toastStore";
 import {
   RakutenBridgeUnreachable,
+  useFocusApp,
   useRakutenImport,
 } from "../hooks/useRakutenBridge";
 import { useImportCommit, useImportPreview } from "../hooks/useImportApi";
@@ -64,6 +65,7 @@ export function AutoImportSection() {
   const rakutenImport = useRakutenImport();
   const previewApi = useImportPreview();
   const commitApi = useImportCommit();
+  const focusApp = useFocusApp();
   const [autoStage, setAutoStage] = useState<AutoStage>(null);
 
   const bridgeErrorMessage = (e: unknown) =>
@@ -111,8 +113,12 @@ export function AutoImportSection() {
       if (isOrderCommit(result)) {
         toast.success(`注文履歴: ${result.updated}件にSL・TPを反映しました`);
       }
-      // 約定履歴・注文履歴とも取り込みが終わったので、アプリ側の画面に戻す
-      navigate(ROUTES.TRADE_QUEUE);
+      toast.success("CSVの自動取り込みが完了しました");
+      // 約定履歴・注文履歴とも取り込みが終わったので、トレード一覧に戻す
+      navigate(ROUTES.TRADES);
+      // ダウンロード中にChromeがWebTraderのタブへ切り替わったままなので、
+      // fx-reviewアプリ自身のタブへ戻す（見つからなくても失敗にはしない）
+      void focusApp.mutateAsync();
     } catch (e) {
       toast.error(`注文履歴の取り込みに失敗しました。${bridgeErrorMessage(e)}`);
     } finally {
@@ -124,7 +130,7 @@ export function AutoImportSection() {
     <section className="card space-y-3" role="tabpanel">
       <h2 className="text-base font-bold">楽天FXから自動取得</h2>
       <p className="text-xs text-ink-mute">
-        WebTraderにログインした状態で、開始日を選んでボタンを押すと、約定履歴→注文履歴の順にダウンロードして、このままfx-reviewに取り込みます（終了日は当日まで）。確認画面を挟まず、そのまま取り込まれます。完了すると、未入力キューに自動で戻ります。
+        WebTraderにログインした状態で、開始日を選んでボタンを押すと、約定履歴→注文履歴の順にダウンロードして、このままfx-reviewに取り込みます（終了日は当日まで）。確認画面を挟まず、そのまま取り込まれます。完了すると、トレード一覧（/trades）に自動で戻り、Chromeのタブもこの画面へ自動で切り替わります。
       </p>
       <p className="rounded-card border border-field bg-surface p-3 text-xs text-ink-sub">
         ※ 事前に
