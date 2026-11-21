@@ -195,6 +195,20 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
           <p className="text-xs text-ink-mute">
             WebTraderにログインした状態で、開始日を選んでボタンを押すと、約定履歴→注文履歴の順にダウンロードして、このままfx-reviewに取り込みます（終了日は当日まで）。完了すると、未入力キューに自動で戻ります。
           </p>
+          <p className="rounded-card border border-field bg-surface p-3 text-xs text-ink-sub">
+            ※ 事前に
+            <a
+              href="https://github.com/mkylzpu1/fx-review/tree/main/hammerspoon"
+              target="_blank"
+              rel="noreferrer"
+              className="mx-1 font-bold text-accent-link underline"
+            >
+              Hammerspoon
+            </a>
+            の導入・設定が必要です（詳しくは
+            <code>hammerspoon/README.md</code>
+            を参照）。未設定の場合は、下の「CSVファイルを選ぶ」から手動で取り込んでください。
+          </p>
           <div
             role="radiogroup"
             aria-label="開始日のクイック選択"
