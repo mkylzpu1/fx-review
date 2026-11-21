@@ -18,8 +18,6 @@ local CONFIG = {
   pollInterval   = 0.5,
   pollTimeout    = 10.0,
   stepDelay      = 1.5,
-  tabLoadWait    = 2.0,   -- タブ切り替え後、iframeの読み込みを待つ秒数
-  radioWait      = 1.0,   -- 注文照会: ラジオボタン切り替えの反映を待つ秒数
   downloadTimeout = 10.0, -- ダウンロード完了をダウンロードフォルダで待つ秒数
 
   -- ローカルHTTPブリッジ（fx-reviewアプリとの連携）
@@ -158,10 +156,22 @@ end
 
 ------------------------------------------------------------
 -- タブリンクをクリック（「約定照会」「注文照会」の切り替え）
+--
+-- クリック前に、今表示されているiframeのdocumentへ目印(data-rkt-pending)を
+-- 付けておく。タブ切り替えでiframeが新しいページへ遷移すると、新しい
+-- documentにはこの目印が付いていないので、「まだ古いページのままか」を
+-- 判定できる（＝固定秒数の代わりに実際の遷移完了を検知する）。
+-- 目印付けとクリックを1回のJS実行にまとめて、取りこぼし(競合)を防ぐ。
 ------------------------------------------------------------
 local function clickTabLink(label)
   runJS(string.format([[
 (function() {
+  try {
+    var frame = document.getElementById('mainFrame');
+    if (frame && frame.contentDocument && frame.contentDocument.documentElement) {
+      frame.contentDocument.documentElement.setAttribute('data-rkt-pending', '1');
+    }
+  } catch (e) {}
   var links = document.querySelectorAll('a');
   for (var i = 0; i < links.length; i++) {
     if (links[i].textContent.trim() === '%s') {
@@ -196,6 +206,11 @@ end
 
 ------------------------------------------------------------
 -- 約定照会: 日付セット → 表示ボタンクリック
+--
+-- clickTabLink が付けた data-rkt-pending が残っている間は、まだタブ切り替え
+-- （iframeのページ遷移）が完了していない古いdocumentなので WAIT を返し続ける。
+-- 目印が消えて（＝新しいdocumentに切り替わって）必要な要素が揃って初めて
+-- 操作に進む。固定の待ち時間は使わない。
 ------------------------------------------------------------
 local function searchYakujo(y, m, d, onDone)
   local js = string.format([[
@@ -203,6 +218,10 @@ local function searchYakujo(y, m, d, onDone)
   var frame = document.getElementById('mainFrame');
   if (!frame) return 'WAIT';
   var doc = frame.contentDocument;
+  if (!doc) return 'WAIT';
+  try {
+    if (doc.documentElement.getAttribute('data-rkt-pending') === '1') return 'WAIT';
+  } catch (e) { return 'WAIT'; }
   var fy = doc.querySelector('input[name="fromDateY"]');
   var fm = doc.querySelector('input[name="fromDateM"]');
   var fd = doc.querySelector('input[name="fromDateD"]');
@@ -230,16 +249,25 @@ end
 --
 -- 「訂正・取消可能な注文のみ」(orderRefMode_1) がデフォルトで選ばれているため、
 -- 「注文日」(orderRefMode_2) に切り替える。切り替え直後は画面がフィールドを
--- 再描画するため、日付をセットする前に radioWait 秒待つ（でないと上書きされる）。
+-- 再描画する（＝日付入力欄のDOM要素が作り直される）ため、固定秒数で待つ
+-- 代わりに、切り替え前の要素に目印(data-rkt-pending)を付けておき、その目印
+-- が付いた要素が「作り直されて消える」までポーリングして待つ。
 ------------------------------------------------------------
 local function searchChumon(y, m, d, onDone)
-  local jsRadio = [[
+  -- フェーズ1: タブ遷移が完了し、ラジオボタンが操作可能になるまで待ってからクリック
+  local jsRadioReady = [[
 (function() {
   var frame = document.getElementById('mainFrame');
   if (!frame) return 'WAIT';
   var doc = frame.contentDocument;
+  if (!doc) return 'WAIT';
+  try {
+    if (doc.documentElement.getAttribute('data-rkt-pending') === '1') return 'WAIT';
+  } catch (e) { return 'WAIT'; }
   var radio2 = doc.getElementById('orderRefMode_2');
   if (!radio2) return 'WAIT';
+  var fy = doc.querySelector('input[name="fromDateY"]');
+  if (fy) fy.setAttribute('data-rkt-pending', '1');
   radio2.checked = true;
   var event = doc.createEvent('Event');
   event.initEvent('change', true, true);
@@ -248,18 +276,26 @@ local function searchChumon(y, m, d, onDone)
   return 'OK';
 })();
 ]]
-  runJS(jsRadio)
 
-  hs.timer.doAfter(CONFIG.radioWait, function()
-    local js = string.format([[
+  waitAndRun(jsRadioReady, function(okRadio, msgRadio)
+    if not okRadio then
+      onDone(false, msgRadio)
+      return
+    end
+
+    -- フェーズ2: ラジオ切り替えによる再描画が終わる（＝目印付き要素が作り直されて
+    -- 消える）まで待ってから、日付をセットして表示ボタンを押す
+    local jsAfterRadio = string.format([[
 (function() {
   var frame = document.getElementById('mainFrame');
   if (!frame) return 'WAIT';
   var doc = frame.contentDocument;
+  if (!doc) return 'WAIT';
   var fy = doc.querySelector('input[name="fromDateY"]');
   var fm = doc.querySelector('input[name="fromDateM"]');
   var fd = doc.querySelector('input[name="fromDateD"]');
   if (!fy || !fm || !fd) return 'WAIT';
+  if (fy.getAttribute('data-rkt-pending') === '1') return 'WAIT';
   fy.value = '%s'; fm.value = '%s'; fd.value = '%s';
   var ty = doc.querySelector('input[name="toDateY"]');
   var tm = doc.querySelector('input[name="toDateM"]');
@@ -274,7 +310,7 @@ local function searchChumon(y, m, d, onDone)
   return 'OK';
 })();
 ]], y, m, d)
-    waitAndRun(js, onDone)
+    waitAndRun(jsAfterRadio, onDone)
   end)
 end
 
@@ -401,27 +437,25 @@ local function run()
             showStatus("注文照会を取得中…", "info")
             clickTabLink("注文照会")
 
-            hs.timer.doAfter(CONFIG.tabLoadWait, function()
-              searchChumon(y, m, d, function(ok3, msg3)
-                if not ok3 then
-                  showStatus("注文照会: 表示に失敗（" .. msg3:gsub("ERROR:", "") .. "）", "error")
-                  return
+            searchChumon(y, m, d, function(ok3, msg3)
+              if not ok3 then
+                showStatus("注文照会: 表示に失敗（" .. msg3:gsub("ERROR:", "") .. "）", "error")
+                return
+              end
+
+              clickCsvButton(function(ok4, msg4)
+                if not ok4 then
+                  local errMsg = msg4:gsub("ERROR:", "")
+                  if errMsg == "該当データなし" then
+                    showStatus("注文照会: 該当データなし", "warn")
+                  else
+                    showStatus("注文照会: CSV保存失敗（" .. errMsg .. "）", "error")
+                    return
+                  end
                 end
 
-                clickCsvButton(function(ok4, msg4)
-                  if not ok4 then
-                    local errMsg = msg4:gsub("ERROR:", "")
-                    if errMsg == "該当データなし" then
-                      showStatus("注文照会: 該当データなし", "warn")
-                    else
-                      showStatus("注文照会: CSV保存失敗（" .. errMsg .. "）", "error")
-                      return
-                    end
-                  end
-
-                  hs.timer.doAfter(1.0, function()
-                    showStatus("ダウンロード完了！", "success")
-                  end)
+                hs.timer.doAfter(1.0, function()
+                  showStatus("ダウンロード完了！", "success")
                 end)
               end)
             end)
@@ -483,53 +517,51 @@ local function runImportJob(jobId, kind, y, m, d)
   hs.timer.doAfter(0.3, function()
     clickTabLink(tabLabel)
 
-    hs.timer.doAfter(CONFIG.tabLoadWait, function()
-      searchFn(y, m, d, function(ok1, msg1)
-        if not ok1 then
-          finishJobError(jobId, "表示に失敗しました（" .. msg1:gsub("ERROR:", "") .. "）")
+    searchFn(y, m, d, function(ok1, msg1)
+      if not ok1 then
+        finishJobError(jobId, "表示に失敗しました（" .. msg1:gsub("ERROR:", "") .. "）")
+        return
+      end
+
+      local before, dir = listDownloadFiles()
+
+      clickCsvButton(function(ok2, msg2)
+        if not ok2 then
+          local errMsg = msg2:gsub("ERROR:", "")
+          if errMsg == "該当データなし" then
+            finishJobError(jobId, "該当データがありません")
+          else
+            finishJobError(jobId, "CSV保存に失敗しました（" .. errMsg .. "）")
+          end
           return
         end
 
-        local before, dir = listDownloadFiles()
-
-        clickCsvButton(function(ok2, msg2)
-          if not ok2 then
-            local errMsg = msg2:gsub("ERROR:", "")
-            if errMsg == "該当データなし" then
-              finishJobError(jobId, "該当データがありません")
-            else
-              finishJobError(jobId, "CSV保存に失敗しました（" .. errMsg .. "）")
-            end
+        waitForNewDownload(before, dir, CONFIG.downloadTimeout, function(ok3, pathOrMsg)
+          if not ok3 then
+            finishJobError(jobId, pathOrMsg:gsub("ERROR:", ""))
             return
           end
 
-          waitForNewDownload(before, dir, CONFIG.downloadTimeout, function(ok3, pathOrMsg)
-            if not ok3 then
-              finishJobError(jobId, pathOrMsg:gsub("ERROR:", ""))
-              return
-            end
+          local path = pathOrMsg
+          local f = io.open(path, "rb")
+          if not f then
+            finishJobError(jobId, "ダウンロードしたファイルを読めませんでした")
+            return
+          end
+          local data = f:read("a")
+          f:close()
 
-            local path = pathOrMsg
-            local f = io.open(path, "rb")
-            if not f then
-              finishJobError(jobId, "ダウンロードしたファイルを読めませんでした")
-              return
-            end
-            local data = f:read("a")
-            f:close()
+          local name = path:match("([^/]+)$") or "download.csv"
+          jobs[jobId] = {
+            status = "done",
+            name = name,
+            contentBase64 = hs.base64.encode(data),
+          }
 
-            local name = path:match("([^/]+)$") or "download.csv"
-            jobs[jobId] = {
-              status = "done",
-              name = name,
-              contentBase64 = hs.base64.encode(data),
-            }
-
-            -- 同じファイルを何度も拾わないよう、取り込み済みフォルダへ移しておく
-            local archiveDir = dir .. "/rakuten-imported"
-            os.execute(string.format('mkdir -p "%s"', archiveDir))
-            os.rename(path, archiveDir .. "/" .. name)
-          end)
+          -- 同じファイルを何度も拾わないよう、取り込み済みフォルダへ移しておく
+          local archiveDir = dir .. "/rakuten-imported"
+          os.execute(string.format('mkdir -p "%s"', archiveDir))
+          os.rename(path, archiveDir .. "/" .. name)
         end)
       end)
     end)
