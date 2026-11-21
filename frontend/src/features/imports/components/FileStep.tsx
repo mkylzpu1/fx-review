@@ -101,7 +101,7 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
       const message = preview.files.find((f) => f.status === "error")?.message;
       throw new Error(message ?? "CSVの形式を確認できませんでした");
     }
-    return commitApi.mutateAsync({ files: [file], duplicateMode: "skip" });
+    return commitApi.mutateAsync({ files: [file], duplicateMode: "overwrite" });
   };
 
   /** ボタン1つで、約定履歴→注文履歴の順に自動ダウンロード・取り込みする */
@@ -117,7 +117,7 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
       const result = await fetchAndCommit("execution", date);
       if (!isOrderCommit(result)) {
         toast.success(
-          `約定履歴: ${result.imported}件を取り込みました${result.skipped > 0 ? `（取り込み済み${result.skipped}件は除外）` : ""}`,
+          `約定履歴: ${result.imported}件を取り込みました${result.overwritten > 0 ? `（既存${result.overwritten}件を上書き）` : ""}`,
         );
       }
     } catch (e) {
