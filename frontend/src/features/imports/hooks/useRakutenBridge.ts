@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { decodeShiftJis } from "../utils/readCsvFile";
+import type { ImportFileInput } from "../types";
 
 /**
  * 楽天FX WebTraderのCSVを自動ダウンロードする、手元専用サーバー（Hammerspoon）のURL。
@@ -53,18 +54,22 @@ async function requestJson<T>(
   return json;
 }
 
-/** CSVの拡張子を保ったまま、File（UTF-8として扱うが中身はCSVそのまま）を作る */
-async function toFile(name: string, contentBase64: string): Promise<File> {
-  const buffer = base64ToArrayBuffer(contentBase64);
-  // Shift_JISのバイト列からUTF-8文字列へ（readCsvFiles と同じデコードを通す）
-  const text = await decodeShiftJis(buffer);
-  return new File([text], name, { type: "text/csv" });
-}
-
 const POLL_INTERVAL_MS = 700;
 const POLL_TIMEOUT_MS = 30_000;
 
-async function runImport(kind: RakutenImportKind, date: string): Promise<File> {
+/**
+ * Hammerspoonブリッジで1件（約定履歴 or 注文履歴）をダウンロードし、
+ * Shift_JISのバイト列をUTF-8テキストへデコードして返す。
+ *
+ * デコード済みの `text` をそのまま使うこと。ここで一度デコードした文字列を
+ * 改めて `File` に包んで `readCsvFiles`（Shift_JISとして再デコードする）に通すと、
+ * 既にUTF-8化された中身を再度Shift_JISとして解釈してしまい文字化けするため、
+ * 二重デコードしないこと。
+ */
+async function runImport(
+  kind: RakutenImportKind,
+  date: string,
+): Promise<ImportFileInput> {
   const start = await requestJson<StartResponse>("/rakuten-import", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -86,11 +91,16 @@ async function runImport(kind: RakutenImportKind, date: string): Promise<File> {
       continue;
     }
     if (status.status === "error") throw new Error(status.message);
-    return toFile(status.name, status.contentBase64);
+    const text = await decodeShiftJis(base64ToArrayBuffer(status.contentBase64));
+    return { name: status.name, text };
   }
 }
 
-/** 楽天FX WebTraderから、指定した開始日のCSVを自動ダウンロードする（約定履歴 or 注文履歴） */
+/**
+ * 楽天FX WebTraderから、指定した開始日の約定履歴・注文履歴CSVを自動ダウンロードする。
+ * 戻り値はデコード済みテキスト（ImportFileInput）で、そのまま /imports/preview や
+ * /imports/commit に渡せる。
+ */
 export function useRakutenImport() {
   return useMutation({
     mutationFn: (v: { kind: RakutenImportKind; date: string }) =>
