@@ -1,4 +1,3 @@
-export type ExportRange = "all" | "30d" | "month";
 export type ExportFormat = "markdown" | "csv" | "json";
 export type IncludeKey =
   "result" | "planDiff" | "rationale" | "ruleChecks" | "reflection" | "market";

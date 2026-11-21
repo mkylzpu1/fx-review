@@ -1,10 +1,4 @@
-import type { ExportFormat, ExportRange, Include, IncludeKey } from "../types";
-
-export const RANGES: { value: ExportRange; label: string }[] = [
-  { value: "all", label: "すべて" },
-  { value: "30d", label: "直近30日" },
-  { value: "month", label: "今月" },
-];
+import type { ExportFormat, Include, IncludeKey } from "../types";
 
 export const FORMATS: { value: ExportFormat; label: string; hint: string }[] = [
   { value: "markdown", label: "Markdown", hint: "AIに貼り付ける用（既定）" },

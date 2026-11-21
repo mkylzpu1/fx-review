@@ -1,28 +1,42 @@
 import { useState } from "react";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import type { PeriodKey } from "@/features/stats/types";
+import { PERIODS } from "@/features/stats/utils/period";
 import { toast } from "@/stores/toastStore";
-import { useExport } from "../hooks/useExport";
+import { type CustomDateRange, useExport } from "../hooks/useExport";
 import { BlogZipPanel } from "../blog/BlogZipPanel";
-import type { ExportFormat, ExportRange, Include, IncludeKey } from "../types";
+import type { ExportFormat, Include, IncludeKey } from "../types";
 import { downloadText } from "../utils/download";
-import {
-  DEFAULT_INCLUDE,
-  FORMATS,
-  INCLUDES,
-  PREVIEW_CHARS,
-  RANGES,
-} from "../utils/options";
+import { DEFAULT_INCLUDE, FORMATS, INCLUDES, PREVIEW_CHARS } from "../utils/options";
+
+function toDateInputValue(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** 「期間を指定」の初期値：今日を終了日、7日前を開始日にする */
+function defaultCustomRange(): CustomDateRange {
+  const to = new Date();
+  const from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
+  return { from: toDateInputValue(from), to: toDateInputValue(to) };
+}
 
 /** AIに貼り付けて分析してもらう出力。サーバーが組み立てた文字列を、コピー・ダウンロードするだけ */
 export function ExportPage() {
-  const [range, setRange] = useState<ExportRange>("all");
+  const [period, setPeriod] = useState<PeriodKey>("all");
+  const [customRange, setCustomRange] = useState<CustomDateRange>(
+    defaultCustomRange,
+  );
   const [format, setFormat] = useState<ExportFormat>("markdown");
   const [include, setInclude] = useState<Include>(DEFAULT_INCLUDE);
   const { data, isLoading, isError, isFetching, refetch } = useExport(
-    range,
+    period,
     format,
     include,
+    customRange,
   );
 
   const [showBlog, setShowBlog] = useState(false);
@@ -64,17 +78,42 @@ export function ExportPage() {
               aria-label="対象期間"
               className="flex flex-wrap gap-2"
             >
-              {RANGES.map((r) => (
+              {PERIODS.map((p) => (
                 <button
-                  key={r.value}
-                  aria-pressed={range === r.value}
-                  onClick={() => setRange(r.value)}
-                  className={`btn ${range === r.value ? "border-accent bg-accent/10 text-accent-link" : ""}`}
+                  key={p.value}
+                  aria-pressed={period === p.value}
+                  onClick={() => setPeriod(p.value)}
+                  className={`btn ${period === p.value ? "border-accent bg-accent/10 text-accent-link" : ""}`}
                 >
-                  {r.label}
+                  {p.label}
                 </button>
               ))}
             </div>
+            {period === "custom" && (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="date"
+                  className="input"
+                  aria-label="開始日"
+                  value={customRange.from}
+                  max={customRange.to}
+                  onChange={(e) =>
+                    setCustomRange((r) => ({ ...r, from: e.target.value }))
+                  }
+                />
+                <span className="text-sm text-ink-mute">〜</span>
+                <input
+                  type="date"
+                  className="input"
+                  aria-label="終了日"
+                  value={customRange.to}
+                  min={customRange.from}
+                  onChange={(e) =>
+                    setCustomRange((r) => ({ ...r, to: e.target.value }))
+                  }
+                />
+              </div>
+            )}
           </section>
 
           <fieldset className="card space-y-2">

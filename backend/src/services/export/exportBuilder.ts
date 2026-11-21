@@ -6,7 +6,6 @@ import type { Rule, TradeView } from "../../types/trade";
 import { buildStats } from "../stats/statsBuilder";
 import { hourInZone, sessionOf } from "../stats/statsCalc";
 import { toCsv, type ExportContext, type Include } from "./exportColumns";
-import { RANGE_LABEL, type ExportRange } from "./exportRange";
 import { EXPORT_TEXT } from "./exportText";
 
 export type ExportFormat = "markdown" | "csv" | "json";
@@ -17,7 +16,9 @@ export interface ExportInput {
   maxRiskPct: number;
   minRr: number;
   timezone: string;
-  range: ExportRange;
+  /** 対象期間の開始・終了（ISO）。両方なしは「すべて」 */
+  from?: string;
+  to?: string;
   format: ExportFormat;
   include: Include;
   now: Date;
@@ -67,6 +68,23 @@ function makeContext(timezone: string): ExportContext {
 
 const num = (v: number | null, d = 2) => (v === null ? "—" : v.toFixed(d));
 
+/** 期間の表示用ラベル。toは「終了日の翌日0時」等の排他的上限で渡ってくるため、1ms引いて含む側の日付にする */
+function rangeLabel(
+  from: string | undefined,
+  to: string | undefined,
+  ctx: ExportContext,
+): string {
+  const dateOnly = (iso: string) => ctx.formatDate(iso).slice(0, 10);
+  const fromLabel = from ? dateOnly(from) : null;
+  const toLabel = to
+    ? dateOnly(new Date(new Date(to).getTime() - 1).toISOString())
+    : null;
+  if (!fromLabel && !toLabel) return "すべて";
+  if (fromLabel && toLabel) return `${fromLabel}〜${toLabel}`;
+  if (fromLabel) return `${fromLabel}〜現在`;
+  return `〜${toLabel}`;
+}
+
 function rulesSection(i: ExportInput): string[] {
   const active = i.rules.filter((r) => r.isActive);
   const lines = [EXPORT_TEXT.rulesHeading, ""];
@@ -81,7 +99,7 @@ function rulesSection(i: ExportInput): string[] {
   return lines;
 }
 
-function summarySection(i: ExportInput): string[] {
+function summarySection(i: ExportInput, ctx: ExportContext): string[] {
   const stats = buildStats(i.views, i.timezone);
   const s = stats.summary;
   const all = i.views.length;
@@ -101,7 +119,7 @@ function summarySection(i: ExportInput): string[] {
   const lines = [
     EXPORT_TEXT.summaryHeading,
     "",
-    `- 期間: ${RANGE_LABEL[i.range]} / 全 ${all}件（決済済みで集計 n=${s.n}）`,
+    `- 期間: ${rangeLabel(i.from, i.to, ctx)} / 全 ${all}件（決済済みで集計 n=${s.n}）`,
     `- 勝率: ${s.winRate === null ? "—" : `${s.winRate.toFixed(1)}%`} / PF: ${num(s.profitFactor)} / 平均R: ${num(s.avgR)} / 最大連敗: ${s.maxLossStreak}`,
     `- 合計pips: ${s.totalPips.toFixed(1)} / 合計損益: ${s.totalPnlJpy}円`,
     `- R が計算できたのは ${s.rCount}件（R未計算 ${s.rMissing}件）。R系の集計はこの ${s.rCount}件だけです`,
@@ -135,7 +153,7 @@ export function buildExport(i: ExportInput): ExportOutput {
     const content = JSON.stringify(
       {
         exportedAt: i.now.toISOString(),
-        range: i.range,
+        range: { from: i.from ?? null, to: i.to ?? null, label: rangeLabel(i.from, i.to, ctx) },
         summary: buildStats(i.views, i.timezone).summary,
         rules: i.rules,
         trades: i.views,
@@ -158,7 +176,7 @@ export function buildExport(i: ExportInput): ExportOutput {
     "",
     ...rulesSection(i),
     "",
-    ...summarySection(i),
+    ...summarySection(i, ctx),
     "",
     EXPORT_TEXT.tradesHeading,
     "",

@@ -7,7 +7,6 @@ import {
   csvCell,
   DEFAULT_INCLUDE,
 } from "../../../src/services/export/exportColumns";
-import { rangeFrom } from "../../../src/services/export/exportRange";
 import type { Rule, TradeView } from "../../../src/types/trade";
 
 const rule = (over: Partial<Rule> = {}): Rule => ({
@@ -69,7 +68,6 @@ const input = (over: Partial<ExportInput> = {}): ExportInput => ({
   maxRiskPct: 1,
   minRr: 2,
   timezone: "Asia/Tokyo",
-  range: "all",
   format: "markdown",
   include: DEFAULT_INCLUDE,
   now: new Date("2026-10-24T03:00:00Z"),
@@ -180,18 +178,38 @@ describe("CSV / JSON", () => {
   });
 });
 
-describe("rangeFrom", () => {
-  const now = new Date("2026-10-24T03:00:00Z");
-  it("すべては指定なし、30日は30日前", () => {
-    expect(rangeFrom("all", "Asia/Tokyo", now)).toBeUndefined();
-    expect(rangeFrom("30d", "Asia/Tokyo", now)).toBe(
-      "2026-09-24T03:00:00.000Z",
-    );
+describe("期間ラベル（from/to指定）", () => {
+  it("from/toどちらも無指定なら「すべて」", () => {
+    const md = buildExport(input()).content;
+    expect(md).toContain("- 期間: すべて /");
   });
-  it("今月は表示タイムゾーンの月初", () => {
-    expect(rangeFrom("month", "Asia/Tokyo", now)).toBe(
-      "2026-09-30T15:00:00.000Z",
+
+  it("fromのみなら「開始日〜現在」", () => {
+    const md = buildExport(input({ from: "2026-10-01T00:00:00Z" })).content;
+    expect(md).toContain("- 期間: 2026-10-01〜現在 /");
+  });
+
+  it("from/to指定なら、toは排他的上限として1日前の日付で表示する", () => {
+    const md = buildExport(
+      input({
+        from: "2026-10-01T00:00:00Z",
+        // 「期間を指定」の終了日の翌日0時（JST）に相当する排他的上限
+        to: "2026-10-15T15:00:00Z",
+      }),
+    ).content;
+    expect(md).toContain("- 期間: 2026-10-01〜2026-10-15 /");
+  });
+
+  it("JSONのrangeにはfrom/to/labelを入れる", () => {
+    const j = JSON.parse(
+      buildExport(
+        input({ format: "json", from: "2026-10-01T00:00:00Z" }),
+      ).content,
     );
-    expect(rangeFrom("month", "UTC", now)).toBe("2026-10-01T00:00:00.000Z");
+    expect(j.range).toEqual({
+      from: "2026-10-01T00:00:00Z",
+      to: null,
+      label: "2026-10-01〜現在",
+    });
   });
 });

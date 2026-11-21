@@ -7,10 +7,11 @@ import {
   type ExportOutput,
 } from "./exportBuilder";
 import type { Include } from "./exportColumns";
-import { rangeFrom, type ExportRange } from "./exportRange";
 
 export interface ExportRequest {
-  range: ExportRange;
+  /** 対象期間の開始・終了（ISO）。両方省略で「すべて」 */
+  from?: string;
+  to?: string;
   format: ExportFormat;
   include: Include;
 }
@@ -24,9 +25,7 @@ export const exportService = {
     const settings = await settingsStore.get(userId);
     const timezone = settings?.timezone ?? "Asia/Tokyo";
     const [views, rules] = await Promise.all([
-      tradeService.listAll(userId, {
-        from: rangeFrom(req.range, timezone, now),
-      }),
+      tradeService.listAll(userId, { from: req.from, to: req.to }),
       ruleStore.list(userId),
     ]);
     return buildExport({
@@ -35,7 +34,8 @@ export const exportService = {
       maxRiskPct: settings?.maxRiskPct ?? 1,
       minRr: settings?.minRr ?? 2,
       timezone,
-      range: req.range,
+      from: req.from,
+      to: req.to,
       format: req.format,
       include: req.include,
       now,

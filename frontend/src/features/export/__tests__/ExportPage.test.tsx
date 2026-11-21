@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -50,7 +50,6 @@ describe("エクスポート", () => {
       "FXトレード振り返り分析の依頼",
     );
     expect(apiClient.post).toHaveBeenCalledWith("/export", {
-      range: "all",
       format: "markdown",
       include: {
         result: true,
@@ -68,16 +67,34 @@ describe("エクスポート", () => {
     vi.mocked(apiClient.post).mockResolvedValue(result());
     renderPage();
     await screen.findByLabelText("出力プレビュー");
-    await userEvent.click(screen.getByRole("button", { name: "直近30日" }));
+    await userEvent.click(screen.getByRole("button", { name: "過去30日" }));
     await userEvent.click(screen.getByRole("radio", { name: /CSV/ }));
     await userEvent.click(
       screen.getByRole("checkbox", { name: /計画と実際の差/ }),
     );
     await waitFor(() => {
       const b = lastBody();
-      expect(b.range).toBe("30d");
+      expect(typeof b.from).toBe("string");
+      expect(b.to).toBeUndefined();
       expect(b.format).toBe("csv");
       expect((b.include as Record<string, boolean>).planDiff).toBe(false);
+    });
+  });
+
+  it("「期間を指定」を選ぶと開始日・終了日の入力欄が出て、その範囲で生成する", async () => {
+    vi.mocked(apiClient.post).mockResolvedValue(result());
+    renderPage();
+    await screen.findByLabelText("出力プレビュー");
+    await userEvent.click(screen.getByRole("button", { name: "期間を指定" }));
+    const fromInput = screen.getByLabelText("開始日");
+    const toInput = screen.getByLabelText("終了日");
+    fireEvent.change(fromInput, { target: { value: "2026-10-01" } });
+    fireEvent.change(toInput, { target: { value: "2026-10-15" } });
+    await waitFor(() => {
+      const b = lastBody();
+      // customRange()はJSTの日付をUTCのISOに変換する。終了日は「翌日0時」を上限にする
+      expect(b.from).toBe("2026-09-30T15:00:00.000Z");
+      expect(b.to).toBe("2026-10-15T15:00:00.000Z");
     });
   });
 

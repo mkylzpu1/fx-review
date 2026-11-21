@@ -17,10 +17,15 @@ const IncludeSchema = z
   })
   .partial();
 
+const IsoDate = (name: string) =>
+  z
+    .string()
+    .datetime({ offset: true, message: `${name}はISO日時で指定してください` })
+    .optional();
+
 const BodySchema = z.object({
-  range: z.enum(["all", "30d", "month"], {
-    errorMap: () => ({ message: "rangeは all / 30d / month のいずれかです" }),
-  }),
+  from: IsoDate("from"),
+  to: IsoDate("to"),
   format: z.enum(["markdown", "csv", "json"], {
     errorMap: () => ({
       message: "formatは markdown / csv / json のいずれかです",
@@ -38,7 +43,8 @@ export const postHandler = async (
     const body = parseBody(event.body, BodySchema);
     return success(
       await exportService.build(userId, {
-        range: body.range,
+        from: body.from,
+        to: body.to,
         format: body.format,
         include: { ...DEFAULT_INCLUDE, ...body.include },
       }),
