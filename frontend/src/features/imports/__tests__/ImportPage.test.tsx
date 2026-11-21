@@ -91,6 +91,10 @@ function renderPage() {
 }
 
 async function chooseFile() {
+  // 楽天FXブリッジが有効な環境では「CSVファイルを選ぶ」タブに切り替えてから選ぶ
+  const manualTab = screen.queryByRole("tab", { name: "CSVファイルを選ぶ" });
+  if (manualTab) await userEvent.click(manualTab);
+
   const file = new File([SJIS], "execution-7.csv", { type: "text/csv" });
   await userEvent.upload(screen.getByLabelText("CSVファイル"), file);
   await userEvent.click(screen.getByRole("button", { name: "内容を確認する" }));
@@ -99,8 +103,10 @@ async function chooseFile() {
 describe("CSV取り込み", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("ファイルを選ぶまで「内容を確認する」は押せず、MT5・その他は準備中", () => {
+  it("ファイルを選ぶまで「内容を確認する」は押せず、MT5・その他は準備中", async () => {
     renderPage();
+    const manualTab = screen.queryByRole("tab", { name: "CSVファイルを選ぶ" });
+    if (manualTab) await userEvent.click(manualTab);
     expect(
       screen.getByRole("button", { name: "内容を確認する" }),
     ).toBeDisabled();

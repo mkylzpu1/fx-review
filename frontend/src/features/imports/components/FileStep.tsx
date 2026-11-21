@@ -66,6 +66,7 @@ const DATE_PRESETS: { id: string; label: string; startDate: () => Date }[] = [
 ];
 
 type AutoStage = "execution" | "order" | null;
+type Method = "auto" | "manual";
 
 /** ① 取り込み元を選び、CSVを複数まとめて選ぶ */
 export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
@@ -78,6 +79,9 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
   const previewApi = useImportPreview();
   const commitApi = useImportCommit();
   const [autoStage, setAutoStage] = useState<AutoStage>(null);
+  const [method, setMethod] = useState<Method>(
+    RAKUTEN_BRIDGE_URL ? "auto" : "manual",
+  );
 
   const pick = (list: FileList | null) => {
     if (list && list.length > 0) onSelect(Array.from(list));
@@ -126,11 +130,10 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
     try {
       const result = await fetchAndCommit("order", date);
       if (isOrderCommit(result)) {
-        toast.success(`注文履歴: ${result.updated}件にSL・TPを反映しました`, {
-          label: "入力を続ける",
-          onClick: () => navigate(ROUTES.TRADE_QUEUE),
-        });
+        toast.success(`注文履歴: ${result.updated}件にSL・TPを反映しました`);
       }
+      // 約定履歴・注文履歴とも取り込みが終わったので、アプリ側の画面に戻す
+      navigate(ROUTES.TRADE_QUEUE);
     } catch (e) {
       toast.error(`注文履歴の取り込みに失敗しました。${bridgeErrorMessage(e)}`);
     } finally {
@@ -166,10 +169,31 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
       </section>
 
       {RAKUTEN_BRIDGE_URL && (
-        <section className="card space-y-3">
+        <div role="tablist" aria-label="取り込み方法" className="flex gap-2">
+          <button
+            role="tab"
+            aria-selected={method === "auto"}
+            className={`btn ${method === "auto" ? "border-accent bg-surface" : ""}`}
+            onClick={() => setMethod("auto")}
+          >
+            楽天FXから自動取得
+          </button>
+          <button
+            role="tab"
+            aria-selected={method === "manual"}
+            className={`btn ${method === "manual" ? "border-accent bg-surface" : ""}`}
+            onClick={() => setMethod("manual")}
+          >
+            CSVファイルを選ぶ
+          </button>
+        </div>
+      )}
+
+      {RAKUTEN_BRIDGE_URL && method === "auto" && (
+        <section className="card space-y-3" role="tabpanel">
           <h2 className="text-base font-bold">楽天FXから自動取得</h2>
           <p className="text-xs text-ink-mute">
-            WebTraderにログインした状態で、開始日を選んでボタンを押すと、約定履歴→注文履歴の順にダウンロードして、このままfx-reviewに取り込みます（終了日は当日まで）。
+            WebTraderにログインした状態で、開始日を選んでボタンを押すと、約定履歴→注文履歴の順にダウンロードして、このままfx-reviewに取り込みます（終了日は当日まで）。完了すると、未入力キューに自動で戻ります。
           </p>
           <div
             role="radiogroup"
@@ -206,7 +230,7 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
               }}
             />
             <button
-              className="btn"
+              className="btn-primary"
               disabled={autoStage !== null}
               onClick={() => void onAutoImportAll()}
             >
@@ -220,80 +244,82 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
         </section>
       )}
 
-      <section className="card space-y-3">
-        <h2 className="text-base font-bold">CSVファイル</h2>
-        <p className="text-xs text-ink-mute">
-          楽天FX証券の約定履歴CSV（トレードの登録）か、注文履歴CSV（SL・TPの反映）を選びます（Shift_JIS）。約定履歴を先に取り込んでから、注文履歴を取り込んでください。2種類は同時に選べません。
-        </p>
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            pick(e.dataTransfer.files);
-          }}
-          className={`flex min-h-32 flex-col items-center justify-center gap-2 rounded-card border border-dashed p-4 ${
-            dragging ? "border-accent bg-surface" : "border-field"
-          }`}
-        >
-          <p className="text-sm text-ink-sub">ここにCSVをドロップ</p>
-          <button className="btn" onClick={() => input.current?.click()}>
-            ファイルを選ぶ
-          </button>
-          <input
-            ref={input}
-            type="file"
-            accept=".csv,text/csv"
-            multiple
-            hidden
-            aria-label="CSVファイル"
-            onChange={(e) => {
-              pick(e.target.files);
-              e.target.value = "";
+      {(!RAKUTEN_BRIDGE_URL || method === "manual") && (
+        <section className="card space-y-3" role="tabpanel">
+          <h2 className="text-base font-bold">CSVファイル</h2>
+          <p className="text-xs text-ink-mute">
+            楽天FX証券の約定履歴CSV（トレードの登録）か、注文履歴CSV（SL・TPの反映）を選びます（Shift_JIS）。約定履歴を先に取り込んでから、注文履歴を取り込んでください。2種類は同時に選べません。
+          </p>
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
             }}
-          />
-        </div>
-
-        {files.length > 0 && (
-          <ul
-            className="divide-y divide-line text-sm"
-            aria-label="選んだファイル"
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              pick(e.dataTransfer.files);
+            }}
+            className={`flex min-h-32 flex-col items-center justify-center gap-2 rounded-card border border-dashed p-4 ${
+              dragging ? "border-accent bg-surface" : "border-field"
+            }`}
           >
-            {files.map((f) => (
-              <li key={f.name} className="flex justify-between gap-3 py-2">
-                <span className="break-all">{f.name}</span>
-                <span className="num text-ink-mute">
-                  {(f.size / 1024).toFixed(0)} KB
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+            <p className="text-sm text-ink-sub">ここにCSVをドロップ</p>
+            <button className="btn" onClick={() => input.current?.click()}>
+              ファイルを選ぶ
+            </button>
+            <input
+              ref={input}
+              type="file"
+              accept=".csv,text/csv"
+              multiple
+              hidden
+              aria-label="CSVファイル"
+              onChange={(e) => {
+                pick(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </div>
 
-        {failures.length > 0 && (
-          <ul role="alert" className="space-y-1 text-sm text-loss">
-            {failures.map((f) => (
-              <li key={f.name}>
-                {f.name}: {f.message}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          {files.length > 0 && (
+            <ul
+              className="divide-y divide-line text-sm"
+              aria-label="選んだファイル"
+            >
+              {files.map((f) => (
+                <li key={f.name} className="flex justify-between gap-3 py-2">
+                  <span className="break-all">{f.name}</span>
+                  <span className="num text-ink-mute">
+                    {(f.size / 1024).toFixed(0)} KB
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-      <div className="flex justify-end">
-        <button
-          className="btn-primary"
-          disabled={files.length === 0 || busy}
-          onClick={onNext}
-        >
-          {busy ? "読み込み中…" : "内容を確認する"}
-        </button>
-      </div>
+          {failures.length > 0 && (
+            <ul role="alert" className="space-y-1 text-sm text-loss">
+              {failures.map((f) => (
+                <li key={f.name}>
+                  {f.name}: {f.message}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              className="btn-primary"
+              disabled={files.length === 0 || busy}
+              onClick={onNext}
+            >
+              {busy ? "読み込み中…" : "内容を確認する"}
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
