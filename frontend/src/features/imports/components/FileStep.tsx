@@ -1,10 +1,14 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "@/constants/routes";
 import { toast } from "@/stores/toastStore";
 import {
   RAKUTEN_BRIDGE_URL,
   RakutenBridgeUnreachable,
   useRakutenImport,
 } from "../hooks/useRakutenBridge";
+import { useImportCommit, useImportPreview } from "../hooks/useImportApi";
+import { isOrderCommit } from "../types";
 import type { ReadFailure } from "../utils/readCsvFile";
 
 const SYSTEMS: { id: string; label: string; ready: boolean }[] = [
@@ -29,40 +33,76 @@ function todayLocalDateInputValue(): string {
   return `${y}-${m}-${d}`;
 }
 
+type AutoStage = "execution" | "order" | null;
+
 /** ① 取り込み元を選び、CSVを複数まとめて選ぶ */
 export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
+  const navigate = useNavigate();
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [bridgeDate, setBridgeDate] = useState(todayLocalDateInputValue);
   const rakutenImport = useRakutenImport();
+  const previewApi = useImportPreview();
+  const commitApi = useImportCommit();
+  const [autoStage, setAutoStage] = useState<AutoStage>(null);
 
   const pick = (list: FileList | null) => {
     if (list && list.length > 0) onSelect(Array.from(list));
   };
 
-  const onAutoFetch = (kind: "execution" | "order") => {
+  const bridgeErrorMessage = (e: unknown) =>
+    e instanceof RakutenBridgeUnreachable
+      ? "Hammerspoonに接続できません。導入手順（hammerspoon/README.md）どおり起動しているか確認してください。"
+      : `取得できませんでした。${e instanceof Error ? e.message : ""}`;
+
+  /** 1種類（約定履歴 or 注文履歴）をダウンロードして、プレビュー・取り込みまで行う */
+  const fetchAndCommit = async (kind: "execution" | "order", date: string) => {
+    const file = await rakutenImport.mutateAsync({ kind, date });
+    const preview = await previewApi.mutateAsync([file]);
+    const hasErrorFile = preview.files.some((f) => f.status === "error");
+    if (hasErrorFile) {
+      const message = preview.files.find((f) => f.status === "error")?.message;
+      throw new Error(message ?? "CSVの形式を確認できませんでした");
+    }
+    return commitApi.mutateAsync({ files: [file], duplicateMode: "skip" });
+  };
+
+  /** ボタン1つで、約定履歴→注文履歴の順に自動ダウンロード・取り込みする */
+  const onAutoImportAll = async () => {
     if (!bridgeDate) {
       toast.error("開始日を選んでください");
       return;
     }
     const date = bridgeDate.split("-").join("/");
-    rakutenImport.mutate(
-      { kind, date },
-      {
-        onSuccess: (file) => {
-          onSelect([file]);
-          toast.success(
-            `${kind === "execution" ? "約定履歴" : "注文履歴"}を取得しました（${file.name}）`,
-          );
-        },
-        onError: (e) =>
-          toast.error(
-            e instanceof RakutenBridgeUnreachable
-              ? "Hammerspoonに接続できません。導入手順（hammerspoon/README.md）どおり起動しているか確認してください。"
-              : `取得できませんでした。${e instanceof Error ? e.message : ""}`,
-          ),
-      },
-    );
+
+    setAutoStage("execution");
+    try {
+      const result = await fetchAndCommit("execution", date);
+      if (!isOrderCommit(result)) {
+        toast.success(
+          `約定履歴: ${result.imported}件を取り込みました${result.skipped > 0 ? `（取り込み済み${result.skipped}件は除外）` : ""}`,
+        );
+      }
+    } catch (e) {
+      setAutoStage(null);
+      toast.error(`約定履歴の取り込みに失敗しました。${bridgeErrorMessage(e)}`);
+      return;
+    }
+
+    setAutoStage("order");
+    try {
+      const result = await fetchAndCommit("order", date);
+      if (isOrderCommit(result)) {
+        toast.success(`注文履歴: ${result.updated}件にSL・TPを反映しました`, {
+          label: "入力を続ける",
+          onClick: () => navigate(ROUTES.TRADE_QUEUE),
+        });
+      }
+    } catch (e) {
+      toast.error(`注文履歴の取り込みに失敗しました。${bridgeErrorMessage(e)}`);
+    } finally {
+      setAutoStage(null);
+    }
   };
 
   return (
@@ -96,7 +136,7 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
         <section className="card space-y-3">
           <h2 className="text-base font-bold">楽天FXから自動取得</h2>
           <p className="text-xs text-ink-mute">
-            WebTraderにログインした状態で、開始日を選んで取得します（終了日は当日まで）。取得したCSVは、下のファイル選択と同じように扱われます。
+            WebTraderにログインした状態で、開始日を選んでボタンを押すと、約定履歴→注文履歴の順にダウンロードして、このままfx-reviewに取り込みます（終了日は当日まで）。
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <input
@@ -104,21 +144,19 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
               className="input"
               aria-label="開始日"
               value={bridgeDate}
+              disabled={autoStage !== null}
               onChange={(e) => setBridgeDate(e.target.value)}
             />
             <button
               className="btn"
-              disabled={rakutenImport.isPending}
-              onClick={() => onAutoFetch("execution")}
+              disabled={autoStage !== null}
+              onClick={() => void onAutoImportAll()}
             >
-              {rakutenImport.isPending ? "取得中…" : "約定履歴を取得"}
-            </button>
-            <button
-              className="btn"
-              disabled={rakutenImport.isPending}
-              onClick={() => onAutoFetch("order")}
-            >
-              {rakutenImport.isPending ? "取得中…" : "注文履歴を取得"}
+              {autoStage === "execution"
+                ? "約定履歴を取得・取り込み中…"
+                : autoStage === "order"
+                  ? "注文履歴を取得・取り込み中…"
+                  : "約定履歴・注文履歴を自動取得して取り込む"}
             </button>
           </div>
         </section>
