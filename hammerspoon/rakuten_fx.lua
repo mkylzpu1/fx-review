@@ -101,6 +101,38 @@ end tell
 end
 
 ------------------------------------------------------------
+-- fx-reviewアプリ自身のタブ（originで始まるURL）を前面に出す。
+-- CSV自動取り込みの最後、WebTraderのタブに切り替えっぱなしにせず、
+-- 手元の画面をfx-review側へ戻すために使う。見つからなければ何もしない
+-- （Chromeで開いていない・別オリジンで開いている等）。
+------------------------------------------------------------
+local function focusAppTab(origin)
+  if not origin or origin == "" then return false end
+  local script = string.format([[
+tell application "Google Chrome"
+  set found to false
+  repeat with w in windows
+    set i to 0
+    repeat with t in tabs of w
+      set i to i + 1
+      if URL of t starts with "%s" then
+        set active tab index of w to i
+        set index of w to 1
+        set found to true
+        activate
+        exit repeat
+      end if
+    end repeat
+    if found then exit repeat
+  end repeat
+  return found
+end tell
+]], origin)
+  local ok, result = hs.osascript.applescript(script)
+  return ok and result == true
+end
+
+------------------------------------------------------------
 -- 期間入力ダイアログ（開始日のみ）
 ------------------------------------------------------------
 local function askDateRange(callback)
@@ -568,6 +600,14 @@ bridge:setCallback(function(method, path, headers, body)
     jobs[jobId] = { status = "running" }
     runImportJob(jobId, kind, y, m, d)
     return hs.json.encode({ ok = true, jobId = jobId }), 200, cors
+  end
+
+  -- POST /focus-app: CSV自動取り込みが終わったあと、Chromeのタブ・ウィンドウを
+  -- fx-reviewアプリ自身（リクエスト元のorigin）へ切り替える。見つからなくても
+  -- フロント側の処理は続くので、ここでは成否をfocusedで返すだけでエラーにはしない
+  if basePath == "/focus-app" and method == "POST" then
+    local focused = focusAppTab(origin)
+    return hs.json.encode({ ok = true, focused = focused }), 200, cors
   end
 
   if basePath == "/rakuten-import/status" and method == "GET" then
