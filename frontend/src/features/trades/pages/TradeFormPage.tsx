@@ -20,7 +20,15 @@ import {
 } from "@/features/session/draftStore";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { toast } from "@/stores/toastStore";
-import { isoToJstInput, SIDE_LABEL, formatJst } from "@/utils/format";
+import { SIDE_COLORS } from "@/constants/chartTheme";
+import {
+  isoToJstInput,
+  SIDE_LABEL,
+  formatJst,
+  formatPips,
+  formatR,
+  formatYenSigned,
+} from "@/utils/format";
 import { ChartPanel } from "../components/ChartPanel";
 import { TradeFormBody } from "../components/TradeFormBody";
 import { useChartUiStore } from "../chartUiStore";
@@ -259,16 +267,42 @@ function TradeFormInner({ trade, settings, pairs, tags, rules }: InnerProps) {
         dirty={dirty}
         onSaveDraft={canDraft ? () => saveAsDraft(true) : undefined}
       />
-      <div>
-        <h1 className="text-xl font-bold">
-          {trade ? "トレード編集・決済入力" : "トレードを記録"}
-        </h1>
-        {trade && (
-          <p className="mt-1 text-sm text-ink-sub">
-            {trade.pair} {SIDE_LABEL[trade.side]} ・ {formatJst(trade.entryAt)}{" "}
-            エントリー ・ {trade.lots} lot
-            {trade.source === "rakuten_csv" && " ・ 取り込み済み"}
-          </p>
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+        <div>
+          <h1 className="text-xl font-bold">
+            {trade ? "トレード編集・決済入力" : "トレードを記録"}
+          </h1>
+          {trade && (
+            <p className="mt-1 text-sm text-ink-sub">
+              <span
+                className="font-bold"
+                style={{ color: SIDE_COLORS[trade.side] }}
+                aria-label={SIDE_LABEL[trade.side]}
+              >
+                {trade.side === "buy" ? "▲" : "▼"} {SIDE_LABEL[trade.side]}
+              </span>{" "}
+              {trade.pair} ・ {formatJst(trade.entryAt)} エントリー ・{" "}
+              {trade.lots} lot
+              {trade.source === "rakuten_csv" && " ・ 取り込み済み"}
+            </p>
+          )}
+        </div>
+        {trade && trade.pnlJpy !== null && (
+          <div
+            className={`num flex items-baseline gap-3 ${
+              trade.pnlJpy > 0
+                ? "text-profit"
+                : trade.pnlJpy < 0
+                  ? "text-loss"
+                  : ""
+            }`}
+          >
+            <span className="text-2xl font-bold leading-none">
+              {formatPips(trade.pips)}
+            </span>
+            <span className="text-sm">{formatR(trade.rMultiple)}</span>
+            <span className="text-sm">{formatYenSigned(trade.pnlJpy)}</span>
+          </div>
         )}
       </div>
 
