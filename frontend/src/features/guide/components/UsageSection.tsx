@@ -47,6 +47,21 @@ export function UsageSection() {
             <b>必須なのは、方向・ロット・エントリー日時・価格だけ</b>
             です。SL・TP・根拠・感情は、書けるときだけで大丈夫です。
           </p>
+          <p>
+            <b>Macをお使いの場合</b>
+            は、
+            <a
+              href="https://www.hammerspoon.org/"
+              target="_blank"
+              rel="noreferrer"
+              className={LINK}
+            >
+              Hammerspoon
+            </a>
+            を導入しておくと、「CSVを取り込む」画面の「楽天FXから自動取得」から、開始日を選んでボタン1つで
+            WebTraderの約定履歴・注文履歴CSVをダウンロード〜取り込みまで自動化できます。設定方法は
+            リポジトリ内の <Code>hammerspoon/README.md</Code> を参照してください（Windows・Linuxでは利用できません）。
+          </p>
         </Step>
         <Step id="use-chart" no={2} title="チャートで、エントリーを見返す">
           <p>
