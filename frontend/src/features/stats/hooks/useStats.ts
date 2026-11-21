@@ -2,14 +2,34 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
 import { toQueryString } from "@/features/trades/hooks/useTradesApi";
 import type { PeriodKey, StatsResult } from "../types";
-import { periodFrom, previousPeriod, todayStartJst } from "../utils/period";
+import {
+  customRange,
+  periodRange,
+  previousPeriod,
+  todayStartJst,
+} from "../utils/period";
 
-export function useStats(period: PeriodKey, pair?: string) {
+/** "custom"（期間を指定）のときに選んだ開始日・終了日（"YYYY-MM-DD"） */
+export interface CustomDateRange {
+  from: string;
+  to: string;
+}
+
+export function useStats(
+  period: PeriodKey,
+  pair?: string,
+  custom?: CustomDateRange,
+) {
+  const isCustom = period === "custom";
+  const range = isCustom
+    ? custom && customRange(custom.from, custom.to)
+    : periodRange(period);
   return useQuery({
-    queryKey: ["stats", period, pair ?? ""],
+    queryKey: ["stats", period, pair ?? "", custom?.from ?? "", custom?.to ?? ""],
+    enabled: !isCustom || Boolean(range),
     queryFn: () =>
       apiClient.get<StatsResult>(
-        `/stats${toQueryString({ from: periodFrom(period), pair })}`,
+        `/stats${toQueryString({ ...(range ?? {}), pair })}`,
       ),
     placeholderData: keepPreviousData,
   });
