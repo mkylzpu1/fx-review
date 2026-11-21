@@ -514,6 +514,17 @@ local function corsHeaders(origin)
   }
 end
 
+-- Reload Config のたびにこのファイルは最初から再実行されるため、ローカル変数の
+-- `bridge` は毎回新しく作られる。古いサーバーを明示的に stop() しないと、
+-- 同じポートに複数のリスナーが残ったり、Luaのガベージコレクションのタイミング次第で
+-- 一時的にポートが誰にも掴まれていない状態になったりして、ブリッジへの接続が
+-- 不安定になる（「繋がったり繋がらなかったり」する）。再実行をまたいで古いサーバーを
+-- 参照できるよう、グローバル変数に保持しておいて確実に止める。
+if _G.__rakutenFxBridge then
+  pcall(function() _G.__rakutenFxBridge:stop() end)
+  _G.__rakutenFxBridge = nil
+end
+
 local bridge = hs.httpserver.new(false, false)
 bridge:setPort(CONFIG.bridgePort)
 bridge:setInterface("127.0.0.1")
@@ -586,5 +597,6 @@ bridge:setCallback(function(method, path, headers, body)
   return hs.json.encode({ ok = false, message = "not found" }), 404, cors
 end)
 bridge:start()
+_G.__rakutenFxBridge = bridge
 
 showStatus("楽天FX ダウンロードツール 読み込み完了", "info")
