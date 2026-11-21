@@ -1,4 +1,10 @@
 import { useRef, useState } from "react";
+import { toast } from "@/stores/toastStore";
+import {
+  RAKUTEN_BRIDGE_URL,
+  RakutenBridgeUnreachable,
+  useRakutenImport,
+} from "../hooks/useRakutenBridge";
 import type { ReadFailure } from "../utils/readCsvFile";
 
 const SYSTEMS: { id: string; label: string; ready: boolean }[] = [
@@ -15,13 +21,48 @@ interface Props {
   onNext: () => void;
 }
 
+function todayLocalDateInputValue(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /** ① 取り込み元を選び、CSVを複数まとめて選ぶ */
 export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [bridgeDate, setBridgeDate] = useState(todayLocalDateInputValue);
+  const rakutenImport = useRakutenImport();
 
   const pick = (list: FileList | null) => {
     if (list && list.length > 0) onSelect(Array.from(list));
+  };
+
+  const onAutoFetch = (kind: "execution" | "order") => {
+    if (!bridgeDate) {
+      toast.error("開始日を選んでください");
+      return;
+    }
+    const date = bridgeDate.split("-").join("/");
+    rakutenImport.mutate(
+      { kind, date },
+      {
+        onSuccess: (file) => {
+          onSelect([file]);
+          toast.success(
+            `${kind === "execution" ? "約定履歴" : "注文履歴"}を取得しました（${file.name}）`,
+          );
+        },
+        onError: (e) =>
+          toast.error(
+            e instanceof RakutenBridgeUnreachable
+              ? "Hammerspoonに接続できません。導入手順（hammerspoon/README.md）どおり起動しているか確認してください。"
+              : `取得できませんでした。${e instanceof Error ? e.message : ""}`,
+          ),
+      },
+    );
   };
 
   return (
@@ -50,6 +91,38 @@ export function FileStep({ files, failures, busy, onSelect, onNext }: Props) {
           ))}
         </div>
       </section>
+
+      {RAKUTEN_BRIDGE_URL && (
+        <section className="card space-y-3">
+          <h2 className="text-base font-bold">楽天FXから自動取得</h2>
+          <p className="text-xs text-ink-mute">
+            WebTraderにログインした状態で、開始日を選んで取得します（終了日は当日まで）。取得したCSVは、下のファイル選択と同じように扱われます。
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              className="input"
+              aria-label="開始日"
+              value={bridgeDate}
+              onChange={(e) => setBridgeDate(e.target.value)}
+            />
+            <button
+              className="btn"
+              disabled={rakutenImport.isPending}
+              onClick={() => onAutoFetch("execution")}
+            >
+              {rakutenImport.isPending ? "取得中…" : "約定履歴を取得"}
+            </button>
+            <button
+              className="btn"
+              disabled={rakutenImport.isPending}
+              onClick={() => onAutoFetch("order")}
+            >
+              {rakutenImport.isPending ? "取得中…" : "注文履歴を取得"}
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="card space-y-3">
         <h2 className="text-base font-bold">CSVファイル</h2>
