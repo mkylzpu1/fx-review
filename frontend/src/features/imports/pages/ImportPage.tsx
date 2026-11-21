@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { ROUTES } from "@/constants/routes";
 import { toast } from "@/stores/toastStore";
+import { AutoImportSection } from "../components/AutoImportSection";
 import { DoneStep } from "../components/DoneStep";
 import { FileStep } from "../components/FileStep";
 import {
@@ -12,6 +13,7 @@ import {
 import { PreviewStep } from "../components/PreviewStep";
 import { Stepper } from "../components/Stepper";
 import { useImportCommit, useImportPreview } from "../hooks/useImportApi";
+import { RAKUTEN_BRIDGE_URL } from "../hooks/useRakutenBridge";
 import type {
   CommitResult,
   DuplicateMode,
@@ -23,12 +25,22 @@ import type {
 import { isOrderCommit, isOrderPreview } from "../types";
 import { readCsvFiles, type ReadFailure } from "../utils/readCsvFile";
 
-/** 楽天FX証券の約定履歴CSVを複数まとめて取り込む（①選ぶ → ②確認 → ③取り込む） */
+type Method = "auto" | "manual";
+
+/**
+ * 楽天FX証券の約定履歴CSVを取り込む画面。
+ * 「楽天FXから自動取得」（ボタン1つで確認なし取り込み）と
+ * 「CSVファイルを選ぶ」（①選ぶ → ②確認 → ③取り込む の3ステップ）は、
+ * 流れそのものが違うので、タブで画面ごと分けている。
+ */
 export function ImportPage() {
   const navigate = useNavigate();
   const previewApi = useImportPreview();
   const commitApi = useImportCommit();
 
+  const [method, setMethod] = useState<Method>(
+    RAKUTEN_BRIDGE_URL ? "auto" : "manual",
+  );
   const [selected, setSelected] = useState<File[]>([]);
   const [failures, setFailures] = useState<ReadFailure[]>([]);
   const [texts, setTexts] = useState<ImportFileInput[]>([]);
@@ -98,49 +110,76 @@ export function ImportPage() {
           約定履歴からトレードをまとめて登録します。注文履歴のCSVを選ぶと、取り込み済みのトレードにSL・TPを反映します。
         </p>
       </div>
-      <Stepper current={step} />
-
-      {previewApi.isError && (
-        <ErrorAlert
-          message="内容を確認できませんでした。通信を確認して、もう一度試してください。選んだファイルは残っています。"
-          onRetry={() => void onNext()}
-        />
+      {RAKUTEN_BRIDGE_URL && (
+        <div role="tablist" aria-label="取り込み方法" className="flex gap-2">
+          <button
+            role="tab"
+            aria-selected={method === "auto"}
+            className={`btn ${method === "auto" ? "border-accent bg-surface" : ""}`}
+            onClick={() => setMethod("auto")}
+          >
+            楽天FXから自動取得
+          </button>
+          <button
+            role="tab"
+            aria-selected={method === "manual"}
+            className={`btn ${method === "manual" ? "border-accent bg-surface" : ""}`}
+            onClick={() => setMethod("manual")}
+          >
+            CSVファイルを選ぶ
+          </button>
+        </div>
       )}
 
-      {step === 1 && (
-        <FileStep
-          files={selected}
-          failures={failures}
-          busy={reading || previewApi.isPending}
-          onSelect={onSelect}
-          onNext={() => void onNext()}
-        />
-      )}
-      {step === 2 && preview && isOrderPreview(preview) && (
-        <OrderLinkPreviewStep
-          preview={preview}
-          committing={commitApi.isPending}
-          commitError={commitApi.isError}
-          onBack={back}
-          onCommit={onCommit}
-        />
-      )}
-      {step === 2 && preview && !isOrderPreview(preview) && (
-        <PreviewStep
-          preview={preview}
-          mode={mode}
-          committing={commitApi.isPending}
-          commitError={commitApi.isError}
-          onModeChange={setMode}
-          onBack={back}
-          onCommit={onCommit}
-        />
-      )}
-      {step === 3 && result && isOrderCommit(result) && (
-        <OrderLinkDoneStep result={result} />
-      )}
-      {step === 3 && result && !isOrderCommit(result) && (
-        <DoneStep result={result} />
+      {method === "auto" ? (
+        <AutoImportSection />
+      ) : (
+        <>
+          <Stepper current={step} />
+
+          {previewApi.isError && (
+            <ErrorAlert
+              message="内容を確認できませんでした。通信を確認して、もう一度試してください。選んだファイルは残っています。"
+              onRetry={() => void onNext()}
+            />
+          )}
+
+          {step === 1 && (
+            <FileStep
+              files={selected}
+              failures={failures}
+              busy={reading || previewApi.isPending}
+              onSelect={onSelect}
+              onNext={() => void onNext()}
+            />
+          )}
+          {step === 2 && preview && isOrderPreview(preview) && (
+            <OrderLinkPreviewStep
+              preview={preview}
+              committing={commitApi.isPending}
+              commitError={commitApi.isError}
+              onBack={back}
+              onCommit={onCommit}
+            />
+          )}
+          {step === 2 && preview && !isOrderPreview(preview) && (
+            <PreviewStep
+              preview={preview}
+              mode={mode}
+              committing={commitApi.isPending}
+              commitError={commitApi.isError}
+              onModeChange={setMode}
+              onBack={back}
+              onCommit={onCommit}
+            />
+          )}
+          {step === 3 && result && isOrderCommit(result) && (
+            <OrderLinkDoneStep result={result} />
+          )}
+          {step === 3 && result && !isOrderCommit(result) && (
+            <DoneStep result={result} />
+          )}
+        </>
       )}
     </div>
   );
