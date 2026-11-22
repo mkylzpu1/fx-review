@@ -98,5 +98,11 @@ export function parseAiResponse(raw: string): ParsedResponse {
     .slice(0, MAX_IMPROVEMENTS);
   const hasStructure =
     sections.some((s) => s.heading) || improvements.length > 0;
-  return { sections: hasStructure ? sections : [], improvements };
+  // 改善案の専用見出しが見つかった場合、その中身は改善提案カード側に出るので、
+  // 同じ内容をセクションとしてもう一度丸ごと表示しない（指示書 §11 の `## 改善案` 固定書式に対応）
+  const visibleSections =
+    focused.length > 0
+      ? sections.filter((s) => !IMPROVEMENT_HEADING.test(s.heading))
+      : sections;
+  return { sections: hasStructure ? visibleSections : [], improvements };
 }

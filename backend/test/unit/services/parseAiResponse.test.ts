@@ -91,6 +91,30 @@ describe("parseAiResponse", () => {
     expect(r).toEqual({ sections: [], improvements: [] });
   });
 
+  it("改善案の専用見出しは、改善提案カード側に出るのでセクションとしては返さない（二重表示を防ぐ）", () => {
+    const r = parseAiResponse(
+      [
+        "## 勝ちと負けを分ける条件",
+        "- 東京時間は勝ちやすい傾向がある",
+        "## 改善案",
+        "1. SLを必ず入れる",
+        "2. 連敗3回で終了",
+      ].join("\n"),
+    );
+    expect(r.sections.map((s) => s.heading)).toEqual(["勝ちと負けを分ける条件"]);
+    expect(r.improvements.map((i) => i.text)).toEqual([
+      "SLを必ず入れる",
+      "連敗3回で終了",
+    ]);
+  });
+
+  it("改善案の専用見出しが無ければ、全体をそのままセクションとして返す", () => {
+    const r = parseAiResponse(
+      ["## 分析", "- SLを必ず入れる", "- 連敗3回で終了"].join("\n"),
+    );
+    expect(r.sections.map((s) => s.heading)).toEqual(["分析"]);
+  });
+
   it("長い行は切り詰め、件数の上限を超えた分は捨てる", () => {
     const many = Array.from(
       { length: 40 },
