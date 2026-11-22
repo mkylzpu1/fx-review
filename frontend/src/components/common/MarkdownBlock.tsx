@@ -32,6 +32,13 @@ function isSoloBoldParagraph(children: ReactNode): boolean {
   );
 }
 
+/**
+ * 小見出し（### / #### / 1行まるごと太字）共通の見た目。
+ * 上下の余白を広めに取り、背景を薄く敷いた「チップ」にして本文の箇条書きと区別する。
+ */
+const SUBHEADING_CLASS =
+  "mt-6 mb-2 rounded-btn bg-surface px-3 py-1.5 text-sm font-bold text-ink first:mt-0";
+
 function StrongText({ children }: { children?: ReactNode }) {
   return (
     <strong className="font-bold text-ink">
@@ -52,22 +59,20 @@ const components: Components = {
     </h3>
   ),
   h3: ({ children }) => (
-    <h4 className="mt-4 border-l-2 border-accent/60 pl-2 text-sm font-bold first:mt-0">
+    <h4 className={SUBHEADING_CLASS}>
       <HeadingText>{children}</HeadingText>
     </h4>
   ),
   h4: ({ children }) => (
-    <h5 className="mt-3 border-l-2 border-accent/40 pl-2 text-sm font-bold first:mt-0">
+    <h5 className={SUBHEADING_CLASS}>
       <HeadingText>{children}</HeadingText>
     </h5>
   ),
   p: ({ children }) =>
     // 「①…」のように1行まるごと太字の段落は、実質的に小見出しなので
-    // 見出しと同じ見た目（左に区切り線・上に余白）にして、本文の中で浮き立たせる
+    // 見出しと同じ見た目（背景を敷いたチップ風）にして、本文の中で浮き立たせる
     isSoloBoldParagraph(children) ? (
-      <p className="mt-4 border-l-2 border-accent/60 pl-2 text-sm font-bold text-ink first:mt-0">
-        {children}
-      </p>
+      <p className={SUBHEADING_CLASS}>{children}</p>
     ) : (
       <p className="text-sm text-ink-sub">{children}</p>
     ),

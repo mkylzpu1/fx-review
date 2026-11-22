@@ -9,7 +9,7 @@ describe("MarkdownBlock", () => {
       <MarkdownBlock>{"**①感情・根拠が記録されたトレードは、成績が分かれている（仮説、n≒20）**"}</MarkdownBlock>,
     );
     const p = container.querySelector("p");
-    expect(p).toHaveClass("border-l-2");
+    expect(p).toHaveClass("bg-surface");
     expect(p).toHaveTextContent("①感情・根拠が記録されたトレードは、成績が分かれている");
   });
 
@@ -23,14 +23,14 @@ describe("MarkdownBlock", () => {
       <MarkdownBlock>{"これは普通の説明文です。"}</MarkdownBlock>,
     );
     const p = container.querySelector("p");
-    expect(p).not.toHaveClass("border-l-2");
+    expect(p).not.toHaveClass("bg-surface");
   });
 
-  it("### の小見出しも左に区切り線を付ける", () => {
+  it("### の小見出しも背景を敷いたチップ風にする", () => {
     const { container } = render(
       <MarkdownBlock>{"### ①勝ちパターン（仮説, n=5）"}</MarkdownBlock>,
     );
-    expect(container.querySelector("h4")).toHaveClass("border-l-2");
+    expect(container.querySelector("h4")).toHaveClass("bg-surface");
   });
 
   it("表はそのままテーブルとして描画する", () => {
