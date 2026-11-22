@@ -37,7 +37,9 @@ const detail = (over: Partial<NoteDetail> = {}): NoteDetail => ({
   nextRule: null,
   sourceTradeId: null,
   createdAt: "2026-10-24T01:00:00Z",
-  sections: [{ heading: "改善案", lines: ["- SLを入れる"] }],
+  sections: [
+    { heading: "改善案", lines: ["- SLを入れる"], raw: "- SLを入れる" },
+  ],
   improvements: [
     {
       id: "i1",

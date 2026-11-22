@@ -36,7 +36,7 @@ export interface Improvement {
 
 export interface NoteDetail extends Note {
   improvements: Improvement[];
-  sections: { heading: string; lines: string[] }[];
+  sections: { heading: string; lines: string[]; raw: string }[];
 }
 
 export interface Avg {

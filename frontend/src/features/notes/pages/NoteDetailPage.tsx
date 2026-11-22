@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { MarkdownBlock } from "@/components/common/MarkdownBlock";
 import { ROUTES } from "@/constants/routes";
 import { ApiError } from "@/services/apiClient";
 import { toast } from "@/stores/toastStore";
@@ -112,13 +113,9 @@ export function NoteDetailPage() {
           {data.sections
             .filter((s) => s.heading && s.lines.length > 0)
             .map((s) => (
-              <section key={s.heading} className="card space-y-1">
+              <section key={s.heading} className="card space-y-2">
                 <h2 className="text-base font-bold">{s.heading}</h2>
-                <ul className="list-disc space-y-1 pl-5 text-sm text-ink-sub">
-                  {s.lines.map((l, i) => (
-                    <li key={i}>{l}</li>
-                  ))}
-                </ul>
+                <MarkdownBlock>{s.raw}</MarkdownBlock>
               </section>
             ))}
 
