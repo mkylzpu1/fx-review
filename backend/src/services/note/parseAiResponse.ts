@@ -17,7 +17,9 @@ export interface ParsedResponse {
 export const MAX_IMPROVEMENTS = 30;
 export const MAX_IMPROVEMENT_CHARS = 300;
 
-const HEADING = /^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/;
+// セクション分割は「## 見出し」(レベル2)だけで行う。「### 小見出し」はカード内の
+// 小見出しとして raw にそのまま残し、Markdown描画側の見出しに任せる（指示書で ### を指定している）。
+const HEADING = /^\s{0,3}#{2}(?!#)\s+(.+?)\s*#*\s*$/;
 // 「1.」「1)」「1．」「（1）」「①」と、「-」「*」「・」「•」
 const ITEM =
   /^\s*(?:(?:[0-9０-９]{1,2}\s*[.)）．、]|[（(][0-9０-９]{1,2}[)）]|[①-⑳])|[-*・•●○])\s*(.+?)\s*$/;
@@ -45,17 +47,27 @@ export function sampleNOf(text: string): number | null {
 /** 回答を見出しごとに分ける。見出しの無い先頭部分は heading が空の節になる */
 export function splitSections(raw: string): ParsedSection[] {
   const sections: ParsedSection[] = [];
-  let current: ParsedSection = { heading: "", lines: [] };
+  let current: ParsedSection = { heading: "", lines: [], raw: "" };
+  let rawLines: string[] = [];
+  const push = () => {
+    if (current.heading || current.lines.length > 0) {
+      sections.push({ ...current, raw: rawLines.join("\n").trim() });
+    }
+  };
   for (const line of raw.replace(/\r\n?/g, "\n").split("\n")) {
     const h = HEADING.exec(line);
     if (h) {
-      if (current.heading || current.lines.length > 0) sections.push(current);
-      current = { heading: stripMarkdown(h[1]), lines: [] };
+      push();
+      current = { heading: stripMarkdown(h[1]), lines: [], raw: "" };
+      rawLines = [];
     } else if (line.trim() !== "") {
       current.lines.push(line.trim());
+      rawLines.push(line);
+    } else if (rawLines.length > 0) {
+      rawLines.push(""); // 空行は段落・表の区切りとして原文側には残す
     }
   }
-  if (current.heading || current.lines.length > 0) sections.push(current);
+  push();
   return sections;
 }
 

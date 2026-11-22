@@ -19,6 +19,30 @@ describe("splitSections", () => {
     expect(s.map((x) => x.heading)).toEqual(["", "改善案", "勝ち負け"]);
     expect(s[1].lines).toEqual(["- a"]);
   });
+
+  it("raw には太字・表・ネストなど元のMarkdown記法をそのまま残す", () => {
+    const s = splitSections(
+      [
+        "## 分析",
+        "### ①勝ちパターン（仮説, n=5）",
+        "- SL10pips・TP20pipsに**集まっている**",
+        "",
+        "| 項目 | 値 |",
+        "|---|---|",
+        "| 勝率 | 38.6% |",
+      ].join("\n"),
+    );
+    expect(s[0].raw).toBe(
+      [
+        "### ①勝ちパターン（仮説, n=5）",
+        "- SL10pips・TP20pipsに**集まっている**",
+        "",
+        "| 項目 | 値 |",
+        "|---|---|",
+        "| 勝率 | 38.6% |",
+      ].join("\n"),
+    );
+  });
 });
 
 describe("parseAiResponse", () => {

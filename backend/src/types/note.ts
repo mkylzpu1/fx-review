@@ -40,7 +40,10 @@ export interface NoteListItem extends NoteRecord {
 
 export interface ParsedSection {
   heading: string;
+  /** 見出し内の行（簡易パース・改善案抽出用） */
   lines: string[];
+  /** 見出し内の原文（太字・表・ネストした箇条書きを保ったMarkdown。表示に使う） */
+  raw: string;
 }
 
 export interface NoteDetail extends NoteRecord {
