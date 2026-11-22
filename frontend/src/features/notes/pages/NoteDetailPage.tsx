@@ -9,6 +9,7 @@ import { ApiError } from "@/services/apiClient";
 import { toast } from "@/stores/toastStore";
 import { formatJst } from "@/utils/format";
 import { ImprovementList } from "../components/ImprovementList";
+import { SectionHeading } from "../components/SectionHeading";
 import { useDeleteNote, useNote, useToRule } from "../hooks/useNotesApi";
 
 /** AI分析の結果ビュー（自分の気づきも同じ画面で見る）。パースできない回答は原文を出す */
@@ -92,15 +93,15 @@ export function NoteDetailPage() {
       ) : (
         <>
           {data.body && (
-            <section className="card space-y-1">
-              <h2 className="text-base font-bold">回答の要約</h2>
+            <section className="card">
+              <SectionHeading text="回答の要約" />
               <p className="text-sm text-ink-sub">{data.body}</p>
             </section>
           )}
 
           {!hasStructure && (
             <section className="card space-y-1">
-              <h2 className="text-base font-bold">回答（原文）</h2>
+              <SectionHeading text="回答（原文）" />
               <p className="text-xs text-ink-mute">
                 改善案を自動で取り出せなかったため、原文をそのまま表示しています。
               </p>
@@ -113,8 +114,8 @@ export function NoteDetailPage() {
           {data.sections
             .filter((s) => s.heading && s.lines.length > 0)
             .map((s) => (
-              <section key={s.heading} className="card space-y-2">
-                <h2 className="text-base font-bold">{s.heading}</h2>
+              <section key={s.heading} className="card">
+                <SectionHeading text={s.heading} />
                 <MarkdownBlock>{s.raw}</MarkdownBlock>
               </section>
             ))}
