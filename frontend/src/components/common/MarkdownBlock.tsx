@@ -1,14 +1,14 @@
+import { Children, isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-/** 見出し末尾の「（仮説, n=8）」「（仮説）」を検出する。パーサー側では外さないので表示側で分ける */
+/** 見出し・太字末尾の「（仮説, n=8）」「（仮説）」を検出する。パーサー側では外さないので表示側で分ける */
 const HYPOTHESIS = /(仮説[^）)]*)/;
 
-function HeadingText({ children }: { children: React.ReactNode }) {
-  const text = typeof children === "string" ? children : null;
-  if (!text) return <>{children}</>;
+/** 文字列の末尾の「仮説」注記だけをバッジにして分離する */
+function withHypothesisBadge(text: string): ReactNode {
   const m = HYPOTHESIS.exec(text);
-  if (!m) return <>{text}</>;
+  if (!m) return text;
   const before = text.slice(0, m.index).trim();
   return (
     <>
@@ -17,6 +17,26 @@ function HeadingText({ children }: { children: React.ReactNode }) {
         {m[1]}
       </span>
     </>
+  );
+}
+
+function HeadingText({ children }: { children: ReactNode }) {
+  return <>{typeof children === "string" ? withHypothesisBadge(children) : children}</>;
+}
+
+/** `**①見出し的な一文**` のように、1行まるごと太字の段落かどうか */
+function isSoloBoldParagraph(children: ReactNode): boolean {
+  const arr = Children.toArray(children);
+  return (
+    arr.length === 1 && isValidElement(arr[0]) && arr[0].type === StrongText
+  );
+}
+
+function StrongText({ children }: { children?: ReactNode }) {
+  return (
+    <strong className="font-bold text-ink">
+      {typeof children === "string" ? withHypothesisBadge(children) : children}
+    </strong>
   );
 }
 
@@ -32,21 +52,26 @@ const components: Components = {
     </h3>
   ),
   h3: ({ children }) => (
-    <h4 className="mt-3 text-sm font-bold first:mt-0">
+    <h4 className="mt-4 border-l-2 border-accent/60 pl-2 text-sm font-bold first:mt-0">
       <HeadingText>{children}</HeadingText>
     </h4>
   ),
   h4: ({ children }) => (
-    <h5 className="mt-2 text-sm font-bold first:mt-0">
+    <h5 className="mt-3 border-l-2 border-accent/40 pl-2 text-sm font-bold first:mt-0">
       <HeadingText>{children}</HeadingText>
     </h5>
   ),
-  p: ({ children }) => (
-    <p className="text-sm text-ink-sub">{children}</p>
-  ),
-  strong: ({ children }) => (
-    <strong className="font-bold text-ink">{children}</strong>
-  ),
+  p: ({ children }) =>
+    // 「①…」のように1行まるごと太字の段落は、実質的に小見出しなので
+    // 見出しと同じ見た目（左に区切り線・上に余白）にして、本文の中で浮き立たせる
+    isSoloBoldParagraph(children) ? (
+      <p className="mt-4 border-l-2 border-accent/60 pl-2 text-sm font-bold text-ink first:mt-0">
+        {children}
+      </p>
+    ) : (
+      <p className="text-sm text-ink-sub">{children}</p>
+    ),
+  strong: StrongText,
   ul: ({ children }) => (
     <ul className="list-disc space-y-1 pl-5 text-sm text-ink-sub">
       {children}
