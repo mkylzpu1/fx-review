@@ -281,6 +281,33 @@ export function judgeGroup(
   };
 }
 
+export interface RHistogramBin {
+  key: string;
+  label: string;
+  count: number;
+}
+
+const R_BINS: { key: string; label: string; test: (r: number) => boolean }[] =
+  [
+    { key: "le-2", label: "-2R以下", test: (r) => r <= -2 },
+    { key: "-2to-1", label: "-2〜-1R", test: (r) => r > -2 && r <= -1 },
+    { key: "-1to0", label: "-1〜0R", test: (r) => r > -1 && r < 0 },
+    { key: "0", label: "0R", test: (r) => r === 0 },
+    { key: "0to1", label: "0〜1R", test: (r) => r > 0 && r < 1 },
+    { key: "1to2", label: "1〜2R", test: (r) => r >= 1 && r < 2 },
+    { key: "2to3", label: "2〜3R", test: (r) => r >= 2 && r < 3 },
+    { key: "ge3", label: "3R以上", test: (r) => r >= 3 },
+  ];
+
+/** Rの分布（区切りごとの件数）。利確が伸ばせているか・損切りが計画通りかを見る */
+export function rHistogram(rs: number[]): RHistogramBin[] {
+  return R_BINS.map((b) => ({
+    key: b.key,
+    label: b.label,
+    count: rs.filter(b.test).length,
+  }));
+}
+
 /** 区分キーの配列（トレードごと。無ければ空配列）で集計する。キーの出現順は labels の順 */
 export function groupBy<T extends StatTrade>(
   trades: T[],

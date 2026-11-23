@@ -10,6 +10,7 @@ import { CumulativeChart } from "../components/CumulativeChart";
 import { DailyGrowthChart } from "../components/DailyGrowthChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
+import { RHistogramChart } from "../components/RHistogramChart";
 import { TodayStatus } from "../components/TodayStatus";
 import { PeriodCompare } from "../components/PeriodCompare";
 import {
@@ -206,17 +207,40 @@ export function StatsPage() {
             <PeriodCompare now={s} prev={prevStats.data.summary} />
           )}
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <GroupTable title="セッション別" groups={data.bySession} />
-            <GroupTable title="根拠タグ別" groups={data.byRationale} />
-            <GroupTable title="ルール遵守別" groups={data.byRule} />
-            <GroupTable title="曜日別" groups={data.byWeekday ?? []} />
-            <GroupTable title="時間帯別" groups={data.byHour ?? []} />
-            <GroupTable title="保有時間別" groups={data.byHolding ?? []} />
-            <GroupTable title="ロット別" groups={data.byLots ?? []} />
-          </div>
+          {data.rHistogram && data.rHistogram.some((b) => b.count > 0) && (
+            <section className="card min-w-0 space-y-2">
+              <h2 className="flex items-center gap-2 text-base font-bold">
+                Rの分布
+                <InfoTip label="Rの分布とは">
+                  トレードごとのRを、-2R以下から3R以上まで区切りごとに件数で数えたものです。
+                  利を伸ばせているか、損切りを計画通りに実行できているかが見えます。
+                </InfoTip>
+              </h2>
+              <RHistogramChart bins={data.rHistogram} />
+            </section>
+          )}
 
           <InsightList insights={data.insights} />
+
+          <details className="card">
+            <summary className="cursor-pointer text-base font-bold">
+              区分別の詳細を見る
+            </summary>
+            <div className="mt-3 grid gap-4 lg:grid-cols-3">
+              <GroupTable title="セッション別" groups={data.bySession} />
+              <GroupTable title="根拠タグ別" groups={data.byRationale} />
+              <GroupTable title="ルール遵守別" groups={data.byRule} />
+              <GroupTable title="確信度別" groups={data.byConfidence ?? []} />
+              <GroupTable
+                title="決済方法別"
+                groups={data.byExitMethod ?? []}
+              />
+              <GroupTable title="曜日別" groups={data.byWeekday ?? []} />
+              <GroupTable title="時間帯別" groups={data.byHour ?? []} />
+              <GroupTable title="保有時間別" groups={data.byHolding ?? []} />
+              <GroupTable title="ロット別" groups={data.byLots ?? []} />
+            </div>
+          </details>
         </>
       )}
     </div>

@@ -55,11 +55,25 @@ export interface GroupStat {
 export interface Insight {
   kind: Verdict;
   axis:
-    "session" | "rationale" | "rule" | "weekday" | "hour" | "holding" | "lots";
+    | "session"
+    | "rationale"
+    | "rule"
+    | "weekday"
+    | "hour"
+    | "holding"
+    | "lots"
+    | "confidence"
+    | "exitMethod";
   label: string;
   n: number;
   avgR: number | null;
   shortfall: number;
+}
+
+export interface RHistogramBin {
+  key: string;
+  label: string;
+  count: number;
 }
 
 export interface StatsResult {
@@ -75,6 +89,12 @@ export interface StatsResult {
   byHour: GroupStat[];
   byHolding: GroupStat[];
   byLots: GroupStat[];
+  /** 古いAPIでは無いことがある */
+  byConfidence?: GroupStat[];
+  /** 古いAPIでは無いことがある */
+  byExitMethod?: GroupStat[];
+  /** 古いAPIでは無いことがある */
+  rHistogram?: RHistogramBin[];
   insights: Insight[];
   closedCount: number;
 }

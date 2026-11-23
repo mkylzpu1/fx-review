@@ -10,6 +10,7 @@ import {
   groupBy,
   hourInZone,
   maxDrawdown,
+  rHistogram,
   sessionOf,
   summarize,
   weekdayInZone,
@@ -17,6 +18,7 @@ import {
   type DailyPoint,
   type Drawdown,
   type GroupStat,
+  type RHistogramBin,
   type StatTrade,
   type Summary,
 } from "./statsCalc";
@@ -27,7 +29,15 @@ export interface Insight {
   kind: "strength" | "weakness" | "needs_check";
   /** どの切り口か */
   axis:
-    "session" | "rationale" | "rule" | "weekday" | "hour" | "holding" | "lots";
+    | "session"
+    | "rationale"
+    | "rule"
+    | "weekday"
+    | "hour"
+    | "holding"
+    | "lots"
+    | "confidence"
+    | "exitMethod";
   label: string;
   n: number;
   avgR: number | null;
@@ -48,6 +58,10 @@ export interface StatsResult {
   byHour: GroupStat[];
   byHolding: GroupStat[];
   byLots: GroupStat[];
+  byConfidence: GroupStat[];
+  byExitMethod: GroupStat[];
+  /** Rの分布（-2R以下〜3R以上）。R が計算できたトレードだけで集計 */
+  rHistogram: RHistogramBin[];
   insights: Insight[];
   /** 決済済みで集計に入ったトレード数 */
   closedCount: number;
@@ -60,6 +74,8 @@ interface Row extends StatTrade {
   lots: number | null;
   rationaleTags: string[];
   ruleKey: "ok" | "ng" | "none";
+  confidence: number | null;
+  exitMethod: "tp" | "sl" | "manual" | "breakeven" | "open";
 }
 
 function ruleKeyOf(v: TradeView): Row["ruleKey"] {
@@ -85,6 +101,8 @@ export function toRows(views: TradeView[], timezone: string): Row[] {
         .filter((t) => t.kind === "rationale")
         .map((t) => t.name),
       ruleKey: ruleKeyOf(v),
+      confidence: v.confidence ?? null,
+      exitMethod: v.exitMethod,
     }));
 }
 
@@ -187,6 +205,21 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     },
     LOT_BANDS.map((b) => ({ key: b.key, label: b.label })),
   );
+  const byConfidence = groupBy(
+    rows,
+    (r) => (r.confidence === null ? [] : [String(r.confidence)]),
+    [1, 2, 3, 4, 5].map((n) => ({ key: String(n), label: `確信度${n}` })),
+  );
+  const byExitMethod = groupBy(
+    rows,
+    (r) => (r.exitMethod === "open" ? [] : [r.exitMethod]),
+    [
+      { key: "tp", label: "TP到達" },
+      { key: "sl", label: "SL到達" },
+      { key: "manual", label: "手動決済" },
+      { key: "breakeven", label: "建値決済" },
+    ],
+  );
 
   return {
     summary: summarize(rows),
@@ -200,6 +233,11 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     byHour,
     byHolding,
     byLots,
+    byConfidence,
+    byExitMethod,
+    rHistogram: rHistogram(
+      rows.flatMap((r) => (r.rMultiple === null ? [] : [r.rMultiple])),
+    ),
     insights: [
       ...toInsights("session", bySession),
       ...toInsights("rationale", byRationale),
@@ -208,6 +246,8 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
       ...toInsights("hour", byHour),
       ...toInsights("holding", byHolding),
       ...toInsights("lots", byLots),
+      ...toInsights("confidence", byConfidence),
+      ...toInsights("exitMethod", byExitMethod),
     ],
     closedCount: rows.length,
   };

@@ -11,6 +11,8 @@ const AXIS = {
   hour: "時間帯",
   holding: "保有時間",
   lots: "ロット",
+  confidence: "確信度",
+  exitMethod: "決済方法",
 } as const;
 
 function line(i: Insight): string {
