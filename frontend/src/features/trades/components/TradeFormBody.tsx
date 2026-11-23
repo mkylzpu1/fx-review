@@ -173,6 +173,7 @@ export function TradeFormBody({
       <Section title="エントリー根拠（任意）">
         <TagPicker
           label="根拠"
+          groupable
           tags={tags.filter((t) => t.kind === "rationale")}
           selected={form.tagIds}
           onChange={(ids) =>
