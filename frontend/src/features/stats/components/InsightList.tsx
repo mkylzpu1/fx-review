@@ -61,43 +61,52 @@ function Row({ i }: { i: Insight }) {
 }
 
 /** 機械的に拾った強み・弱み・要検証。断定せず、件数が少ないものは仮説として示す */
+function Column({ kind, items }: { kind: Insight["kind"]; items: Insight[] }) {
+  const style = KIND_STYLE[kind];
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <h3 className="text-sm font-bold">{style.title}</h3>
+      <ul className="mt-1 space-y-0.5">
+        {items.map((i) => (
+          <Row key={`${i.axis}:${i.label}`} i={i} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function InsightList({ insights }: { insights: Insight[] }) {
-  const groups: { kind: Insight["kind"] }[] = [
-    { kind: "strength" },
-    { kind: "weakness" },
-    { kind: "needs_check" },
-  ];
+  const strength = insights.filter((i) => i.kind === "strength");
+  const weakness = insights.filter((i) => i.kind === "weakness");
+  const needsCheck = insights.filter((i) => i.kind === "needs_check");
+
   return (
     <section className="card space-y-3">
       <h2 className="text-base font-bold">データから見えること</h2>
       {insights.length === 0 ? (
         <p className="text-sm text-ink-sub">まだ集計できる区分がありません。</p>
       ) : (
-        groups.map((g) => {
-          const items = insights.filter((i) => i.kind === g.kind);
-          if (items.length === 0) return null;
-          const style = KIND_STYLE[g.kind];
-          const body = (
-            <ul className="mt-1 space-y-0.5">
-              {items.map((i) => (
-                <Row key={`${i.axis}:${i.label}`} i={i} />
-              ))}
-            </ul>
-          );
-          return g.kind === "needs_check" ? (
-            <details key={g.kind}>
-              <summary className="cursor-pointer text-sm font-bold">
-                {style.title}（{items.length}件・件数不足で判断保留）
-              </summary>
-              {body}
-            </details>
-          ) : (
-            <div key={g.kind}>
-              <h3 className="text-sm font-bold">{style.title}</h3>
-              {body}
+        <>
+          {(strength.length > 0 || weakness.length > 0) && (
+            <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              <Column kind="strength" items={strength} />
+              <Column kind="weakness" items={weakness} />
             </div>
-          );
-        })
+          )}
+          {needsCheck.length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-sm font-bold">
+                要検証（{needsCheck.length}件・件数不足で判断保留）
+              </summary>
+              <ul className="mt-1 space-y-0.5">
+                {needsCheck.map((i) => (
+                  <Row key={`${i.axis}:${i.label}`} i={i} />
+                ))}
+              </ul>
+            </details>
+          )}
+        </>
       )}
       <Link className="btn-primary" to={ROUTES.EXPORT}>
         AIに分析してもらう
