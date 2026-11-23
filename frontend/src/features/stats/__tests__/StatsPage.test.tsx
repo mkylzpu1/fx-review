@@ -134,8 +134,9 @@ describe("統計", () => {
     const box = within(
       (await screen.findByText("データから見えること")).closest("section")!,
     );
-    expect(box.getByText(/あと9件ほど記録してから判断/)).toBeInTheDocument();
-    expect(box.getByText(/逆張り.*弱みの候補/)).toBeInTheDocument();
+    expect(box.getByText(/あと9件/)).toBeInTheDocument();
+    expect(box.getByText("弱み")).toBeInTheDocument();
+    expect(box.getByText(/逆張り/)).toBeInTheDocument();
     expect(
       box.getByRole("link", { name: "AIに分析してもらう" }),
     ).toHaveAttribute("href", "/export");

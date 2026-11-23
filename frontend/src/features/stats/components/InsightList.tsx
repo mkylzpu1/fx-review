@@ -15,40 +15,86 @@ const AXIS = {
   exitMethod: "決済方法",
 } as const;
 
-function line(i: Insight): string {
-  const base = `${AXIS[i.axis]}「${i.label}」`;
-  if (i.kind === "needs_check")
-    return `${base}は n=${i.n} と少なく、まだ判断できません。あと${i.shortfall}件ほど記録してから判断しましょう。`;
-  return `${base}は平均 ${formatR(i.avgR)}（n=${i.n}）。${i.kind === "strength" ? "強み" : "弱み"}の候補です。`;
+const KIND_STYLE: Record<
+  Insight["kind"],
+  { title: string; row: string; value: string }
+> = {
+  strength: {
+    title: "強み",
+    row: "border-profit/40",
+    value: "text-profit",
+  },
+  weakness: {
+    title: "弱み",
+    row: "border-loss/40",
+    value: "text-loss",
+  },
+  needs_check: {
+    title: "要検証",
+    row: "border-line",
+    value: "text-ink-mute",
+  },
+};
+
+/** 一覧の1行。文章にせず「区分名＋値」の形に揃えて、繰り返しの定型文を減らす */
+function Row({ i }: { i: Insight }) {
+  const style = KIND_STYLE[i.kind];
+  return (
+    <li
+      className={`flex items-center justify-between gap-2 border-l-2 py-1 pl-2 text-sm ${style.row}`}
+    >
+      <span className="text-ink-sub">
+        {AXIS[i.axis]}「{i.label}」
+      </span>
+      {i.kind === "needs_check" ? (
+        <span className="num shrink-0 text-xs text-ink-mute">
+          n={i.n}（あと{i.shortfall}件）
+        </span>
+      ) : (
+        <span className="num shrink-0">
+          <span className={`font-bold ${style.value}`}>{formatR(i.avgR)}</span>
+          <span className="ml-1 text-xs text-ink-mute">n={i.n}</span>
+        </span>
+      )}
+    </li>
+  );
 }
 
 /** 機械的に拾った強み・弱み・要検証。断定せず、件数が少ないものは仮説として示す */
 export function InsightList({ insights }: { insights: Insight[] }) {
-  const groups: { kind: Insight["kind"]; title: string }[] = [
-    { kind: "strength", title: "強み" },
-    { kind: "weakness", title: "弱み" },
-    { kind: "needs_check", title: "要検証" },
+  const groups: { kind: Insight["kind"] }[] = [
+    { kind: "strength" },
+    { kind: "weakness" },
+    { kind: "needs_check" },
   ];
   return (
     <section className="card space-y-3">
       <h2 className="text-base font-bold">データから見えること</h2>
-      <p className="text-xs text-ink-mute">
-        件数が少ないものは傾向ではなく仮説です。
-      </p>
       {insights.length === 0 ? (
         <p className="text-sm text-ink-sub">まだ集計できる区分がありません。</p>
       ) : (
         groups.map((g) => {
           const items = insights.filter((i) => i.kind === g.kind);
           if (items.length === 0) return null;
-          return (
+          const style = KIND_STYLE[g.kind];
+          const body = (
+            <ul className="mt-1 space-y-0.5">
+              {items.map((i) => (
+                <Row key={`${i.axis}:${i.label}`} i={i} />
+              ))}
+            </ul>
+          );
+          return g.kind === "needs_check" ? (
+            <details key={g.kind}>
+              <summary className="cursor-pointer text-sm font-bold">
+                {style.title}（{items.length}件・件数不足で判断保留）
+              </summary>
+              {body}
+            </details>
+          ) : (
             <div key={g.kind}>
-              <h3 className="text-sm font-bold">{g.title}</h3>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-ink-sub">
-                {items.map((i) => (
-                  <li key={`${i.axis}:${i.label}`}>{line(i)}</li>
-                ))}
-              </ul>
+              <h3 className="text-sm font-bold">{style.title}</h3>
+              {body}
             </div>
           );
         })
