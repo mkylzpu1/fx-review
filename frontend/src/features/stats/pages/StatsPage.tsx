@@ -5,7 +5,6 @@ import { InfoTip } from "@/components/common/InfoTip";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
-import { formatR } from "@/utils/format";
 import { CumulativeChart } from "../components/CumulativeChart";
 import { DailyGrowthChart } from "../components/DailyGrowthChart";
 import { GroupTable } from "../components/GroupTable";
@@ -32,24 +31,6 @@ function defaultCustomRange(): CustomDateRange {
   const to = new Date();
   const from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
   return { from: toDateInputValue(from), to: toDateInputValue(to) };
-}
-
-function Metric({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note?: string;
-}) {
-  return (
-    <div className="rounded-card border border-line p-3">
-      <p className="text-xs text-ink-mute">{label}</p>
-      <p className="num text-lg font-bold">{value}</p>
-      {note && <p className="text-xs text-ink-mute">{note}</p>}
-    </div>
-  );
 }
 
 /** 統計。R系はRが計算できるトレードだけ、勝率・pips・円は全件（SLは任意項目のため） */
@@ -87,10 +68,10 @@ export function StatsPage() {
       </div>
 
       {period === "custom" && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-fit items-center gap-2">
           <input
             type="date"
-            className="input"
+            className="input w-auto shrink-0"
             aria-label="開始日"
             value={customRange.from}
             max={customRange.to}
@@ -101,7 +82,7 @@ export function StatsPage() {
           <span className="text-sm text-ink-mute">〜</span>
           <input
             type="date"
-            className="input"
+            className="input w-auto shrink-0"
             aria-label="終了日"
             value={customRange.to}
             min={customRange.from}
@@ -138,25 +119,6 @@ export function StatsPage() {
         />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Metric
-              label="勝率"
-              value={s.winRate === null ? "—" : `${s.winRate.toFixed(1)}%`}
-              note={`n=${s.n}`}
-            />
-            <Metric
-              label="PF"
-              value={s.profitFactor === null ? "—" : s.profitFactor.toFixed(2)}
-              note={`R計算 n=${s.rCount}`}
-            />
-            <Metric
-              label="平均R"
-              value={formatR(s.avgR)}
-              note={`R計算 n=${s.rCount}`}
-            />
-            <Metric label="最大連敗" value={`${s.maxLossStreak}連敗`} />
-          </div>
-
           <InsightList insights={data.insights} summary={s} />
 
           <div className="grid gap-4 sm:grid-cols-2">
