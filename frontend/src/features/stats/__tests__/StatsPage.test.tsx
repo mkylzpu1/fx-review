@@ -192,12 +192,12 @@ describe("統計", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("日々の成長（損益）: 累積の折れ線と日ごとの棒を出す", async () => {
+  it("損益: 累積の折れ線と日ごとの棒を出す", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();
     const box = within(
       (
-        await screen.findByRole("heading", { name: /日々の成長（損益）/ })
+        await screen.findByRole("heading", { name: /^損益/ })
       ).closest("section")!,
     );
     expect(box.getByTestId("cumulative-line")).toBeInTheDocument();
@@ -206,12 +206,12 @@ describe("統計", () => {
     expect(box.getByText(/2日（プラス1日・マイナス1日）/)).toBeInTheDocument();
   });
 
-  it("日々の成長（pips）: 円とは別のチャートとして出る", async () => {
+  it("pips: 損益とは別のチャートとして出る", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();
     const box = within(
       (
-        await screen.findByRole("heading", { name: /日々の成長（pips）/ })
+        await screen.findByRole("heading", { name: /^pips/ })
       ).closest("section")!,
     );
     expect(box.getByTestId("cumulative-line")).toBeInTheDocument();
@@ -223,7 +223,7 @@ describe("統計", () => {
     renderPage();
     const box = within(
       (
-        await screen.findByRole("heading", { name: /日々の成長（損益）/ })
+        await screen.findByRole("heading", { name: /^損益/ })
       ).closest("section")!,
     );
     const svg = box.getByRole("img", { name: /日々の成長/ });

@@ -164,7 +164,7 @@ export function StatsPage() {
               <>
                 <section className="card min-w-0 space-y-2">
                   <h2 className="flex items-center gap-2 text-base font-bold">
-                    日々の成長（損益）
+                    損益
                     <InfoTip label="日々の成長（損益）とは">
                       取引のあった日ごとの成績です。上の折れ線は「その日までの合計」、
                       下の棒は「その日だけの成績」です。
@@ -175,7 +175,7 @@ export function StatsPage() {
 
                 <section className="card min-w-0 space-y-2">
                   <h2 className="flex items-center gap-2 text-base font-bold">
-                    日々の成長（pips）
+                    pips
                     <InfoTip label="日々の成長（pips）とは">
                       取引のあった日ごとの成績です。上の折れ線は「その日までの合計」、
                       下の棒は「その日だけの成績」です。
