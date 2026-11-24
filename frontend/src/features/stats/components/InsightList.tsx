@@ -69,7 +69,7 @@ function Column({ kind, items }: { kind: Insight["kind"]; items: Insight[] }) {
   const style = KIND_STYLE[kind];
   if (items.length === 0) return null;
   const shown = expanded ? items : items.slice(0, TOP_N);
-  const rest = items.length - shown.length;
+  const rest = items.length - TOP_N;
   return (
     <div>
       <h3 className="text-sm font-bold">
@@ -89,9 +89,9 @@ function Column({ kind, items }: { kind: Insight["kind"]; items: Insight[] }) {
         <button
           type="button"
           className="mt-1 text-xs text-accent-link hover:underline"
-          onClick={() => setExpanded(true)}
+          onClick={() => setExpanded((v) => !v)}
         >
-          残り{rest}件をすべて見る →
+          {expanded ? "閉じる" : `残り${rest}件をすべて見る →`}
         </button>
       )}
     </div>
