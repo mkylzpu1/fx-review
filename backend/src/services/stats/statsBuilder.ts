@@ -72,6 +72,8 @@ export interface StatsResult {
   sessionPnl: GroupPnlStat[];
   /** 時間帯（時）別の損益・勝率 */
   hourPnl: GroupPnlStat[];
+  /** 曜日別の損益・勝率 */
+  weekdayPnl: GroupPnlStat[];
   /** 確信度別の損益・勝率 */
   confidencePnl: GroupPnlStat[];
   insights: Insight[];
@@ -273,6 +275,15 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     })),
   );
 
+  const weekdayPnl = groupByPnl(
+    rows,
+    (r) => [String(r.weekday)],
+    WEEKDAY_ORDER.map((d) => ({
+      key: String(d),
+      label: `${WEEKDAY_LABELS[d]}曜`,
+    })),
+  );
+
   const confidencePnl = groupByPnl(
     rows,
     (r) => (r.confidence === null ? [UNSET_KEY] : [String(r.confidence)]),
@@ -303,6 +314,7 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     emotionPnl,
     sessionPnl,
     hourPnl,
+    weekdayPnl,
     confidencePnl,
     insights: [
       ...toInsights("session", bySession),
