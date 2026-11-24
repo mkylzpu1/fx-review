@@ -6,7 +6,6 @@ export type DailyMetric = "pnl" | "pips" | "r";
 export const DAILY_METRICS: { key: DailyMetric; label: string }[] = [
   { key: "pnl", label: "損益（円）" },
   { key: "pips", label: "pips" },
-  { key: "r", label: "R" },
 ];
 
 /** その日の値。R が計算できた取引が無い日は null（棒を描かない） */

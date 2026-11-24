@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { SegmentedControl } from "@/components/common/SegmentedControl";
 import type { DailyPoint } from "../types";
 import {
   DAILY_METRICS,
@@ -15,6 +14,7 @@ import {
 
 interface Props {
   daily: DailyPoint[];
+  metric: DailyMetric;
 }
 
 const W = 640;
@@ -25,10 +25,9 @@ const H = BAR.t + BAR.h + 22;
 
 /**
  * 日々の成長。上: その日までの累積の折れ線、下: 日ごとの棒（プラス=緑・マイナス=赤）。
- * 取引のあった日だけを横に並べ、円／pips／R を切り替えられる。
+ * 取引のあった日だけを横に並べる。円・pipsはそれぞれ別のチャートとして表示する。
  */
-export function DailyGrowthChart({ daily }: Props) {
-  const [metric, setMetric] = useState<DailyMetric>("pnl");
+export function DailyGrowthChart({ daily, metric }: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   if (daily.length === 0) return null;
@@ -76,12 +75,6 @@ export function DailyGrowthChart({ daily }: Props) {
   return (
     <figure className="space-y-2" data-testid="daily-growth">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <SegmentedControl
-          label="表示する指標"
-          value={metric}
-          options={DAILY_METRICS.map((m) => ({ value: m.key, label: m.label }))}
-          onChange={setMetric}
-        />
         <p className="text-sm">
           累積{" "}
           <span className={`num font-bold ${tone}`}>
@@ -280,7 +273,6 @@ export function DailyGrowthChart({ daily }: Props) {
       </div>
       <figcaption className="text-xs text-ink-mute">
         取引のあった日だけを並べています。図にカーソルを合わせる（スマホは触れる）と、その日の詳細が出ます。
-        {metric === "r" && "R が計算できた取引が無い日は棒を出していません。"}
       </figcaption>
     </figure>
   );

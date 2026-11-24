@@ -6,7 +6,6 @@ import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { formatR } from "@/utils/format";
-import { CumulativeChart } from "../components/CumulativeChart";
 import { DailyGrowthChart } from "../components/DailyGrowthChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
@@ -155,49 +154,35 @@ export function StatsPage() {
 
           <InsightList insights={data.insights} summary={s} />
 
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {(data.daily ?? []).length > 0 && (
-              <section className="card min-w-0 space-y-2">
-                <h2 className="flex items-center gap-2 text-base font-bold">
-                  日々の成長
-                  <InfoTip label="日々の成長とは">
-                    取引のあった日ごとの成績です。上の折れ線は「その日までの合計」、
-                    下の棒は「その日だけの成績」です。円・pips・Rを切り替えられます。
-                  </InfoTip>
-                </h2>
-                <DailyGrowthChart daily={data.daily ?? []} />
-              </section>
+              <>
+                <section className="card min-w-0 space-y-2">
+                  <h2 className="flex items-center gap-2 text-base font-bold">
+                    日々の成長（損益）
+                    <InfoTip label="日々の成長（損益）とは">
+                      取引のあった日ごとの成績です。上の折れ線は「その日までの合計」、
+                      下の棒は「その日だけの成績」です。
+                    </InfoTip>
+                  </h2>
+                  <DailyGrowthChart daily={data.daily ?? []} metric="pnl" />
+                </section>
+
+                <section className="card min-w-0 space-y-2">
+                  <h2 className="flex items-center gap-2 text-base font-bold">
+                    日々の成長（pips）
+                    <InfoTip label="日々の成長（pips）とは">
+                      取引のあった日ごとの成績です。上の折れ線は「その日までの合計」、
+                      下の棒は「その日だけの成績」です。
+                    </InfoTip>
+                  </h2>
+                  <DailyGrowthChart daily={data.daily ?? []} metric="pips" />
+                </section>
+              </>
             )}
 
-            <section className="card min-w-0 space-y-2">
-              <h2 className="flex items-center gap-2 text-base font-bold">
-                累積R
-                <InfoTip label="累積Rとは">
-                  R
-                  は「最初に決めた損切り幅（エントリーからSLまで）を1とした、損益の倍率」です。
-                  SLまで20pipsで+40pips勝てば +2R、SLに掛かれば −1R。
-                  累積Rは、これを古い順に足し合わせたものです。
-                  ロットや通貨ペアが違っても、同じ物差しで成長を比べられます。
-                  SLを入れていないトレードは計算に入りません。
-                </InfoTip>
-              </h2>
-              <p className="text-xs text-ink-mute">
-                1回のリスク（SLまでの距離）を1Rとして、損益を足し合わせた推移です。
-              </p>
-              {data.cumulative.length === 0 ? (
-                <p className="text-sm text-ink-mute">
-                  SLを入れたトレードがまだありません。
-                </p>
-              ) : (
-                <CumulativeChart
-                  points={data.cumulative}
-                  drawdown={data.drawdown}
-                />
-              )}
-            </section>
-
             {data.rHistogram && data.rHistogram.some((b) => b.count > 0) && (
-              <section className="card min-w-0 space-y-2">
+              <section className="card min-w-0 space-y-2 sm:col-span-2">
                 <h2 className="flex items-center gap-2 text-base font-bold">
                   Rの分布
                   <InfoTip label="Rの分布とは">
