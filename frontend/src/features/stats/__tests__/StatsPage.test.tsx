@@ -126,6 +126,7 @@ describe("統計", () => {
     expect((await screen.findAllByText("55.0%")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("R計算 n=10")).toHaveLength(2);
     expect(screen.getByText(/SLが入っていない30件/)).toBeInTheDocument();
+    expect(screen.getByTestId("drawdown-band")).toBeInTheDocument();
     expect(screen.getByText("n=6")).toBeInTheDocument();
   });
 
@@ -241,6 +242,41 @@ describe("統計", () => {
 
     fireEvent.mouseLeave(svg);
     expect(box.queryByTestId("daily-tooltip")).not.toBeInTheDocument();
+  });
+
+  it("累積R: 「?」で説明が出て、図にカーソルを合わせるとその件の詳細が出る", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(stats());
+    renderPage();
+    const box = within(
+      (await screen.findByRole("heading", { name: /累積R/ })).closest(
+        "section",
+      )!,
+    );
+    expect(box.queryByRole("tooltip")).not.toBeInTheDocument();
+    await userEvent.hover(box.getByRole("button", { name: "累積Rとは" }));
+    expect(box.getByRole("tooltip")).toHaveTextContent("損益の倍率");
+    await userEvent.unhover(box.getByRole("button", { name: "累積Rとは" }));
+    expect(box.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    const svg = box.getByRole("img", { name: /累積R/ });
+    vi.spyOn(svg, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      top: 0,
+      right: 640,
+      bottom: 190,
+      width: 640,
+      height: 190,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    fireEvent.mouseMove(svg, { clientX: 628 }); // 右端 = 2件目
+    const tip = within(box.getByTestId("cum-tooltip"));
+    expect(tip.getByText("2件目")).toBeInTheDocument();
+    expect(tip.getByText("−2.00R")).toBeInTheDocument();
+    expect(tip.getByText("−1.00R")).toBeInTheDocument();
+    fireEvent.mouseLeave(svg);
+    expect(box.queryByTestId("cum-tooltip")).not.toBeInTheDocument();
   });
 
   it("0件なら空状態と取り込みへの導線", async () => {

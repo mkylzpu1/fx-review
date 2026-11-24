@@ -6,6 +6,7 @@ import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { formatR } from "@/utils/format";
+import { CumulativeChart } from "../components/CumulativeChart";
 import { DailyGrowthChart } from "../components/DailyGrowthChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
@@ -181,8 +182,35 @@ export function StatsPage() {
               </>
             )}
 
+            <section className="card min-w-0 space-y-2">
+              <h2 className="flex items-center gap-2 text-base font-bold">
+                累積R
+                <InfoTip label="累積Rとは">
+                  R
+                  は「最初に決めた損切り幅（エントリーからSLまで）を1とした、損益の倍率」です。
+                  SLまで20pipsで+40pips勝てば +2R、SLに掛かれば −1R。
+                  累積Rは、これを古い順に足し合わせたものです。
+                  ロットや通貨ペアが違っても、同じ物差しで成長を比べられます。
+                  SLを入れていないトレードは計算に入りません。
+                </InfoTip>
+              </h2>
+              <p className="text-xs text-ink-mute">
+                1回のリスク（SLまでの距離）を1Rとして、損益を足し合わせた推移です。
+              </p>
+              {data.cumulative.length === 0 ? (
+                <p className="text-sm text-ink-mute">
+                  SLを入れたトレードがまだありません。
+                </p>
+              ) : (
+                <CumulativeChart
+                  points={data.cumulative}
+                  drawdown={data.drawdown}
+                />
+              )}
+            </section>
+
             {data.rHistogram && data.rHistogram.some((b) => b.count > 0) && (
-              <section className="card min-w-0 space-y-2 sm:col-span-2">
+              <section className="card min-w-0 space-y-2">
                 <h2 className="flex items-center gap-2 text-base font-bold">
                   Rの分布
                   <InfoTip label="Rの分布とは">
