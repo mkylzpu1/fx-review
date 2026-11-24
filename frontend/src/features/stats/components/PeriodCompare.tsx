@@ -63,13 +63,16 @@ export function PeriodCompare({
     hasPrev && prev.totalPnlJpy !== 0 && pnlDiff !== null
       ? (pnlDiff / Math.abs(prev.totalPnlJpy)) * 100
       : null;
-  const pnlTone = hasPrev
+  // 大きい数字（今回の合計損益そのもの）の色は、値自体の符号で決める
+  const pnlValueTone = signTone(now.totalPnlJpy);
+  // 前回比バッジの色は、前回との差分の符号で決める
+  const pnlDiffTone = hasPrev
     ? pnlDiff! > 0
       ? "up"
       : pnlDiff! < 0
         ? "down"
         : "flat"
-    : signTone(now.totalPnlJpy);
+    : pnlValueTone;
 
   const winRateDiff =
     !hasPrev || now.winRate === null || prev.winRate === null
@@ -114,9 +117,9 @@ export function PeriodCompare({
       <div className="flex flex-wrap items-end gap-4">
         <p
           className={`num text-3xl font-extrabold ${
-            pnlTone === "up"
+            pnlValueTone === "up"
               ? "text-profit"
-              : pnlTone === "down"
+              : pnlValueTone === "down"
                 ? "text-loss"
                 : "text-ink"
           }`}
@@ -127,14 +130,14 @@ export function PeriodCompare({
           <div className="flex items-center gap-2 pb-1.5">
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                pnlTone === "up"
+                pnlDiffTone === "up"
                   ? "bg-profit/10 text-profit"
-                  : pnlTone === "down"
+                  : pnlDiffTone === "down"
                     ? "bg-loss/10 text-loss"
                     : "bg-surface text-ink-mute"
               }`}
             >
-              {pnlTone === "up" ? "▲" : pnlTone === "down" ? "▼" : "±"} 前回比
+              {pnlDiffTone === "up" ? "▲" : pnlDiffTone === "down" ? "▼" : "±"} 前回比
               {pnlPct === null ? " —" : ` ${signed(pnlPct, 0)}%`}
             </span>
             <span className="text-xs text-ink-mute">

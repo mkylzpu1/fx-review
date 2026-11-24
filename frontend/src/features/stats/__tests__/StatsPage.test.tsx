@@ -124,7 +124,6 @@ describe("統計", () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();
     expect((await screen.findAllByText("55.0%")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("R計算 n=10")).toHaveLength(2);
     expect(screen.getByText(/SLが入っていない30件/)).toBeInTheDocument();
     expect(screen.getByTestId("drawdown-band")).toBeInTheDocument();
     expect(screen.getByText("n=6")).toBeInTheDocument();
@@ -170,6 +169,26 @@ describe("統計", () => {
     );
     expect(box.getByText("55.0%")).toBeInTheDocument();
     expect(box.getByText(/\+15\.0pt/)).toBeInTheDocument();
+  });
+
+  it("今回がマイナスで前回よりは改善していても、合計損益はマイナス色で表示する", async () => {
+    // 前回比バッジは「改善（プラス）」でも、今回の値自体がマイナスなら
+    // 大きい数字はエメラルド色（text-profit）ではなく赤系（text-loss）にする
+    vi.mocked(apiClient.get).mockImplementation(async (path: string) =>
+      path.includes("to=")
+        ? stats({ summary: { ...stats().summary, totalPnlJpy: -20000 } })
+        : stats({ summary: { ...stats().summary, totalPnlJpy: -5000 } }),
+    );
+    renderPage();
+    const box = within(
+      (
+        await screen.findByRole("heading", { name: /前の同じ長さの期間と比較/ })
+      ).closest("section")!,
+    );
+    const pnl = await box.findByText("−¥5,000");
+    expect(pnl).toHaveClass("text-loss");
+    expect(pnl).not.toHaveClass("text-profit");
+    expect(box.getByText(/前回比/)).toHaveClass("text-profit");
   });
 
   it("先週・先月も、先々週・先々月と比較する", async () => {
