@@ -266,6 +266,28 @@ describe("統計", () => {
     expect(box.getByText("+12.0 pips")).toBeInTheDocument();
   });
 
+  it("勝率・トレード数も損益・pipsとは別のチャートとして出る", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(stats());
+    renderPage();
+
+    const winRateBox = within(
+      (
+        await screen.findByRole("heading", { name: /^勝率/ })
+      ).closest("section")!,
+    );
+    expect(winRateBox.getByTestId("cumulative-line")).toBeInTheDocument();
+    // 2026-10-01: 2件中1勝, 2026-10-02: 1件中0勝 → 通算3件中1勝 = 33.3%
+    expect(winRateBox.getByText("33.3%")).toBeInTheDocument();
+
+    const countBox = within(
+      (
+        await screen.findByRole("heading", { name: /^トレード数/ })
+      ).closest("section")!,
+    );
+    expect(countBox.getByTestId("cumulative-line")).toBeInTheDocument();
+    expect(countBox.getByText("3件")).toBeInTheDocument();
+  });
+
   it("棒グラフの間隔を週単位に切り替えると、同じ週の日がまとめられる", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();

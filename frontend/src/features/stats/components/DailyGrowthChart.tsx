@@ -3,12 +3,13 @@ import type { DailyPoint } from "../types";
 import {
   DAILY_METRICS,
   aggregateDaily,
-  cumulativeValue,
+  cumulativeSeries,
   dayCounts,
   dayValue,
   formatAxis,
   formatMetric,
   fullLabel,
+  isSignedMetric,
   shortLabel,
   unitLabel,
   type DailyMetric,
@@ -44,13 +45,14 @@ export function DailyGrowthChart({
   );
   if (daily.length === 0) return null;
   const unit = unitLabel(granularity);
+  const signed = isSignedMetric(metric);
 
   const n = daily.length;
   const plotW = W - PAD.l - PAD.r;
   const slot = plotW / n;
   const cx = (i: number) => PAD.l + slot * (i + 0.5);
 
-  const cum = daily.map((d) => cumulativeValue(d, metric));
+  const cum = cumulativeSeries(daily, metric);
   const cLo = Math.min(0, ...cum);
   const cHi = Math.max(0, ...cum);
   const cSpan = cHi - cLo || 1;
@@ -80,10 +82,16 @@ export function DailyGrowthChart({
   const hd = hi_ === null ? null : daily[hi_];
 
   const { plus, minus } = dayCounts(daily, metric);
-  const tone =
-    lastCum > 0 ? "text-profit" : lastCum < 0 ? "text-loss" : "text-ink";
+  const tone = !signed
+    ? "text-ink"
+    : lastCum > 0
+      ? "text-profit"
+      : lastCum < 0
+        ? "text-loss"
+        : "text-ink";
   // 日付ラベルは混み合わないよう間引く
   const step = Math.max(1, Math.ceil(n / 8));
+  const totalTrades = daily.reduce((sum, d) => sum + d.n, 0);
 
   return (
     <figure className="space-y-2" data-testid="daily-growth">
@@ -94,10 +102,19 @@ export function DailyGrowthChart({
             {formatMetric(lastCum, metric)}
           </span>
           <span className="ml-2 text-xs text-ink-mute">
-            {n}
-            {unit}（プラス{plus}
-            {unit}・マイナス{minus}
-            {unit}）
+            {signed ? (
+              <>
+                {n}
+                {unit}（プラス{plus}
+                {unit}・マイナス{minus}
+                {unit}）
+              </>
+            ) : (
+              <>
+                {n}
+                {unit}・通算{totalTrades}件
+              </>
+            )}
           </span>
         </p>
       </div>
@@ -193,9 +210,19 @@ export function DailyGrowthChart({
           />
           {daily.map((d, i) => {
             const v = vals[i];
-            if (v === null || v === 0) return null;
+            if (v === null) return null;
+            if (signed && v === 0) return null;
             const top = Math.min(by(v), by(0));
             const h = Math.max(1, Math.abs(by(v) - by(0)));
+            const barClass = !signed
+              ? metric === "winRate"
+                ? v >= 50
+                  ? "fill-profit"
+                  : "fill-loss"
+                : "fill-accent-link"
+              : v > 0
+                ? "fill-profit"
+                : "fill-loss";
             return (
               <rect
                 key={d.date}
@@ -204,7 +231,7 @@ export function DailyGrowthChart({
                 y={top}
                 width={barW}
                 height={h}
-                className={v > 0 ? "fill-profit" : "fill-loss"}
+                className={barClass}
                 opacity={hi_ === null || hi_ === i ? 1 : 0.55}
               ></rect>
             );

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   aggregateDaily,
   bucketKey,
+  cumulativeSeries,
   cumulativeValue,
   dayCounts,
   dayValue,
@@ -9,6 +10,7 @@ import {
   fullDate,
   fullLabel,
   formatMetric,
+  isSignedMetric,
   shortDate,
   shortLabel,
 } from "../utils/daily";
@@ -108,5 +110,36 @@ describe("日々の成長 utils", () => {
     expect(fullLabel("2026-10-05", "week")).toBe("2026/10/05週（〜10/11）");
     expect(fullLabel("2026-10-01", "month")).toBe("2026年10月");
     expect(fullLabel("2026-01-01", "year")).toBe("2026年");
+  });
+
+  it("勝率・トレード数は符号で色分けしない指標", () => {
+    expect(isSignedMetric("pnl")).toBe(true);
+    expect(isSignedMetric("pips")).toBe(true);
+    expect(isSignedMetric("r")).toBe(true);
+    expect(isSignedMetric("winRate")).toBe(false);
+    expect(isSignedMetric("count")).toBe(false);
+  });
+
+  it("勝率・トレード数の日次値", () => {
+    expect(dayValue(d({ n: 4, wins: 1 }), "winRate")).toBe(25);
+    expect(dayValue(d({ n: 4, wins: 1 }), "count")).toBe(4);
+    // n=0の日は無いはずだが、念のため null を返す
+    expect(dayValue(d({ n: 0, wins: 0 }), "winRate")).toBeNull();
+  });
+
+  it("勝率・トレード数の累積は、そこまでの合計から計算し直す", () => {
+    const days = [
+      d({ date: "2026-10-01", n: 4, wins: 1 }), // 25%
+      d({ date: "2026-10-02", n: 2, wins: 2 }), // 通算 6戦3勝 → 50%
+    ];
+    expect(cumulativeSeries(days, "winRate")).toEqual([25, 50]);
+    expect(cumulativeSeries(days, "count")).toEqual([4, 6]);
+  });
+
+  it("勝率・トレード数の表記", () => {
+    expect(formatMetric(52.5, "winRate")).toBe("52.5%");
+    expect(formatMetric(4, "count")).toBe("4件");
+    expect(formatAxis(52.5, "winRate")).toBe("53");
+    expect(formatAxis(4, "count")).toBe("4");
   });
 });

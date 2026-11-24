@@ -1,7 +1,11 @@
 import { formatPips, formatR, formatYenSigned } from "@/utils/format";
 import type { DailyPoint } from "../types";
 
-export type DailyMetric = "pnl" | "pips" | "r";
+export type DailyMetric = "pnl" | "pips" | "r" | "winRate" | "count";
+
+/** 損益のように符号で色分けする指標か（勝率・件数は常に非負なので別扱い） */
+export const isSignedMetric = (m: DailyMetric): boolean =>
+  m === "pnl" || m === "pips" || m === "r";
 
 /** 日々の成長チャートの棒の間隔 */
 export type Granularity = "day" | "week" | "month" | "year";
@@ -88,26 +92,51 @@ export const DAILY_METRICS: { key: DailyMetric; label: string }[] = [
 export function dayValue(d: DailyPoint, m: DailyMetric): number | null {
   if (m === "pnl") return d.pnlJpy;
   if (m === "pips") return d.pips;
-  return d.rCount > 0 ? d.r : null;
+  if (m === "r") return d.rCount > 0 ? d.r : null;
+  if (m === "count") return d.n;
+  return d.n > 0 ? round((d.wins / d.n) * 100, 1) : null;
 }
 
-/** その日までの累積 */
+/** その日までの累積（勝率・件数は日次の合計を積み上げて都度計算する） */
 export function cumulativeValue(d: DailyPoint, m: DailyMetric): number {
   if (m === "pnl") return d.cumulativePnlJpy;
   if (m === "pips") return d.cumulativePips;
-  return d.cumulativeR;
+  if (m === "r") return d.cumulativeR;
+  // winRate・countは1点だけでは計算できないので cumulativeSeries を使う
+  return m === "count" ? d.n : d.n > 0 ? round((d.wins / d.n) * 100, 1) : 0;
+}
+
+/** 系列全体での累積値。勝率・件数は、そこまでの合計から都度計算し直す */
+export function cumulativeSeries(
+  daily: DailyPoint[],
+  m: DailyMetric,
+): number[] {
+  if (m !== "winRate" && m !== "count") {
+    return daily.map((d) => cumulativeValue(d, m));
+  }
+  let n = 0;
+  let wins = 0;
+  return daily.map((d) => {
+    n += d.n;
+    wins += d.wins;
+    return m === "count" ? n : n > 0 ? round((wins / n) * 100, 1) : 0;
+  });
 }
 
 export function formatMetric(v: number | null, m: DailyMetric): string {
   if (m === "pnl") return formatYenSigned(v);
   if (m === "pips") return formatPips(v);
-  return formatR(v);
+  if (m === "r") return formatR(v);
+  if (m === "count") return v === null ? "—" : `${v}件`;
+  return v === null ? "—" : `${v.toFixed(1)}%`;
 }
 
 /** 軸ラベル用の短い表記（単位なし） */
 export function formatAxis(v: number, m: DailyMetric): string {
   if (m === "pnl") return Math.round(v).toLocaleString("ja-JP");
-  return m === "pips" ? v.toFixed(0) : v.toFixed(1);
+  if (m === "pips") return v.toFixed(0);
+  if (m === "count" || m === "winRate") return v.toFixed(0);
+  return v.toFixed(1);
 }
 
 /** 「10/21」 */

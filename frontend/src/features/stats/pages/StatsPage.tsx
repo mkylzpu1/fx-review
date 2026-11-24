@@ -200,6 +200,36 @@ export function StatsPage() {
                     granularity={granularity}
                   />
                 </section>
+
+                <section className="card min-w-0 space-y-2">
+                  <h2 className="flex items-center gap-2 text-base font-bold">
+                    勝率
+                    <InfoTip label="日々の成長（勝率）とは">
+                      取引のあった日ごとの勝率です。上の折れ線は「そこまでの通算勝率」、
+                      下の棒は「その日だけの勝率」（緑=50%以上、赤=50%未満）です。
+                    </InfoTip>
+                  </h2>
+                  <DailyGrowthChart
+                    daily={data.daily ?? []}
+                    metric="winRate"
+                    granularity={granularity}
+                  />
+                </section>
+
+                <section className="card min-w-0 space-y-2">
+                  <h2 className="flex items-center gap-2 text-base font-bold">
+                    トレード数
+                    <InfoTip label="日々の成長（トレード数）とは">
+                      取引のあった日ごとの件数です。上の折れ線は「そこまでの通算件数」、
+                      下の棒は「その日だけの件数」です。取引量のペースが見えます。
+                    </InfoTip>
+                  </h2>
+                  <DailyGrowthChart
+                    daily={data.daily ?? []}
+                    metric="count"
+                    granularity={granularity}
+                  />
+                </section>
               </>
             )}
 
