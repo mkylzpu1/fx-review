@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import type { DailyPoint } from "../types";
 import {
-  DAILY_METRICS,
   aggregateDaily,
   cumulativeSeries,
   dayCounts,
@@ -285,28 +284,27 @@ export function DailyGrowthChart({
             <p className="text-ink-mute">
               {hd.n}件（勝ち{hd.wins}・負け{hd.n - hd.wins}）
             </p>
-            <dl className="mt-1 space-y-0.5">
-              {DAILY_METRICS.map((m) => {
-                const v = dayValue(hd, m.key);
-                const tone =
-                  v === null || v === 0
-                    ? "text-ink"
-                    : v > 0
-                      ? "text-profit"
-                      : "text-loss";
-                return (
-                  <div
-                    key={m.key}
-                    className={`flex justify-between gap-2 ${
-                      m.key === metric ? "font-bold" : "text-ink-sub"
-                    }`}
-                  >
-                    <dt>{m.key === "pnl" ? "損益" : m.label}</dt>
-                    <dd className={`num ${tone}`}>{formatMetric(v, m.key)}</dd>
-                  </div>
-                );
-              })}
-            </dl>
+            {metric !== "count" && (
+              <p className="mt-1 flex justify-between gap-2">
+                <span className="text-ink-mute">
+                  {granularity === "day" ? "この日" : `この${unit}`}
+                </span>
+                <span
+                  className={`num font-bold ${
+                    (() => {
+                      const v = dayValue(hd, metric);
+                      return v === null || v === 0
+                        ? "text-ink"
+                        : v > 0
+                          ? "text-profit"
+                          : "text-loss";
+                    })()
+                  }`}
+                >
+                  {formatMetric(dayValue(hd, metric), metric)}
+                </span>
+              </p>
+            )}
             <p className="mt-1 flex justify-between gap-2 border-t border-line pt-1">
               <span className="text-ink-mute">ここまでの累積</span>
               <span className="num font-bold text-ink">

@@ -17,6 +17,7 @@ const stats = (over: Partial<StatsResult> = {}): StatsResult => ({
   summary: {
     n: 40,
     winRate: 55,
+    wins: 22,
     totalPips: 120.5,
     totalPnlJpy: 12000,
     rCount: 10,
@@ -336,7 +337,6 @@ describe("統計", () => {
     expect(tip.getByText("2026/10/01(木)")).toBeInTheDocument();
     expect(tip.getByText("2件（勝ち1・負け1）")).toBeInTheDocument();
     expect(tip.getAllByText("+¥2,000")).toHaveLength(2); // その日・累積
-    expect(tip.getByText("+20.0 pips")).toBeInTheDocument();
 
     // 右半分 = 2日目
     fireEvent.mouseMove(svg, { clientX: 500 });
