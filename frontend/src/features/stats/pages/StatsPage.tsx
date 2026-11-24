@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { SegmentedControl as Seg } from "@/components/common/SegmentedControl";
 import { EmptyState } from "@/components/common/EmptyState";
 import { InfoTip } from "@/components/common/InfoTip";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
@@ -11,87 +12,110 @@ import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
 import { RHistogramChart } from "../components/RHistogramChart";
 import { PeriodCompare } from "../components/PeriodCompare";
-import {
-  type CustomDateRange,
-  usePreviousStats,
-  useStats,
-} from "../hooks/useStats";
+import { usePreviousStats, useStats } from "../hooks/useStats";
 import type { PeriodKey } from "../types";
 import { PERIODS } from "../utils/period";
 
-function toDateInputValue(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+/** 期間ボタンの並び（/tradesの期間選択と同じ）。「期間を指定」だけボタンではなく、隣の日付入力で代える */
+const PERIOD_OPTIONS = PERIODS.filter((p) => p.value !== "custom");
 
-/** 「期間を指定」の初期値：今日を終了日、7日前を開始日にする */
-function defaultCustomRange(): CustomDateRange {
-  const to = new Date();
-  const from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
-  return { from: toDateInputValue(from), to: toDateInputValue(to) };
-}
+/** /tradesの期間を日付で指定する入力と同じ見た目 */
+const dateCls =
+  "h-[30px] rounded-[7px] border-0 bg-transparent px-1 text-[13px] text-ink [color-scheme:dark]";
 
 /** 統計。R系はRが計算できるトレードだけ、勝率・pips・円は全件（SLは任意項目のため） */
 export function StatsPage() {
   const [period, setPeriod] = useState<PeriodKey>("90d");
-  const [customRange, setCustomRange] = useState<CustomDateRange>(
-    defaultCustomRange,
-  );
+  // 期間を日付で指定（/tradesと同じ）。どちらかが入っていれば上の期間ボタンより優先する
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const customActive = dateFrom !== "" || dateTo !== "";
+  const effectivePeriod: PeriodKey = customActive ? "custom" : period;
+
   const { data, isLoading, isError, refetch } = useStats(
-    period,
+    effectivePeriod,
     undefined,
-    customRange,
+    { from: dateFrom, to: dateTo },
   );
-  const prevStats = usePreviousStats(period);
+  const prevStats = usePreviousStats(effectivePeriod);
+
+  // 期間ボタンを押したら、日付指定は解除してボタンの期間に戻す
+  const pickPeriod = (v: PeriodKey) => {
+    setDateFrom("");
+    setDateTo("");
+    setPeriod(v);
+  };
+  // 開始日が終了日より後にならないよう、片方を変えたらもう片方を合わせる
+  const changeDateFrom = (v: string) => {
+    setDateFrom(v);
+    if (v && dateTo && v > dateTo) setDateTo(v);
+  };
+  const changeDateTo = (v: string) => {
+    setDateTo(v);
+    if (v && dateFrom && v < dateFrom) setDateFrom(v);
+  };
 
   if (isLoading) return <LoadingSpinner fullScreen={false} />;
   if (isError || !data) return <ErrorAlert onRetry={() => void refetch()} />;
   const s = data.summary;
+  const periodLabel = customActive
+    ? "期間を指定"
+    : (PERIOD_OPTIONS.find((p) => p.value === period)?.label ?? period);
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">統計</h1>
-
-      <div role="group" aria-label="期間" className="flex flex-wrap gap-2">
-        {PERIODS.map((p) => (
-          <button
-            key={p.value}
-            aria-pressed={period === p.value}
-            onClick={() => setPeriod(p.value)}
-            className={`btn ${period === p.value ? "border-accent bg-accent/10 text-accent-link" : ""}`}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-xl font-bold">統計</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <Seg
+            label="期間"
+            value={customActive ? ("custom" as PeriodKey) : period}
+            options={PERIOD_OPTIONS}
+            onChange={pickPeriod}
+          />
+          <div
+            role="group"
+            aria-label="期間を日付で指定"
+            className={`inline-flex h-[38px] items-center gap-1.5 rounded-chip border px-2.5 text-[13px] ${
+              customActive ? "border-accent bg-accent/10" : "border-field"
+            }`}
           >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {period === "custom" && (
-        <div className="flex w-fit items-center gap-2">
-          <input
-            type="date"
-            className="input w-auto shrink-0"
-            aria-label="開始日"
-            value={customRange.from}
-            max={customRange.to}
-            onChange={(e) =>
-              setCustomRange((r) => ({ ...r, from: e.target.value }))
-            }
-          />
-          <span className="text-sm text-ink-mute">〜</span>
-          <input
-            type="date"
-            className="input w-auto shrink-0"
-            aria-label="終了日"
-            value={customRange.to}
-            min={customRange.from}
-            onChange={(e) =>
-              setCustomRange((r) => ({ ...r, to: e.target.value }))
-            }
-          />
+            <span className="text-xs text-ink-mute">日付</span>
+            <input
+              type="date"
+              aria-label="開始日"
+              className={dateCls}
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(e) => changeDateFrom(e.target.value)}
+            />
+            <span aria-hidden="true" className="text-ink-mute">
+              〜
+            </span>
+            <input
+              type="date"
+              aria-label="終了日"
+              className={dateCls}
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => changeDateTo(e.target.value)}
+            />
+            {customActive && (
+              <button
+                type="button"
+                aria-label="日付指定をクリア"
+                className="ml-0.5 px-1 text-ink-mute hover:text-ink"
+                onClick={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {data.closedCount > 0 && (
         <PeriodCompare
@@ -101,9 +125,7 @@ export function StatsPage() {
               ? prevStats.data.summary
               : null
           }
-          periodLabel={
-            PERIODS.find((p) => p.value === period)?.label ?? period
-          }
+          periodLabel={periodLabel}
         />
       )}
 

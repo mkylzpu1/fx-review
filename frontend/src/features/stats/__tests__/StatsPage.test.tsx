@@ -188,7 +188,7 @@ describe("統計", () => {
     const pnl = await box.findByText("−¥5,000");
     expect(pnl).toHaveClass("text-loss");
     expect(pnl).not.toHaveClass("text-profit");
-    expect(box.getByText(/前回比/)).toHaveClass("text-profit");
+    expect(box.getByText(/前回比\s*[+\-−±]?\d+%/)).toHaveClass("text-profit");
   });
 
   it("先週・先月も、先々週・先々月と比較する", async () => {
@@ -235,8 +235,7 @@ describe("統計", () => {
 
     const pnl = box.getByText("−¥12,000");
     expect(pnl).toHaveClass("text-loss");
-    const pips = box.getByText("−120.5 pips");
-    expect(pips).toHaveClass("text-loss");
+    expect(box.getByText("−120.5 pips")).toBeInTheDocument();
     const avgR = box.getByText("−0.40R");
     expect(avgR).toHaveClass("text-loss");
   });

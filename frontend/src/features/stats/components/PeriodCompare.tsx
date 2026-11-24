@@ -4,49 +4,24 @@ import type { Summary } from "../types";
 const signed = (n: number, digits = 1) =>
   `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n).toFixed(digits)}`;
 
-/** 比較相手が無いときの色づけ：値そのものの符号で、プラス=up・マイナス=down */
-const signTone = (v: number | null): "up" | "down" | "flat" | "neutral" =>
-  v === null ? "neutral" : v > 0 ? "up" : v < 0 ? "down" : "flat";
+type Tone = "up" | "down" | "flat" | "neutral";
 
-function SubMetric({
-  label,
-  now,
-  diff,
-  tone,
-}: {
-  label: string;
-  now: string;
-  diff: string | null;
-  tone: "up" | "down" | "flat" | "neutral";
-}) {
-  const toneClass =
-    tone === "up"
-      ? "text-profit"
-      : tone === "down"
-        ? "text-loss"
-        : "text-ink-mute";
-  return (
-    <div className="rounded-card border border-line bg-surface p-2.5">
-      <p className="text-xs text-ink-mute">{label}</p>
-      <p
-        className={`num text-base font-bold ${
-          diff === null && tone !== "neutral" ? toneClass : ""
-        }`}
-      >
-        {now}
-      </p>
-      {diff !== null && (
-        <p className={`num text-xs ${toneClass}`}>
-          {tone === "up" ? "▲" : tone === "down" ? "▼" : ""} {diff}
-        </p>
-      )}
-    </div>
-  );
-}
+/** 大きい数字そのものの色。前回との差分ではなく、値自体の符号で決める
+ *（これを差分の符号にすると「今回マイナスでも前回よりマシだとプラス色になる」バグになる） */
+const valueToneClass = (v: number | null) =>
+  v === null || v === 0 ? "text-ink" : v > 0 ? "text-profit" : "text-loss";
+
+const diffTone = (diff: number | null): Tone =>
+  diff === null ? "neutral" : diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+
+const diffToneClass = (t: Tone) =>
+  t === "up" ? "text-profit" : t === "down" ? "text-loss" : "text-ink-mute";
+
+const diffArrow = (t: Tone) => (t === "up" ? "▲" : t === "down" ? "▼" : "±");
 
 /**
- * 直前の同じ長さの期間との比較。見出し（合計損益＋前回比バッジ）を主役にし、
- * 他の指標は小さく添える。件数が少ないと動きが大きく出るので n も併記する
+ * 集計サマリー（/tradesの集計カードと同じ見た目）。
+ * 前回との比較は、見出しの「前回 n=」と各指標の下の小さな差分表示でわかるようにする。
  */
 export function PeriodCompare({
   now,
@@ -58,51 +33,30 @@ export function PeriodCompare({
   periodLabel: string;
 }) {
   const hasPrev = prev !== null;
+
   const pnlDiff = hasPrev ? now.totalPnlJpy - prev.totalPnlJpy : null;
   const pnlPct =
     hasPrev && prev.totalPnlJpy !== 0 && pnlDiff !== null
       ? (pnlDiff / Math.abs(prev.totalPnlJpy)) * 100
       : null;
-  // 大きい数字（今回の合計損益そのもの）の色は、値自体の符号で決める
-  const pnlValueTone = signTone(now.totalPnlJpy);
-  // 前回比バッジの色は、前回との差分の符号で決める
-  const pnlDiffTone = hasPrev
-    ? pnlDiff! > 0
-      ? "up"
-      : pnlDiff! < 0
-        ? "down"
-        : "flat"
-    : pnlValueTone;
+  const pnlDiffTone = diffTone(pnlDiff);
 
   const winRateDiff =
     !hasPrev || now.winRate === null || prev.winRate === null
       ? null
       : now.winRate - prev.winRate;
+  const winRateDiffTone = diffTone(winRateDiff);
+
   const avgRDiff =
     !hasPrev || now.avgR === null || prev.avgR === null
       ? null
       : now.avgR - prev.avgR;
-  const avgRTone = hasPrev
-    ? avgRDiff === null
-      ? "neutral"
-      : avgRDiff > 0
-        ? "up"
-        : avgRDiff < 0
-          ? "down"
-          : "flat"
-    : signTone(now.avgR);
-  const pipsDiff = hasPrev ? now.totalPips - prev.totalPips : null;
-  const pipsTone = hasPrev
-    ? pipsDiff! > 0
-      ? "up"
-      : pipsDiff! < 0
-        ? "down"
-        : "flat"
-    : signTone(now.totalPips);
+  const avgRDiffTone = diffTone(avgRDiff);
+
   const nDiff = hasPrev ? now.n - prev.n : null;
 
   return (
-    <section className="card space-y-4">
+    <section className="space-y-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-bold text-ink-mute">
           {hasPrev ? `${periodLabel} — 前の同じ長さの期間と比較` : periodLabel}
@@ -110,76 +64,81 @@ export function PeriodCompare({
         {hasPrev ? (
           <span className="text-xs text-ink-mute">前回 n={prev.n}</span>
         ) : (
-          <span className="text-xs text-ink-mute">比較対象の期間がありません</span>
+          <span className="text-xs text-ink-mute">
+            比較対象の期間がありません
+          </span>
         )}
       </div>
 
-      <div className="flex flex-wrap items-end gap-4">
-        <p
-          className={`num text-3xl font-extrabold ${
-            pnlValueTone === "up"
-              ? "text-profit"
-              : pnlValueTone === "down"
-                ? "text-loss"
-                : "text-ink"
-          }`}
-        >
-          {formatYenSigned(now.totalPnlJpy)}
-        </p>
-        {hasPrev && (
-          <div className="flex items-center gap-2 pb-1.5">
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                pnlDiffTone === "up"
-                  ? "bg-profit/10 text-profit"
-                  : pnlDiffTone === "down"
-                    ? "bg-loss/10 text-loss"
-                    : "bg-surface text-ink-mute"
-              }`}
-            >
-              {pnlDiffTone === "up" ? "▲" : pnlDiffTone === "down" ? "▼" : "±"} 前回比
+      <div
+        aria-label="集計"
+        className="grid overflow-hidden rounded-card border border-line bg-card md:grid-cols-4"
+      >
+        <div className="px-6 pb-[22px] pt-5">
+          <p className="text-xs text-ink-mute">損益</p>
+          <p
+            className={`num mt-2 text-[32px] font-medium leading-[1.1] ${valueToneClass(now.totalPnlJpy)}`}
+          >
+            {formatYenSigned(now.totalPnlJpy)}
+          </p>
+          <p className="num mt-2 text-[13px] text-ink-sub">
+            {formatPips(now.totalPips)}
+          </p>
+          {hasPrev && (
+            <p className={`num mt-2 text-xs ${diffToneClass(pnlDiffTone)}`}>
+              {diffArrow(pnlDiffTone)} 前回比
               {pnlPct === null ? " —" : ` ${signed(pnlPct, 0)}%`}
-            </span>
-            <span className="text-xs text-ink-mute">
-              （前回 {formatYenSigned(prev.totalPnlJpy)}）
-            </span>
-          </div>
-        )}
-      </div>
+              <span className="ml-1 text-ink-mute">
+                （前回 {formatYenSigned(prev.totalPnlJpy)}）
+              </span>
+            </p>
+          )}
+        </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <SubMetric
-          label="勝率"
-          now={now.winRate === null ? "—" : `${now.winRate.toFixed(1)}%`}
-          diff={winRateDiff === null ? null : `${signed(winRateDiff, 1)}pt`}
-          tone={
-            winRateDiff === null
-              ? "neutral"
-              : winRateDiff > 0
-                ? "up"
-                : winRateDiff < 0
-                  ? "down"
-                  : "flat"
-          }
-        />
-        <SubMetric
-          label="平均R"
-          now={formatR(now.avgR)}
-          diff={avgRDiff === null ? null : signed(avgRDiff, 2)}
-          tone={avgRTone}
-        />
-        <SubMetric
-          label="合計pips"
-          now={formatPips(now.totalPips)}
-          diff={pipsDiff === null ? null : signed(pipsDiff, 1)}
-          tone={pipsTone}
-        />
-        <SubMetric
-          label="トレード数"
-          now={`${now.n}件`}
-          diff={nDiff === null ? null : signed(nDiff, 0)}
-          tone="neutral"
-        />
+        <div className="border-t border-line px-6 pb-[22px] pt-5 md:border-l md:border-t-0">
+          <p className="text-xs text-ink-mute">勝率</p>
+          <p className="num mt-2 text-[32px] font-medium leading-[1.1]">
+            {now.winRate === null ? "—" : `${now.winRate.toFixed(1)}%`}
+          </p>
+          <p className="num mt-2 text-[13px] text-ink-sub">n={now.n}</p>
+          {hasPrev && winRateDiff !== null && (
+            <p
+              className={`num mt-2 text-xs ${diffToneClass(winRateDiffTone)}`}
+            >
+              {diffArrow(winRateDiffTone)} {signed(winRateDiff, 1)}pt
+            </p>
+          )}
+        </div>
+
+        <div className="border-t border-line px-6 pb-[22px] pt-5 md:border-l md:border-t-0">
+          <p className="text-xs text-ink-mute">平均R</p>
+          <p
+            className={`num mt-2 text-[32px] font-medium leading-[1.1] ${valueToneClass(now.avgR)}`}
+          >
+            {formatR(now.avgR)}
+          </p>
+          <p className="num mt-2 text-[13px] text-ink-sub">
+            PF {now.profitFactor === null ? "—" : now.profitFactor.toFixed(2)}
+          </p>
+          {hasPrev && avgRDiff !== null && (
+            <p className={`num mt-2 text-xs ${diffToneClass(avgRDiffTone)}`}>
+              {diffArrow(avgRDiffTone)} {signed(avgRDiff, 2)}
+            </p>
+          )}
+        </div>
+
+        <div className="border-t border-line px-6 pb-[22px] pt-5 md:border-l md:border-t-0">
+          <p className="text-xs text-ink-mute">トレード数</p>
+          <p className="num mt-2 text-[32px] font-medium leading-[1.1]">
+            {now.n}
+            <span className="text-xl text-ink-mute">件</span>
+          </p>
+          {hasPrev && nDiff !== null && (
+            <p className="num mt-2 text-xs text-ink-mute">
+              前回比 {signed(nDiff, 0)}件
+            </p>
+          )}
+        </div>
       </div>
     </section>
   );
