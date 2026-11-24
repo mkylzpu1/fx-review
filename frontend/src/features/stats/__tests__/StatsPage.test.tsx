@@ -163,15 +163,15 @@ describe("統計", () => {
     renderPage();
     const box = within(
       (
-        await screen.findByRole("heading", { name: "前の期間との比較" })
+        await screen.findByRole("heading", { name: /前の同じ長さの期間と比較/ })
       ).closest("section")!,
     );
-    expect(box.getByText("40.0%")).toBeInTheDocument();
-    expect(box.getByText("+15.0pt")).toBeInTheDocument();
+    expect(box.getByText("55.0%")).toBeInTheDocument();
+    expect(box.getByText(/\+15\.0pt/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "すべて" }));
     await screen.findAllByText("55.0%");
     expect(
-      screen.queryByRole("heading", { name: "前の期間との比較" }),
+      screen.queryByRole("heading", { name: /前の同じ長さの期間と比較/ }),
     ).not.toBeInTheDocument();
   });
 

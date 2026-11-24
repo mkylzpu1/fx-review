@@ -120,6 +120,16 @@ export function StatsPage() {
         </div>
       )}
 
+      {data.closedCount > 0 && prevStats.data && prevStats.data.closedCount > 0 && (
+        <PeriodCompare
+          now={s}
+          prev={prevStats.data.summary}
+          periodLabel={
+            PERIODS.find((p) => p.value === period)?.label ?? period
+          }
+        />
+      )}
+
       {data.closedCount === 0 ? (
         <EmptyState
           title="まだ集計できるトレードがありません"
@@ -202,10 +212,6 @@ export function StatsPage() {
               )}
             </section>
           </div>
-
-          {prevStats.data && prevStats.data.closedCount > 0 && (
-            <PeriodCompare now={s} prev={prevStats.data.summary} />
-          )}
 
           {data.rHistogram && data.rHistogram.some((b) => b.count > 0) && (
             <section className="card min-w-0 space-y-2">
