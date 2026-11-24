@@ -5,6 +5,7 @@ import type { Summary } from "../types";
 const sum = (over: Partial<Summary>): Summary => ({
   n: 3,
   winRate: 0,
+  wins: 0,
   totalPips: 0,
   totalPnlJpy: 0,
   rCount: 0,

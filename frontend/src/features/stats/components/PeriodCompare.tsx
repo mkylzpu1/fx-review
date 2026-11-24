@@ -100,7 +100,9 @@ export function PeriodCompare({
           <p className="num mt-2 text-[32px] font-medium leading-[1.1]">
             {now.winRate === null ? "—" : `${now.winRate.toFixed(1)}%`}
           </p>
-          <p className="num mt-2 text-[13px] text-ink-sub">n={now.n}</p>
+          <p className="num mt-2 text-[13px] text-ink-sub">
+            {now.n}戦{now.wins}勝{now.n - now.wins}敗
+          </p>
           {hasPrev && winRateDiff !== null && (
             <p
               className={`num mt-2 text-xs ${diffToneClass(winRateDiffTone)}`}

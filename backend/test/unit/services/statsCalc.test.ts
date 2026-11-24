@@ -110,6 +110,7 @@ describe("summarize（SLなしを含む）", () => {
     ]);
     expect(s.n).toBe(3);
     expect(s.winRate).toBeCloseTo(66.7, 1);
+    expect(s.wins).toBe(2);
     expect(s.totalPips).toBe(13);
     expect(s.totalPnlJpy).toBe(1300);
     expect(s.rCount).toBe(2);

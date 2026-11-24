@@ -4,6 +4,8 @@ export type Verdict = "strength" | "weakness" | "needs_check";
 export interface Summary {
   n: number;
   winRate: number | null;
+  /** 勝ちトレードの件数（n - wins が負けトレード件数） */
+  wins: number;
   totalPips: number;
   totalPnlJpy: number;
   rCount: number;

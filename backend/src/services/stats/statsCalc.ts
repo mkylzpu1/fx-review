@@ -237,6 +237,8 @@ export interface Summary {
   /** 集計対象（決済済み・pips あり）の件数 */
   n: number;
   winRate: number | null;
+  /** 勝ちトレードの件数（n - wins が負けトレード件数） */
+  wins: number;
   totalPips: number;
   totalPnlJpy: number;
   /** R が計算できた件数 */
@@ -262,6 +264,7 @@ export function summarize(all: StatTrade[]): Summary {
     n: closed.length,
     winRate:
       closed.length === 0 ? null : round((wins / closed.length) * 100, 1),
+    wins,
     totalPips: round(sum(closed.map((t) => t.pips as number)), 1),
     totalPnlJpy: Math.round(sum(closed.map((t) => t.pnlJpy ?? 0))),
     rCount: rs.length,
