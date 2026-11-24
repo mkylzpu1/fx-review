@@ -357,3 +357,50 @@ export function groupBy<T extends StatTrade>(
     .filter((l) => (bucket.get(l.key) ?? []).length > 0)
     .map((l) => judgeGroup(l.key, l.label, bucket.get(l.key) ?? []));
 }
+
+/** 区分ごとの損益・pips・勝率（Rが無いトレードも含め、全件で集計する） */
+export interface GroupPnlStat {
+  key: string;
+  label: string;
+  n: number;
+  wins: number;
+  winRate: number | null;
+  pnlJpy: number;
+  pips: number;
+}
+
+/**
+ * 区分キーの配列（トレードごと。無ければ空配列）で、損益・pips・勝率を集計する。
+ * groupBy とは違い R の有無を問わず全件を使う（根拠タグ・感情タグ・セッション・時間帯・確信度別の
+ * 損益／勝率チャート用）。
+ */
+export function groupByPnl<T extends StatTrade>(
+  trades: T[],
+  keysOf: (t: T) => string[],
+  labels: { key: string; label: string }[],
+): GroupPnlStat[] {
+  const bucket = new Map<string, T[]>();
+  for (const l of labels) bucket.set(l.key, []);
+  for (const t of trades) {
+    for (const k of keysOf(t)) bucket.get(k)?.push(t);
+  }
+  return labels
+    .map((l) => {
+      const ts = bucket.get(l.key) ?? [];
+      const n = ts.length;
+      const wins = ts.filter((t) => (t.pips ?? 0) > 0).length;
+      return {
+        key: l.key,
+        label: l.label,
+        n,
+        wins,
+        winRate: n === 0 ? null : round(wins / n, 4),
+        pnlJpy: round(
+          sum(ts.map((t) => t.pnlJpy ?? 0)),
+          0,
+        ),
+        pips: round(sum(ts.map((t) => t.pips ?? 0)), 1),
+      };
+    })
+    .filter((g) => g.n > 0);
+}

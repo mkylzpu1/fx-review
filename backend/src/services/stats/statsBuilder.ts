@@ -8,6 +8,7 @@ import {
   cumulativeR,
   dailySeries,
   groupBy,
+  groupByPnl,
   hourInZone,
   maxDrawdown,
   rHistogram,
@@ -17,6 +18,7 @@ import {
   type CumulativePoint,
   type DailyPoint,
   type Drawdown,
+  type GroupPnlStat,
   type GroupStat,
   type RHistogramBin,
   type StatTrade,
@@ -62,6 +64,16 @@ export interface StatsResult {
   byExitMethod: GroupStat[];
   /** Rの分布（-2R以下〜3R以上）。R が計算できたトレードだけで集計 */
   rHistogram: RHistogramBin[];
+  /** 根拠タグ別の損益・勝率（Rの有無を問わず全件） */
+  rationalePnl: GroupPnlStat[];
+  /** 感情タグ別の損益・勝率 */
+  emotionPnl: GroupPnlStat[];
+  /** セッション別の損益・勝率 */
+  sessionPnl: GroupPnlStat[];
+  /** 時間帯（時）別の損益・勝率 */
+  hourPnl: GroupPnlStat[];
+  /** 確信度別の損益・勝率 */
+  confidencePnl: GroupPnlStat[];
   insights: Insight[];
   /** 決済済みで集計に入ったトレード数 */
   closedCount: number;
@@ -73,6 +85,7 @@ interface Row extends StatTrade {
   holdMinutes: number | null;
   lots: number | null;
   rationaleTags: string[];
+  emotionTags: string[];
   ruleKey: "ok" | "ng" | "none";
   confidence: number | null;
   exitMethod: "tp" | "sl" | "manual" | "breakeven" | "open";
@@ -99,6 +112,9 @@ export function toRows(views: TradeView[], timezone: string): Row[] {
       lots: v.lots ?? null,
       rationaleTags: v.tags
         .filter((t) => t.kind === "rationale")
+        .map((t) => t.name),
+      emotionTags: v.tags
+        .filter((t) => t.kind === "emotion")
         .map((t) => t.name),
       ruleKey: ruleKeyOf(v),
       confidence: v.confidence ?? null,
@@ -221,6 +237,51 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     ],
   );
 
+  const rationalePnl = groupByPnl(
+    rows,
+    (r) => (r.rationaleTags.length === 0 ? [UNSET_KEY] : r.rationaleTags),
+    [
+      ...tagNames.map((n) => ({ key: n, label: n })),
+      { key: UNSET_KEY, label: "未入力" },
+    ],
+  );
+
+  const emotionTagNames = [
+    ...new Set(rows.flatMap((r) => r.emotionTags)),
+  ].sort();
+  const emotionPnl = groupByPnl(
+    rows,
+    (r) => (r.emotionTags.length === 0 ? [UNSET_KEY] : r.emotionTags),
+    [
+      ...emotionTagNames.map((n) => ({ key: n, label: n })),
+      { key: UNSET_KEY, label: "未入力" },
+    ],
+  );
+
+  const sessionPnl = groupByPnl(
+    rows,
+    (r) => [sessionOf(r.hour).key],
+    [...SESSIONS, OTHER_SESSION].map((s) => ({ key: s.key, label: s.label })),
+  );
+
+  const hourPnl = groupByPnl(
+    rows,
+    (r) => [String(r.hour)],
+    Array.from({ length: 24 }, (_, h) => ({
+      key: String(h),
+      label: `${h}時台`,
+    })),
+  );
+
+  const confidencePnl = groupByPnl(
+    rows,
+    (r) => (r.confidence === null ? [UNSET_KEY] : [String(r.confidence)]),
+    [
+      ...[1, 2, 3, 4, 5].map((n) => ({ key: String(n), label: `確信度${n}` })),
+      { key: UNSET_KEY, label: "未入力" },
+    ],
+  );
+
   return {
     summary: summarize(rows),
     cumulative: points,
@@ -238,6 +299,11 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     rHistogram: rHistogram(
       rows.flatMap((r) => (r.rMultiple === null ? [] : [r.rMultiple])),
     ),
+    rationalePnl,
+    emotionPnl,
+    sessionPnl,
+    hourPnl,
+    confidencePnl,
     insights: [
       ...toInsights("session", bySession),
       ...toInsights("rationale", byRationale),

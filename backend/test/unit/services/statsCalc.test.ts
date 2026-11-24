@@ -4,6 +4,7 @@ import {
   dailySeries,
   dateInZone,
   groupBy,
+  groupByPnl,
   hourInZone,
   judgeGroup,
   currentLossStreak,
@@ -231,3 +232,45 @@ describe("日ごとの成績と累積", () => {
     );
   });
 });
+
+describe("groupByPnl（損益・勝率は全件、Rの有無を問わない）", () => {
+  it("Rが無いトレードも損益・勝率の集計に含める", () => {
+    const trades: StatTrade[] = [
+      t(1, 10, null, 1000),
+      t(2, -5, -1, -500),
+      t(3, 3, 1, 300),
+    ];
+    const groups = groupByPnl(
+      trades,
+      () => ["a"],
+      [{ key: "a", label: "A" }],
+    );
+    expect(groups).toEqual([
+      {
+        key: "a",
+        label: "A",
+        n: 3,
+        wins: 2,
+        winRate: round2(2 / 3),
+        pnlJpy: 800,
+        pips: 8,
+      },
+    ]);
+  });
+
+  it("件数0の区分は結果から除く", () => {
+    const groups = groupByPnl(
+      [t(1, 1, 1, 100)],
+      () => ["a"],
+      [
+        { key: "a", label: "A" },
+        { key: "b", label: "B" },
+      ],
+    );
+    expect(groups.map((g) => g.key)).toEqual(["a"]);
+  });
+});
+
+function round2(v: number): number {
+  return Math.round(v * 10000) / 10000;
+}
