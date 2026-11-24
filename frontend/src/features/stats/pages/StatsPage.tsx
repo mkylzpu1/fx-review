@@ -8,9 +8,11 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
 import { CumulativeChart } from "../components/CumulativeChart";
 import { DailyGrowthChart } from "../components/DailyGrowthChart";
+import { GroupPnlChart } from "../components/GroupPnlChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
 import { RHistogramChart } from "../components/RHistogramChart";
+import { TimeBandPnlChart } from "../components/TimeBandPnlChart";
 import { PeriodCompare } from "../components/PeriodCompare";
 import { usePreviousStats, useStats } from "../hooks/useStats";
 import type { PeriodKey } from "../types";
@@ -270,6 +272,61 @@ export function StatsPage() {
                   </InfoTip>
                 </h2>
                 <RHistogramChart bins={data.rHistogram} />
+              </section>
+            )}
+
+            {data.rationalePnl && data.rationalePnl.length > 0 && (
+              <section className="card min-w-0 space-y-2">
+                <h2 className="flex items-center gap-2 text-base font-bold">
+                  根拠タグ別の損益と勝率
+                  <InfoTip label="根拠タグ別の損益と勝率とは">
+                    エントリーの根拠タグごとに、合計損益（棒）と勝率（線・右軸）をまとめたものです。
+                    1トレードに複数タグがあれば、それぞれのタグの集計に重複して数えます。
+                  </InfoTip>
+                </h2>
+                <GroupPnlChart groups={data.rationalePnl} />
+              </section>
+            )}
+
+            {data.emotionPnl && data.emotionPnl.length > 0 && (
+              <section className="card min-w-0 space-y-2">
+                <h2 className="flex items-center gap-2 text-base font-bold">
+                  感情タグ別の損益と勝率
+                  <InfoTip label="感情タグ別の損益と勝率とは">
+                    エントリー時の感情タグごとに、合計損益（棒）と勝率（線・右軸）をまとめたものです。
+                    どんな心理状態のときに成績が崩れやすいかが見えます。
+                  </InfoTip>
+                </h2>
+                <GroupPnlChart groups={data.emotionPnl} />
+              </section>
+            )}
+
+            {((data.sessionPnl && data.sessionPnl.length > 0) ||
+              (data.hourPnl && data.hourPnl.length > 0)) && (
+              <section className="card min-w-0 space-y-2">
+                <h2 className="flex items-center gap-2 text-base font-bold">
+                  時間帯別の損益と勝率
+                  <InfoTip label="時間帯別の損益と勝率とは">
+                    トレードした時間帯ごとの合計損益（棒）と勝率（線・右軸）です。
+                    東京・ロンドン・NYのセッション単位と、1時間ごとの単位を切り替えて見られます。
+                  </InfoTip>
+                </h2>
+                <TimeBandPnlChart
+                  bySession={data.sessionPnl ?? []}
+                  byHour={data.hourPnl ?? []}
+                />
+              </section>
+            )}
+
+            {data.confidencePnl && data.confidencePnl.length > 0 && (
+              <section className="card min-w-0 space-y-2">
+                <h2 className="flex items-center gap-2 text-base font-bold">
+                  確信度別の損益と勝率
+                  <InfoTip label="確信度別の損益と勝率とは">
+                    エントリー時に入力した確信度（1〜5）ごとの合計損益（棒）と勝率（線・右軸）です。
+                  </InfoTip>
+                </h2>
+                <GroupPnlChart groups={data.confidencePnl} />
               </section>
             )}
           </div>

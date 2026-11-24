@@ -82,6 +82,17 @@ export interface RHistogramBin {
   count: number;
 }
 
+/** 区分ごとの損益・pips・勝率（Rの有無を問わず全件で集計） */
+export interface GroupPnlStat {
+  key: string;
+  label: string;
+  n: number;
+  wins: number;
+  winRate: number | null;
+  pnlJpy: number;
+  pips: number;
+}
+
 export interface StatsResult {
   summary: Summary;
   cumulative: CumulativePoint[];
@@ -101,6 +112,16 @@ export interface StatsResult {
   byExitMethod?: GroupStat[];
   /** 古いAPIでは無いことがある */
   rHistogram?: RHistogramBin[];
+  /** 古いAPIでは無いことがある */
+  rationalePnl?: GroupPnlStat[];
+  /** 古いAPIでは無いことがある */
+  emotionPnl?: GroupPnlStat[];
+  /** 古いAPIでは無いことがある */
+  sessionPnl?: GroupPnlStat[];
+  /** 古いAPIでは無いことがある */
+  hourPnl?: GroupPnlStat[];
+  /** 古いAPIでは無いことがある */
+  confidencePnl?: GroupPnlStat[];
   insights: Insight[];
   closedCount: number;
 }
