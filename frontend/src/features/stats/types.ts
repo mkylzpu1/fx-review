@@ -12,6 +12,10 @@ export interface Summary {
   totalR: number;
   profitFactor: number | null;
   maxLossStreak: number;
+  /** 直近から数えた連敗数 */
+  currentLossStreak: number;
+  /** 勝ちトレードの平均R ÷ 負けトレードの平均|R| */
+  payoffRatio: number | null;
 }
 
 export interface CumulativePoint {

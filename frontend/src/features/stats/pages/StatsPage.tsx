@@ -164,12 +164,8 @@ export function StatsPage() {
             <Metric label="累積R" value={formatR(s.totalR)} />
             <Metric label="R未計算" value={`${s.rMissing}件`} note="SLなし" />
           </div>
-          {s.rMissing > 0 && (
-            <p className="text-xs text-ink-mute">
-              SLが入っていない{s.rMissing}
-              件は、R系の集計に入っていません（勝率・pips・損益には入っています）。
-            </p>
-          )}
+
+          <InsightList insights={data.insights} summary={s} />
 
           <div className="grid gap-4 lg:grid-cols-2">
             {(data.daily ?? []).length > 0 && (
@@ -225,8 +221,6 @@ export function StatsPage() {
               <RHistogramChart bins={data.rHistogram} />
             </section>
           )}
-
-          <InsightList insights={data.insights} />
 
           <details className="card">
             <summary className="cursor-pointer text-base font-bold">

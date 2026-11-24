@@ -25,6 +25,8 @@ const stats = (over: Partial<StatsResult> = {}): StatsResult => ({
     totalR: 4,
     profitFactor: 1.5,
     maxLossStreak: 4,
+    currentLossStreak: 1,
+    payoffRatio: 1.2,
   },
   cumulative: [
     { index: 1, entryAt: "2026-10-01T00:00:00Z", r: 1, cumulative: 1 },
@@ -138,7 +140,7 @@ describe("統計", () => {
     expect(box.getByText("弱み")).toBeInTheDocument();
     expect(box.getByText(/逆張り/)).toBeInTheDocument();
     expect(
-      box.getByRole("link", { name: "AIに分析してもらう" }),
+      box.getByRole("link", { name: /AIに分析してもらう/ }),
     ).toHaveAttribute("href", "/export");
   });
 

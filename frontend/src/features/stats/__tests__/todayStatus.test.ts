@@ -13,6 +13,8 @@ const sum = (over: Partial<Summary>): Summary => ({
   totalR: 0,
   profitFactor: null,
   maxLossStreak: 0,
+  currentLossStreak: 0,
+  payoffRatio: null,
   ...over,
 });
 
