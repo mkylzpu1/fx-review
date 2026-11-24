@@ -209,6 +209,30 @@ export function maxLossStreak(trades: StatTrade[]): number {
   return best;
 }
 
+/** 直近から数えた連敗数（直近が勝ち・建値なら0）。R未計算のSLなしトレードは対象外 */
+export function currentLossStreak(trades: StatTrade[]): number {
+  const closed = sortAsc(trades).filter((t) => t.pips !== null);
+  let cur = 0;
+  for (let i = closed.length - 1; i >= 0; i--) {
+    if ((closed[i].pips as number) < 0) {
+      cur += 1;
+    } else {
+      break;
+    }
+  }
+  return cur;
+}
+
+/** ペイオフレシオ（勝ちトレードの平均R ÷ 負けトレードの平均|R|）。どちらかが無ければ null */
+export function payoffRatio(rs: number[]): number | null {
+  const wins = rs.filter((r) => r > 0);
+  const losses = rs.filter((r) => r < 0);
+  if (wins.length === 0 || losses.length === 0) return null;
+  const avgWin = mean(wins) as number;
+  const avgLoss = Math.abs(mean(losses) as number);
+  return avgLoss === 0 ? null : round(avgWin / avgLoss, 2);
+}
+
 export interface Summary {
   /** 集計対象（決済済み・pips あり）の件数 */
   n: number;
@@ -223,6 +247,10 @@ export interface Summary {
   totalR: number;
   profitFactor: number | null;
   maxLossStreak: number;
+  /** 直近から数えた連敗数 */
+  currentLossStreak: number;
+  /** 勝ちトレードの平均R ÷ 負けトレードの平均|R| */
+  payoffRatio: number | null;
 }
 
 export function summarize(all: StatTrade[]): Summary {
@@ -242,6 +270,8 @@ export function summarize(all: StatTrade[]): Summary {
     totalR: round(sum(rs), 2),
     profitFactor: profitFactor(rs),
     maxLossStreak: maxLossStreak(closed),
+    currentLossStreak: currentLossStreak(closed),
+    payoffRatio: payoffRatio(rs),
   };
 }
 

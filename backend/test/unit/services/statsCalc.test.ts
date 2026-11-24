@@ -6,8 +6,10 @@ import {
   groupBy,
   hourInZone,
   judgeGroup,
+  currentLossStreak,
   maxDrawdown,
   maxLossStreak,
+  payoffRatio,
   profitFactor,
   sessionOf,
   summarize,
@@ -79,6 +81,23 @@ describe("PF・連敗", () => {
     ];
     expect(maxLossStreak(trades)).toBe(2);
   });
+
+  it("直近からの連敗。直近が勝ちなら0、建値は無視して続きを見る", () => {
+    expect(
+      currentLossStreak([t(1, 5, 1), t(2, -1, -1), t(3, -2, -1)]),
+    ).toBe(2);
+    expect(
+      currentLossStreak([t(1, -1, -1), t(2, -2, -1), t(3, 5, 1)]),
+    ).toBe(0);
+    expect(currentLossStreak([])).toBe(0);
+  });
+
+  it("ペイオフレシオ = 勝ち平均R ÷ 負け平均|R|。片方が無ければnull", () => {
+    expect(payoffRatio([2, -1, 1, -0.5])).toBeCloseTo(2, 2);
+    expect(payoffRatio([1, 2])).toBeNull();
+    expect(payoffRatio([-1, -2])).toBeNull();
+    expect(payoffRatio([])).toBeNull();
+  });
 });
 
 describe("summarize（SLなしを含む）", () => {
@@ -97,6 +116,8 @@ describe("summarize（SLなしを含む）", () => {
     expect(s.rMissing).toBe(1);
     expect(s.avgR).toBe(0.5);
     expect(s.profitFactor).toBe(2);
+    expect(s.currentLossStreak).toBe(0);
+    expect(s.payoffRatio).toBe(2);
   });
 
   it("0件でも壊れない", () => {
