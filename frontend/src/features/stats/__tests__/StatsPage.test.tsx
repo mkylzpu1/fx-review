@@ -266,6 +266,26 @@ describe("統計", () => {
     expect(box.getByText("+12.0 pips")).toBeInTheDocument();
   });
 
+  it("棒グラフの間隔を週単位に切り替えると、同じ週の日がまとめられる", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(stats());
+    renderPage();
+    const pnlBox = within(
+      (
+        await screen.findByRole("heading", { name: /^損益/ })
+      ).closest("section")!,
+    );
+    // 日単位: 2026-10-01と2026-10-02の2本
+    expect(pnlBox.getAllByTestId("day-bar")).toHaveLength(2);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "週単位", pressed: false }),
+    );
+
+    // 週単位: 同じ週（月曜始まり）なので1本にまとまる
+    expect(pnlBox.getAllByTestId("day-bar")).toHaveLength(1);
+    expect(pnlBox.getByText("+¥1,200")).toBeInTheDocument();
+  });
+
   it("日々の成長: カーソルを合わせた日の詳細がポップアップで出る", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();

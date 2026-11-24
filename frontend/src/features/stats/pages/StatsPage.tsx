@@ -14,6 +14,7 @@ import { RHistogramChart } from "../components/RHistogramChart";
 import { PeriodCompare } from "../components/PeriodCompare";
 import { usePreviousStats, useStats } from "../hooks/useStats";
 import type { PeriodKey } from "../types";
+import { GRANULARITIES, type Granularity } from "../utils/daily";
 import { PERIODS } from "../utils/period";
 
 /** 期間ボタンの並び（/tradesの期間選択と同じ）。「期間を指定」だけボタンではなく、隣の日付入力で代える */
@@ -26,6 +27,8 @@ const dateCls =
 /** 統計。R系はRが計算できるトレードだけ、勝率・pips・円は全件（SLは任意項目のため） */
 export function StatsPage() {
   const [period, setPeriod] = useState<PeriodKey>("90d");
+  // 損益・pipsの棒グラフの間隔（日/週/月/年）。両方のチャートで共通
+  const [granularity, setGranularity] = useState<Granularity>("day");
   // 期間を日付で指定（/tradesと同じ）。どちらかが入っていれば上の期間ボタンより優先する
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -146,15 +149,41 @@ export function StatsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {(data.daily ?? []).length > 0 && (
               <>
+                <div
+                  role="group"
+                  aria-label="棒グラフの間隔"
+                  className="flex items-center gap-1 sm:col-span-2"
+                >
+                  {GRANULARITIES.map((g) => (
+                    <button
+                      key={g.value}
+                      type="button"
+                      aria-pressed={granularity === g.value}
+                      onClick={() => setGranularity(g.value)}
+                      className={`btn !px-3 !py-1 text-xs ${
+                        granularity === g.value
+                          ? "border-accent bg-accent/10 text-accent-link"
+                          : ""
+                      }`}
+                    >
+                      {g.label}単位
+                    </button>
+                  ))}
+                </div>
+
                 <section className="card min-w-0 space-y-2">
                   <h2 className="flex items-center gap-2 text-base font-bold">
                     損益
                     <InfoTip label="日々の成長（損益）とは">
                       取引のあった日ごとの成績です。上の折れ線は「その日までの合計」、
-                      下の棒は「その日だけの成績」です。
+                      下の棒は「その日だけの成績」です。日/週/月/年の単位で切り替えられます。
                     </InfoTip>
                   </h2>
-                  <DailyGrowthChart daily={data.daily ?? []} metric="pnl" />
+                  <DailyGrowthChart
+                    daily={data.daily ?? []}
+                    metric="pnl"
+                    granularity={granularity}
+                  />
                 </section>
 
                 <section className="card min-w-0 space-y-2">
@@ -162,10 +191,14 @@ export function StatsPage() {
                     pips
                     <InfoTip label="日々の成長（pips）とは">
                       取引のあった日ごとの成績です。上の折れ線は「その日までの合計」、
-                      下の棒は「その日だけの成績」です。
+                      下の棒は「その日だけの成績」です。日/週/月/年の単位で切り替えられます。
                     </InfoTip>
                   </h2>
-                  <DailyGrowthChart daily={data.daily ?? []} metric="pips" />
+                  <DailyGrowthChart
+                    daily={data.daily ?? []}
+                    metric="pips"
+                    granularity={granularity}
+                  />
                 </section>
               </>
             )}

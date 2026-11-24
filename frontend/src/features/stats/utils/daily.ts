@@ -3,6 +3,82 @@ import type { DailyPoint } from "../types";
 
 export type DailyMetric = "pnl" | "pips" | "r";
 
+/** 日々の成長チャートの棒の間隔 */
+export type Granularity = "day" | "week" | "month" | "year";
+
+export const GRANULARITIES: { value: Granularity; label: string }[] = [
+  { value: "day", label: "日" },
+  { value: "week", label: "週" },
+  { value: "month", label: "月" },
+  { value: "year", label: "年" },
+];
+
+export const unitLabel = (g: Granularity): string =>
+  g === "day" ? "日" : g === "week" ? "週" : g === "month" ? "月" : "年";
+
+function round(v: number, digits: number): number {
+  const f = 10 ** digits;
+  return Math.round(v * f) / f;
+}
+
+/** 月曜始まりの週の開始日（YYYY-MM-DD）。dateは暦日の文字列なのでUTCとして扱って問題ない */
+function mondayStart(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  const offset = dow === 0 ? -6 : 1 - dow;
+  return new Date(Date.UTC(y, m - 1, d + offset)).toISOString().slice(0, 10);
+}
+
+/** 指定した間隔での、そのグループを代表する日付（週は月曜、月は1日、年は1/1） */
+export function bucketKey(date: string, g: Granularity): string {
+  if (g === "day") return date;
+  if (g === "week") return mondayStart(date);
+  if (g === "month") return `${date.slice(0, 7)}-01`;
+  return `${date.slice(0, 4)}-01-01`;
+}
+
+/**
+ * 日次データを週・月・年単位にまとめる。件数・勝数・pips・損益・Rは合計、
+ * 累積はそのグループ内で最も新しい日の値（dailyは古い順なので上書きしていけば残る）
+ */
+export function aggregateDaily(
+  daily: DailyPoint[],
+  g: Granularity,
+): DailyPoint[] {
+  if (g === "day") return daily;
+  const out: DailyPoint[] = [];
+  for (const d of daily) {
+    const key = bucketKey(d.date, g);
+    const prev = out[out.length - 1];
+    const bucket =
+      prev && prev.date === key
+        ? prev
+        : ({
+            date: key,
+            n: 0,
+            wins: 0,
+            pips: 0,
+            pnlJpy: 0,
+            r: 0,
+            rCount: 0,
+            cumulativePips: 0,
+            cumulativePnlJpy: 0,
+            cumulativeR: 0,
+          } satisfies DailyPoint);
+    bucket.n += d.n;
+    bucket.wins += d.wins;
+    bucket.pips = round(bucket.pips + d.pips, 1);
+    bucket.pnlJpy = round(bucket.pnlJpy + d.pnlJpy, 0);
+    bucket.r = round(bucket.r + d.r, 2);
+    bucket.rCount += d.rCount;
+    bucket.cumulativePips = d.cumulativePips;
+    bucket.cumulativePnlJpy = d.cumulativePnlJpy;
+    bucket.cumulativeR = d.cumulativeR;
+    if (!prev || prev.date !== key) out.push(bucket);
+  }
+  return out;
+}
+
 export const DAILY_METRICS: { key: DailyMetric; label: string }[] = [
   { key: "pnl", label: "損益（円）" },
   { key: "pips", label: "pips" },
@@ -59,4 +135,31 @@ const DOW = ["日", "月", "火", "水", "木", "金", "土"];
 export function fullDate(date: string): string {
   const dow = new Date(`${date}T00:00:00Z`).getUTCDay();
   return `${date.replace(/-/g, "/")}(${DOW[dow]})`;
+}
+
+/** 軸・凡例用の短いラベル。間隔に応じて「10/21」「10/21週」「'26/10」「2026」になる */
+export function shortLabel(date: string, g: Granularity): string {
+  if (g === "day") return shortDate(date);
+  if (g === "week") return `${shortDate(date)}週`;
+  if (g === "month") {
+    const [y, m] = date.split("-");
+    return `'${y.slice(2)}/${Number(m)}`;
+  }
+  return date.slice(0, 4);
+}
+
+/** ツールチップ見出し用の長いラベル。週は月曜〜日曜の範囲も添える */
+export function fullLabel(date: string, g: Granularity): string {
+  if (g === "day") return fullDate(date);
+  if (g === "week") {
+    const [y, m, d] = date.split("-").map(Number);
+    const end = new Date(Date.UTC(y, m - 1, d + 6));
+    const endLabel = `${end.getUTCMonth() + 1}/${end.getUTCDate()}`;
+    return `${date.replace(/-/g, "/")}週（〜${endLabel}）`;
+  }
+  if (g === "month") {
+    const [y, m] = date.split("-");
+    return `${y}年${Number(m)}月`;
+  }
+  return `${date.slice(0, 4)}年`;
 }

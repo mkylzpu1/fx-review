@@ -1,20 +1,24 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { DailyPoint } from "../types";
 import {
   DAILY_METRICS,
+  aggregateDaily,
   cumulativeValue,
   dayCounts,
   dayValue,
   formatAxis,
   formatMetric,
-  fullDate,
-  shortDate,
+  fullLabel,
+  shortLabel,
+  unitLabel,
   type DailyMetric,
+  type Granularity,
 } from "../utils/daily";
 
 interface Props {
   daily: DailyPoint[];
   metric: DailyMetric;
+  granularity: Granularity;
 }
 
 const W = 640;
@@ -27,10 +31,19 @@ const H = BAR.t + BAR.h + 22;
  * 日々の成長。上: その日までの累積の折れ線、下: 日ごとの棒（プラス=緑・マイナス=赤）。
  * 取引のあった日だけを横に並べる。円・pipsはそれぞれ別のチャートとして表示する。
  */
-export function DailyGrowthChart({ daily, metric }: Props) {
+export function DailyGrowthChart({
+  daily: dailyProp,
+  metric,
+  granularity,
+}: Props) {
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const daily = useMemo(
+    () => aggregateDaily(dailyProp, granularity),
+    [dailyProp, granularity],
+  );
   if (daily.length === 0) return null;
+  const unit = unitLabel(granularity);
 
   const n = daily.length;
   const plotW = W - PAD.l - PAD.r;
@@ -81,7 +94,10 @@ export function DailyGrowthChart({ daily, metric }: Props) {
             {formatMetric(lastCum, metric)}
           </span>
           <span className="ml-2 text-xs text-ink-mute">
-            {n}日（プラス{plus}日・マイナス{minus}日）
+            {n}
+            {unit}（プラス{plus}
+            {unit}・マイナス{minus}
+            {unit}）
           </span>
         </p>
       </div>
@@ -96,7 +112,7 @@ export function DailyGrowthChart({ daily, metric }: Props) {
           style={{ touchAction: "pan-y" }}
           viewBox={`0 0 ${W} ${H}`}
           role="img"
-          aria-label={`日々の成長。${n}日で累積 ${formatMetric(lastCum, metric)}`}
+          aria-label={`日々の成長。${n}${unit}で累積 ${formatMetric(lastCum, metric)}`}
           className="w-full cursor-crosshair"
         >
           {/* ホバー中の日のガイド */}
@@ -166,7 +182,7 @@ export function DailyGrowthChart({ daily, metric }: Props) {
 
           {/* 日ごとの棒 */}
           <text x={PAD.l} y={BAR.t - 8} className="fill-ink-mute text-[10px]">
-            その日の成績
+            {granularity === "day" ? "その日の成績" : `その${unit}の成績`}
           </text>
           <line
             x1={PAD.l}
@@ -220,7 +236,7 @@ export function DailyGrowthChart({ daily, metric }: Props) {
                 textAnchor="middle"
                 className="num fill-ink-mute text-[10px]"
               >
-                {shortDate(d.date)}
+                {shortLabel(d.date, granularity)}
               </text>
             ) : null,
           )}
@@ -236,7 +252,9 @@ export function DailyGrowthChart({ daily, metric }: Props) {
                 : { left: `${(cx(hi_) / W) * 100 + 2}%` }
             }
           >
-            <p className="font-bold text-ink">{fullDate(hd.date)}</p>
+            <p className="font-bold text-ink">
+              {fullLabel(hd.date, granularity)}
+            </p>
             <p className="text-ink-mute">
               {hd.n}件（勝ち{hd.wins}・負け{hd.n - hd.wins}）
             </p>
@@ -272,7 +290,10 @@ export function DailyGrowthChart({ daily, metric }: Props) {
         )}
       </div>
       <figcaption className="text-xs text-ink-mute">
-        取引のあった日だけを並べています。図にカーソルを合わせる（スマホは触れる）と、その日の詳細が出ます。
+        {granularity === "day"
+          ? "取引のあった日だけを並べています。"
+          : `取引のあった日を${unit}単位でまとめています。`}
+        図にカーソルを合わせる（スマホは触れる）と、詳細が出ます。
       </figcaption>
     </figure>
   );
