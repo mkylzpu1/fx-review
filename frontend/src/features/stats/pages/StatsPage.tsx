@@ -167,7 +167,7 @@ export function StatsPage() {
 
           <InsightList insights={data.insights} summary={s} />
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-3">
             {(data.daily ?? []).length > 0 && (
               <section className="card min-w-0 space-y-2">
                 <h2 className="flex items-center gap-2 text-base font-bold">
@@ -207,20 +207,20 @@ export function StatsPage() {
                 />
               )}
             </section>
-          </div>
 
-          {data.rHistogram && data.rHistogram.some((b) => b.count > 0) && (
-            <section className="card min-w-0 space-y-2">
-              <h2 className="flex items-center gap-2 text-base font-bold">
-                Rの分布
-                <InfoTip label="Rの分布とは">
-                  トレードごとのRを、-2R以下から3R以上まで区切りごとに件数で数えたものです。
-                  利を伸ばせているか、損切りを計画通りに実行できているかが見えます。
-                </InfoTip>
-              </h2>
-              <RHistogramChart bins={data.rHistogram} />
-            </section>
-          )}
+            {data.rHistogram && data.rHistogram.some((b) => b.count > 0) && (
+              <section className="card min-w-0 space-y-2">
+                <h2 className="flex items-center gap-2 text-base font-bold">
+                  Rの分布
+                  <InfoTip label="Rの分布とは">
+                    トレードごとのRを、-2R以下から3R以上まで区切りごとに件数で数えたものです。
+                    利を伸ばせているか、損切りを計画通りに実行できているかが見えます。
+                  </InfoTip>
+                </h2>
+                <RHistogramChart bins={data.rHistogram} />
+              </section>
+            )}
+          </div>
 
           <details className="card">
             <summary className="cursor-pointer text-base font-bold">
