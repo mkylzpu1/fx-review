@@ -44,32 +44,40 @@ export function PeriodCompare({
   periodLabel,
 }: {
   now: Summary;
-  prev: Summary;
+  prev: Summary | null;
   periodLabel: string;
 }) {
-  const pnlDiff = now.totalPnlJpy - prev.totalPnlJpy;
+  const hasPrev = prev !== null;
+  const pnlDiff = hasPrev ? now.totalPnlJpy - prev.totalPnlJpy : null;
   const pnlPct =
-    prev.totalPnlJpy !== 0
+    hasPrev && prev.totalPnlJpy !== 0 && pnlDiff !== null
       ? (pnlDiff / Math.abs(prev.totalPnlJpy)) * 100
       : null;
-  const pnlTone = pnlDiff > 0 ? "up" : pnlDiff < 0 ? "down" : "flat";
+  const pnlTone =
+    pnlDiff === null ? "neutral" : pnlDiff > 0 ? "up" : pnlDiff < 0 ? "down" : "flat";
 
   const winRateDiff =
-    now.winRate === null || prev.winRate === null
+    !hasPrev || now.winRate === null || prev.winRate === null
       ? null
       : now.winRate - prev.winRate;
   const avgRDiff =
-    now.avgR === null || prev.avgR === null ? null : now.avgR - prev.avgR;
-  const pipsDiff = now.totalPips - prev.totalPips;
-  const nDiff = now.n - prev.n;
+    !hasPrev || now.avgR === null || prev.avgR === null
+      ? null
+      : now.avgR - prev.avgR;
+  const pipsDiff = hasPrev ? now.totalPips - prev.totalPips : null;
+  const nDiff = hasPrev ? now.n - prev.n : null;
 
   return (
     <section className="card space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-bold text-ink-mute">
-          {periodLabel} — 前の同じ長さの期間と比較
+          {hasPrev ? `${periodLabel} — 前の同じ長さの期間と比較` : periodLabel}
         </h2>
-        <span className="text-xs text-ink-mute">前回 n={prev.n}</span>
+        {hasPrev ? (
+          <span className="text-xs text-ink-mute">前回 n={prev.n}</span>
+        ) : (
+          <span className="text-xs text-ink-mute">比較対象の期間がありません</span>
+        )}
       </div>
 
       <div className="flex flex-wrap items-end gap-4">
@@ -84,23 +92,25 @@ export function PeriodCompare({
         >
           {formatYenSigned(now.totalPnlJpy)}
         </p>
-        <div className="flex items-center gap-2 pb-1.5">
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-              pnlTone === "up"
-                ? "bg-profit/10 text-profit"
-                : pnlTone === "down"
-                  ? "bg-loss/10 text-loss"
-                  : "bg-surface text-ink-mute"
-            }`}
-          >
-            {pnlTone === "up" ? "▲" : pnlTone === "down" ? "▼" : "±"} 前回比
-            {pnlPct === null ? " —" : ` ${signed(pnlPct, 0)}%`}
-          </span>
-          <span className="text-xs text-ink-mute">
-            （前回 {formatYenSigned(prev.totalPnlJpy)}）
-          </span>
-        </div>
+        {hasPrev && (
+          <div className="flex items-center gap-2 pb-1.5">
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                pnlTone === "up"
+                  ? "bg-profit/10 text-profit"
+                  : pnlTone === "down"
+                    ? "bg-loss/10 text-loss"
+                    : "bg-surface text-ink-mute"
+              }`}
+            >
+              {pnlTone === "up" ? "▲" : pnlTone === "down" ? "▼" : "±"} 前回比
+              {pnlPct === null ? " —" : ` ${signed(pnlPct, 0)}%`}
+            </span>
+            <span className="text-xs text-ink-mute">
+              （前回 {formatYenSigned(prev.totalPnlJpy)}）
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -135,13 +145,21 @@ export function PeriodCompare({
         <SubMetric
           label="合計pips"
           now={formatPips(now.totalPips)}
-          diff={signed(pipsDiff, 1)}
-          tone={pipsDiff > 0 ? "up" : pipsDiff < 0 ? "down" : "flat"}
+          diff={pipsDiff === null ? null : signed(pipsDiff, 1)}
+          tone={
+            pipsDiff === null
+              ? "neutral"
+              : pipsDiff > 0
+                ? "up"
+                : pipsDiff < 0
+                  ? "down"
+                  : "flat"
+          }
         />
         <SubMetric
           label="トレード数"
           now={`${now.n}件`}
-          diff={signed(nDiff, 0)}
+          diff={nDiff === null ? null : signed(nDiff, 0)}
           tone="neutral"
         />
       </div>

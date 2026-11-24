@@ -177,6 +177,21 @@ describe("統計", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("比較対象の期間が無くても、その期間の集計だけは出す", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(stats());
+    renderPage();
+    await screen.findAllByText("55.0%");
+    await userEvent.click(screen.getByRole("button", { name: "先月" }));
+    await screen.findAllByText("55.0%");
+    const heading = await screen.findByRole("heading", { name: "先月" });
+    const box = within(heading.closest("section")!);
+    expect(box.getByText("+¥12,000")).toBeInTheDocument();
+    expect(box.getByText("比較対象の期間がありません")).toBeInTheDocument();
+    expect(
+      box.queryByText(/前回比/),
+    ).not.toBeInTheDocument();
+  });
+
   it("日々の成長（損益）: 累積の折れ線と日ごとの棒を出す", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();

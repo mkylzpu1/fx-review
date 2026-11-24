@@ -112,10 +112,14 @@ export function StatsPage() {
         </div>
       )}
 
-      {data.closedCount > 0 && prevStats.data && prevStats.data.closedCount > 0 && (
+      {data.closedCount > 0 && period !== "all" && period !== "custom" && (
         <PeriodCompare
           now={s}
-          prev={prevStats.data.summary}
+          prev={
+            prevStats.data && prevStats.data.closedCount > 0
+              ? prevStats.data.summary
+              : null
+          }
           periodLabel={
             PERIODS.find((p) => p.value === period)?.label ?? period
           }
