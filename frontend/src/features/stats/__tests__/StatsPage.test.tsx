@@ -156,7 +156,7 @@ describe("統計", () => {
     expect(paths[0]).toContain("/stats");
   });
 
-  it("前の期間との比較を出し、期間「すべて」では出さない", async () => {
+  it("前の期間との比較を出す", async () => {
     vi.mocked(apiClient.get).mockImplementation(async (path: string) =>
       path.includes("to=")
         ? stats({ summary: { ...stats().summary, winRate: 40, n: 10 } })
@@ -170,26 +170,56 @@ describe("統計", () => {
     );
     expect(box.getByText("55.0%")).toBeInTheDocument();
     expect(box.getByText(/\+15\.0pt/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "すべて" }));
-    await screen.findAllByText("55.0%");
-    expect(
-      screen.queryByRole("heading", { name: /前の同じ長さの期間と比較/ }),
-    ).not.toBeInTheDocument();
   });
 
-  it("比較対象の期間が無くても、その期間の集計だけは出す", async () => {
+  it("先週・先月も、先々週・先々月と比較する", async () => {
     vi.mocked(apiClient.get).mockResolvedValue(stats());
     renderPage();
     await screen.findAllByText("55.0%");
-    await userEvent.click(screen.getByRole("button", { name: "先月" }));
-    await screen.findAllByText("55.0%");
-    const heading = await screen.findByRole("heading", { name: "先月" });
-    const box = within(heading.closest("section")!);
-    expect(box.getByText("+¥12,000")).toBeInTheDocument();
-    expect(box.getByText("比較対象の期間がありません")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "先週" }));
+    await screen.findByRole("heading", { name: /前の同じ長さの期間と比較/ });
     expect(
-      box.queryByText(/前回比/),
+      screen.queryByText("比較対象の期間がありません"),
     ).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "先月" }));
+    await screen.findByRole("heading", { name: /前の同じ長さの期間と比較/ });
+    expect(
+      screen.queryByText("比較対象の期間がありません"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("「すべて」は比較対象が無いが、その期間の集計は出す。プラス・マイナスは比較時と同じ色で示す", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue(
+      stats({
+        summary: {
+          ...stats().summary,
+          totalPnlJpy: -12000,
+          totalPips: -120.5,
+          avgR: -0.4,
+        },
+      }),
+    );
+    renderPage();
+    await screen.findAllByText("55.0%");
+    await userEvent.click(screen.getByRole("button", { name: "すべて" }));
+    await screen.findAllByText("55.0%");
+
+    const heading = await screen.findByRole("heading", { name: "すべて" });
+    const box = within(heading.closest("section")!);
+    expect(
+      screen.queryByRole("heading", { name: /前の同じ長さの期間と比較/ }),
+    ).not.toBeInTheDocument();
+    expect(box.getByText("比較対象の期間がありません")).toBeInTheDocument();
+    expect(box.queryByText(/前回比/)).not.toBeInTheDocument();
+
+    const pnl = box.getByText("−¥12,000");
+    expect(pnl).toHaveClass("text-loss");
+    const pips = box.getByText("−120.5 pips");
+    expect(pips).toHaveClass("text-loss");
+    const avgR = box.getByText("−0.40R");
+    expect(avgR).toHaveClass("text-loss");
   });
 
   it("損益: 累積の折れ線と日ごとの棒を出す", async () => {

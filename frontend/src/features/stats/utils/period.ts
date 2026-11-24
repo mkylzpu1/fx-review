@@ -91,23 +91,38 @@ export function customRange(
 
 /**
  * 比べる相手（直前の同じ長さの期間）。
- * 「すべて」「期間を指定」は比べられないのでnull。「先週」「先月」も、
- * すでに過去の1期間を見ているので比較は出さずnull。
+ * 「すべて」「期間を指定」は比べられないのでnull。
+ * 「先週」は先々週、「先月」は先々月と比較する。
  */
 export function previousPeriod(
   key: PeriodKey,
   now: Date = new Date(),
 ): { from: string; to: string } | null {
-  if (key === "all" || key === "custom" || key === "lastWeek" || key === "lastMonth") {
+  if (key === "all" || key === "custom") {
     return null;
   }
   if (key === "thisWeek") {
     const r = periodRange("lastWeek", now);
     return r.from && r.to ? { from: r.from, to: r.to } : null;
   }
+  if (key === "lastWeek") {
+    const { y, m, d, dow } = jstParts(now);
+    const thisWeekStart = d + mondayOffset(dow);
+    return {
+      from: jstDateToIso(y, m, thisWeekStart - 14),
+      to: jstDateToIso(y, m, thisWeekStart - 7),
+    };
+  }
   if (key === "month") {
     const r = periodRange("lastMonth", now);
     return r.from && r.to ? { from: r.from, to: r.to } : null;
+  }
+  if (key === "lastMonth") {
+    const { y, m } = jstParts(now);
+    return {
+      from: jstDateToIso(y, m - 2, 1),
+      to: jstDateToIso(y, m - 1, 1),
+    };
   }
 
   const from = periodFrom(key, now);

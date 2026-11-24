@@ -112,7 +112,7 @@ export function StatsPage() {
         </div>
       )}
 
-      {data.closedCount > 0 && period !== "all" && period !== "custom" && (
+      {data.closedCount > 0 && (
         <PeriodCompare
           now={s}
           prev={

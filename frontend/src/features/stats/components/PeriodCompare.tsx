@@ -4,6 +4,10 @@ import type { Summary } from "../types";
 const signed = (n: number, digits = 1) =>
   `${n > 0 ? "+" : n < 0 ? "−" : "±"}${Math.abs(n).toFixed(digits)}`;
 
+/** 比較相手が無いときの色づけ：値そのものの符号で、プラス=up・マイナス=down */
+const signTone = (v: number | null): "up" | "down" | "flat" | "neutral" =>
+  v === null ? "neutral" : v > 0 ? "up" : v < 0 ? "down" : "flat";
+
 function SubMetric({
   label,
   now,
@@ -24,7 +28,13 @@ function SubMetric({
   return (
     <div className="rounded-card border border-line bg-surface p-2.5">
       <p className="text-xs text-ink-mute">{label}</p>
-      <p className="num text-base font-bold">{now}</p>
+      <p
+        className={`num text-base font-bold ${
+          diff === null && tone !== "neutral" ? toneClass : ""
+        }`}
+      >
+        {now}
+      </p>
       {diff !== null && (
         <p className={`num text-xs ${toneClass}`}>
           {tone === "up" ? "▲" : tone === "down" ? "▼" : ""} {diff}
@@ -53,8 +63,13 @@ export function PeriodCompare({
     hasPrev && prev.totalPnlJpy !== 0 && pnlDiff !== null
       ? (pnlDiff / Math.abs(prev.totalPnlJpy)) * 100
       : null;
-  const pnlTone =
-    pnlDiff === null ? "neutral" : pnlDiff > 0 ? "up" : pnlDiff < 0 ? "down" : "flat";
+  const pnlTone = hasPrev
+    ? pnlDiff! > 0
+      ? "up"
+      : pnlDiff! < 0
+        ? "down"
+        : "flat"
+    : signTone(now.totalPnlJpy);
 
   const winRateDiff =
     !hasPrev || now.winRate === null || prev.winRate === null
@@ -64,7 +79,23 @@ export function PeriodCompare({
     !hasPrev || now.avgR === null || prev.avgR === null
       ? null
       : now.avgR - prev.avgR;
+  const avgRTone = hasPrev
+    ? avgRDiff === null
+      ? "neutral"
+      : avgRDiff > 0
+        ? "up"
+        : avgRDiff < 0
+          ? "down"
+          : "flat"
+    : signTone(now.avgR);
   const pipsDiff = hasPrev ? now.totalPips - prev.totalPips : null;
+  const pipsTone = hasPrev
+    ? pipsDiff! > 0
+      ? "up"
+      : pipsDiff! < 0
+        ? "down"
+        : "flat"
+    : signTone(now.totalPips);
   const nDiff = hasPrev ? now.n - prev.n : null;
 
   return (
@@ -132,29 +163,13 @@ export function PeriodCompare({
           label="平均R"
           now={formatR(now.avgR)}
           diff={avgRDiff === null ? null : signed(avgRDiff, 2)}
-          tone={
-            avgRDiff === null
-              ? "neutral"
-              : avgRDiff > 0
-                ? "up"
-                : avgRDiff < 0
-                  ? "down"
-                  : "flat"
-          }
+          tone={avgRTone}
         />
         <SubMetric
           label="合計pips"
           now={formatPips(now.totalPips)}
           diff={pipsDiff === null ? null : signed(pipsDiff, 1)}
-          tone={
-            pipsDiff === null
-              ? "neutral"
-              : pipsDiff > 0
-                ? "up"
-                : pipsDiff < 0
-                  ? "down"
-                  : "flat"
-          }
+          tone={pipsTone}
         />
         <SubMetric
           label="トレード数"

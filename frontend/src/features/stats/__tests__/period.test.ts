@@ -51,13 +51,30 @@ describe("periodFrom", () => {
     });
   });
 
-  it("今週の比較相手は先週、先週・先月自体は比較なし", () => {
+  it("今週の比較相手は先週、先週の比較相手は先々週", () => {
     expect(previousPeriod("thisWeek", now)).toEqual({
       from: "2026-10-11T15:00:00.000Z",
       to: "2026-10-18T15:00:00.000Z",
     });
-    expect(previousPeriod("lastWeek", now)).toBeNull();
-    expect(previousPeriod("lastMonth", now)).toBeNull();
+    expect(previousPeriod("lastWeek", now)).toEqual({
+      from: "2026-10-04T15:00:00.000Z",
+      to: "2026-10-11T15:00:00.000Z",
+    });
+  });
+
+  it("今月の比較相手は先月、先月の比較相手は先々月", () => {
+    expect(previousPeriod("month", now)).toEqual({
+      from: "2026-08-31T15:00:00.000Z",
+      to: "2026-09-30T15:00:00.000Z",
+    });
+    expect(previousPeriod("lastMonth", now)).toEqual({
+      from: "2026-07-31T15:00:00.000Z",
+      to: "2026-08-31T15:00:00.000Z",
+    });
+  });
+
+  it("「すべて」「期間を指定」は比較なし", () => {
+    expect(previousPeriod("all", now)).toBeNull();
     expect(previousPeriod("custom", now)).toBeNull();
   });
 
