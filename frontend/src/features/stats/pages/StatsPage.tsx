@@ -5,13 +5,12 @@ import { InfoTip } from "@/components/common/InfoTip";
 import { ErrorAlert } from "@/components/common/ErrorAlert";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ROUTES } from "@/constants/routes";
-import { formatPips, formatR, formatYenSigned } from "@/utils/format";
+import { formatR } from "@/utils/format";
 import { CumulativeChart } from "../components/CumulativeChart";
 import { DailyGrowthChart } from "../components/DailyGrowthChart";
 import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
 import { RHistogramChart } from "../components/RHistogramChart";
-import { TodayStatus } from "../components/TodayStatus";
 import { PeriodCompare } from "../components/PeriodCompare";
 import {
   type CustomDateRange,
@@ -72,14 +71,7 @@ export function StatsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">統計</h1>
-        <Link className="btn" to={ROUTES.STATS_WEEKLY}>
-          週次レビュー
-        </Link>
-      </div>
-
-      <TodayStatus />
+      <h1 className="text-xl font-bold">統計</h1>
 
       <div role="group" aria-label="期間" className="flex flex-wrap gap-2">
         {PERIODS.map((p) => (
@@ -159,10 +151,6 @@ export function StatsPage() {
               note={`R計算 n=${s.rCount}`}
             />
             <Metric label="最大連敗" value={`${s.maxLossStreak}連敗`} />
-            <Metric label="合計pips" value={formatPips(s.totalPips)} />
-            <Metric label="合計損益" value={formatYenSigned(s.totalPnlJpy)} />
-            <Metric label="累積R" value={formatR(s.totalR)} />
-            <Metric label="R未計算" value={`${s.rMissing}件`} note="SLなし" />
           </div>
 
           <InsightList insights={data.insights} summary={s} />
