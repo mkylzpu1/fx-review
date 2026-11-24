@@ -121,6 +121,8 @@ export interface StatsResult {
   /** 古いAPIでは無いことがある */
   hourPnl?: GroupPnlStat[];
   /** 古いAPIでは無いことがある */
+  weekdayPnl?: GroupPnlStat[];
+  /** 古いAPIでは無いことがある */
   confidencePnl?: GroupPnlStat[];
   insights: Insight[];
   closedCount: number;

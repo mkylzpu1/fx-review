@@ -320,6 +320,19 @@ export function StatsPage() {
               </section>
             )}
 
+            {data.weekdayPnl && data.weekdayPnl.length > 0 && (
+              <section className="card min-w-0 space-y-2">
+                <h2 className="flex items-center gap-2 text-base font-bold">
+                  曜日別の損益と勝率
+                  <InfoTip label="曜日別の損益と勝率とは">
+                    トレードした曜日ごとの合計損益（棒）と勝率（線・右軸）です。
+                    月〜金を先頭に、土日は後ろに並べています。
+                  </InfoTip>
+                </h2>
+                <GroupPnlChart groups={data.weekdayPnl} />
+              </section>
+            )}
+
             {data.confidencePnl && data.confidencePnl.length > 0 && (
               <section className="card min-w-0 space-y-2">
                 <h2 className="flex items-center gap-2 text-base font-bold">
