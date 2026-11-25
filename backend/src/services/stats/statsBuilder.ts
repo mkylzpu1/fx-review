@@ -147,12 +147,12 @@ const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 /** 曜日×時間帯ヒートマップの時間帯区切り（4時間刻み） */
 const HOUR_BANDS4 = [
-  { key: "0", label: "0-4時", start: 0, end: 4 },
-  { key: "4", label: "4-8時", start: 4, end: 8 },
-  { key: "8", label: "8-12時", start: 8, end: 12 },
-  { key: "12", label: "12-16時", start: 12, end: 16 },
-  { key: "16", label: "16-20時", start: 16, end: 20 },
-  { key: "20", label: "20-24時", start: 20, end: 24 },
+  { key: "0", label: "0時〜", start: 0, end: 4 },
+  { key: "4", label: "4時〜", start: 4, end: 8 },
+  { key: "8", label: "8時〜", start: 8, end: 12 },
+  { key: "12", label: "12時〜", start: 12, end: 16 },
+  { key: "16", label: "16時〜", start: 16, end: 20 },
+  { key: "20", label: "20時〜", start: 20, end: 24 },
 ];
 
 function hourBandKeyOf(hour: number): string {

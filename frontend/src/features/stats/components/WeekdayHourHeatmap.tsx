@@ -34,16 +34,16 @@ export function WeekdayHourHeatmap({ cells }: Props) {
   return (
     <div className="space-y-2">
       <div
-        className="grid gap-[3px]"
+        className="mx-auto grid max-w-[320px] gap-[2px]"
         style={{
-          gridTemplateColumns: `3rem repeat(${bandOrder.length}, 1fr)`,
+          gridTemplateColumns: `2rem repeat(${bandOrder.length}, 1fr)`,
         }}
       >
         <div />
         {bandOrder.map((b) => (
           <div
             key={b}
-            className="text-center text-[10px] text-ink-mute"
+            className="truncate text-center text-[9px] text-ink-mute"
           >
             {bandLabels.get(b)}
           </div>
@@ -52,7 +52,7 @@ export function WeekdayHourHeatmap({ cells }: Props) {
           const label = cells.find((c) => c.weekday === wd)?.weekdayLabel ?? wd;
           return (
             <Fragment key={wd}>
-              <div className="flex items-center text-xs text-ink-sub">
+              <div className="flex items-center text-[11px] text-ink-sub">
                 {label}
               </div>
               {bandOrder.map((b) => {

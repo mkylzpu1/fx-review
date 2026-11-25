@@ -323,7 +323,7 @@ export function StatsPage() {
 
             {data.weekdayHourHeatmap &&
               data.weekdayHourHeatmap.some((c) => c.n > 0) && (
-                <section className="card min-w-0 space-y-2 sm:col-span-2">
+                <section className="card min-w-0 space-y-2">
                   <h2 className="flex items-center gap-2 text-base font-bold">
                     曜日×時間帯の勝率ヒートマップ
                     <InfoTip label="曜日×時間帯の勝率ヒートマップとは">
