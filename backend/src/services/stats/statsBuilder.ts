@@ -9,6 +9,7 @@ import {
   dailySeries,
   groupBy,
   groupByPnl,
+  heatmap,
   hourInZone,
   maxDrawdown,
   rHistogram,
@@ -20,6 +21,7 @@ import {
   type Drawdown,
   type GroupPnlStat,
   type GroupStat,
+  type HeatmapCell,
   type RHistogramBin,
   type StatTrade,
   type Summary,
@@ -74,6 +76,8 @@ export interface StatsResult {
   hourPnl: GroupPnlStat[];
   /** 曜日別の損益・勝率 */
   weekdayPnl: GroupPnlStat[];
+  /** 曜日×時間帯（4時間刻み）ごとの件数・勝率・損益のマス目（7曜日×6時間帯=42セル、常に全セル返す） */
+  weekdayHourHeatmap: HeatmapCell[];
   /** 確信度別の損益・勝率 */
   confidencePnl: GroupPnlStat[];
   insights: Insight[];
@@ -140,6 +144,20 @@ function toInsights(axis: Insight["axis"], groups: GroupStat[]): Insight[] {
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 /** 月〜金を先頭に、土日は後ろ */
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+/** 曜日×時間帯ヒートマップの時間帯区切り（4時間刻み） */
+const HOUR_BANDS4 = [
+  { key: "0", label: "0-4時", start: 0, end: 4 },
+  { key: "4", label: "4-8時", start: 4, end: 8 },
+  { key: "8", label: "8-12時", start: 8, end: 12 },
+  { key: "12", label: "12-16時", start: 12, end: 16 },
+  { key: "16", label: "16-20時", start: 16, end: 20 },
+  { key: "20", label: "20-24時", start: 20, end: 24 },
+];
+
+function hourBandKeyOf(hour: number): string {
+  return HOUR_BANDS4.find((b) => hour >= b.start && hour < b.end)?.key ?? "0";
+}
 
 const HOLDING_BANDS = [
   { key: "lt5", label: "5分未満", max: 5 },
@@ -284,6 +302,19 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     })),
   );
 
+  const weekdayHourHeatmap = heatmap(
+    rows.map((r) => ({
+      ...r,
+      rowKey: String(r.weekday),
+      colKey: hourBandKeyOf(r.hour),
+    })),
+    WEEKDAY_ORDER.map((d) => ({
+      key: String(d),
+      label: `${WEEKDAY_LABELS[d]}曜`,
+    })),
+    HOUR_BANDS4.map((b) => ({ key: b.key, label: b.label })),
+  );
+
   const confidencePnl = groupByPnl(
     rows,
     (r) => (r.confidence === null ? [UNSET_KEY] : [String(r.confidence)]),
@@ -315,6 +346,7 @@ export function buildStats(views: TradeView[], timezone: string): StatsResult {
     sessionPnl,
     hourPnl,
     weekdayPnl,
+    weekdayHourHeatmap,
     confidencePnl,
     insights: [
       ...toInsights("session", bySession),

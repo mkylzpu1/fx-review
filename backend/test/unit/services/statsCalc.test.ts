@@ -5,6 +5,7 @@ import {
   dateInZone,
   groupBy,
   groupByPnl,
+  heatmap,
   hourInZone,
   judgeGroup,
   currentLossStreak,
@@ -274,3 +275,34 @@ describe("groupByPnl（損益・勝率は全件、Rの有無を問わない）",
 function round2(v: number): number {
   return Math.round(v * 10000) / 10000;
 }
+
+describe("heatmap（行×列のマス目を常に全セル返す）", () => {
+  it("件数0のマスもwinRate=null, n=0で含める", () => {
+    const trades = [t(1, 10, null, 100), t(2, -5, null, -50)].map((tr, i) => ({
+      ...tr,
+      rowKey: i === 0 ? "mon" : "tue",
+      colKey: "am",
+    }));
+    const cells = heatmap(
+      trades,
+      [
+        { key: "mon", label: "月曜" },
+        { key: "tue", label: "火曜" },
+      ],
+      [{ key: "am", label: "午前" }],
+    );
+    expect(cells).toHaveLength(2);
+    expect(cells[0]).toEqual({
+      weekday: "mon",
+      weekdayLabel: "月曜",
+      band: "am",
+      bandLabel: "午前",
+      n: 1,
+      wins: 1,
+      winRate: 1,
+      pnlJpy: 100,
+      pips: 10,
+    });
+    expect(cells[1].winRate).toBe(0);
+  });
+});

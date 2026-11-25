@@ -404,3 +404,52 @@ export function groupByPnl<T extends StatTrade>(
     })
     .filter((g) => g.n > 0);
 }
+
+export interface HeatmapCell {
+  weekday: string;
+  weekdayLabel: string;
+  band: string;
+  bandLabel: string;
+  n: number;
+  wins: number;
+  winRate: number | null;
+  pnlJpy: number;
+  pips: number;
+}
+
+export interface HeatmapAxisLabel {
+  key: string;
+  label: string;
+}
+
+/**
+ * 曜日×時間帯のマス目ごとに、件数・勝率・損益を集計する（根拠タグ等と同じく全件・Rの有無を問わない）。
+ * rowKeyOf/rowLabels が縦軸（曜日）、colKeyOf/colLabels が横軸（時間帯の区切り）。
+ * すべてのマスを返す（件数0でも「—」として表示できるように、フィルタしない）。
+ */
+export function heatmap<T extends StatTrade & { rowKey: string; colKey: string }>(
+  trades: T[],
+  rowLabels: HeatmapAxisLabel[],
+  colLabels: HeatmapAxisLabel[],
+): HeatmapCell[] {
+  const cells: HeatmapCell[] = [];
+  for (const row of rowLabels) {
+    for (const col of colLabels) {
+      const ts = trades.filter((t) => t.rowKey === row.key && t.colKey === col.key);
+      const n = ts.length;
+      const wins = ts.filter((t) => (t.pips ?? 0) > 0).length;
+      cells.push({
+        weekday: row.key,
+        weekdayLabel: row.label,
+        band: col.key,
+        bandLabel: col.label,
+        n,
+        wins,
+        winRate: n === 0 ? null : round(wins / n, 4),
+        pnlJpy: round(sum(ts.map((t) => t.pnlJpy ?? 0)), 0),
+        pips: round(sum(ts.map((t) => t.pips ?? 0)), 1),
+      });
+    }
+  }
+  return cells;
+}
