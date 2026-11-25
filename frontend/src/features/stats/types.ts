@@ -82,6 +82,19 @@ export interface RHistogramBin {
   count: number;
 }
 
+/** 曜日×時間帯のマス目1つ分（勝率ヒートマップ用）。件数0のマスも含む */
+export interface HeatmapCell {
+  weekday: string;
+  weekdayLabel: string;
+  band: string;
+  bandLabel: string;
+  n: number;
+  wins: number;
+  winRate: number | null;
+  pnlJpy: number;
+  pips: number;
+}
+
 /** 区分ごとの損益・pips・勝率（Rの有無を問わず全件で集計） */
 export interface GroupPnlStat {
   key: string;
@@ -122,6 +135,8 @@ export interface StatsResult {
   hourPnl?: GroupPnlStat[];
   /** 古いAPIでは無いことがある */
   weekdayPnl?: GroupPnlStat[];
+  /** 古いAPIでは無いことがある */
+  weekdayHourHeatmap?: HeatmapCell[];
   /** 古いAPIでは無いことがある */
   confidencePnl?: GroupPnlStat[];
   insights: Insight[];

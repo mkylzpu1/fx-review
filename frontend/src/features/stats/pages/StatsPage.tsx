@@ -13,6 +13,7 @@ import { GroupTable } from "../components/GroupTable";
 import { InsightList } from "../components/InsightList";
 import { RHistogramChart } from "../components/RHistogramChart";
 import { TimeBandPnlChart } from "../components/TimeBandPnlChart";
+import { WeekdayHourHeatmap } from "../components/WeekdayHourHeatmap";
 import { PeriodCompare } from "../components/PeriodCompare";
 import { usePreviousStats, useStats } from "../hooks/useStats";
 import type { PeriodKey } from "../types";
@@ -319,6 +320,21 @@ export function StatsPage() {
                 />
               </section>
             )}
+
+            {data.weekdayHourHeatmap &&
+              data.weekdayHourHeatmap.some((c) => c.n > 0) && (
+                <section className="card min-w-0 space-y-2 sm:col-span-2">
+                  <h2 className="flex items-center gap-2 text-base font-bold">
+                    曜日×時間帯の勝率ヒートマップ
+                    <InfoTip label="曜日×時間帯の勝率ヒートマップとは">
+                      曜日（縦）と4時間刻みの時間帯（横）のマスごとの勝率を色の濃さで示します。
+                      緑が濃いほど勝率が高く、赤が濃いほど低いことを表します。時間はすべて日本時間です。
+                      件数が少ないマスは数字が極端になりやすいので、各マスのnも確認してください。
+                    </InfoTip>
+                  </h2>
+                  <WeekdayHourHeatmap cells={data.weekdayHourHeatmap} />
+                </section>
+              )}
 
             {data.weekdayPnl && data.weekdayPnl.length > 0 && (
               <section className="card min-w-0 space-y-2">
