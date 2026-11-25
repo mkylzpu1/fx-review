@@ -22,21 +22,24 @@ function cellStyle(winRate: number | null): React.CSSProperties {
  * 件数が少ないマスの色だけで判断しないようにする。件数0のマスは「—」。
  */
 export function WeekdayHourHeatmap({ cells }: Props) {
-  const [hover, setHover] = useState<string | null>(null);
+  const [hover, setHover] = useState<{ key: string; col: number } | null>(
+    null,
+  );
   if (cells.length === 0) return null;
 
   const bandOrder = [...new Set(cells.map((c) => c.band))];
   const bandLabels = new Map(cells.map((c) => [c.band, c.bandLabel]));
   const weekdayOrder = [...new Set(cells.map((c) => c.weekday))];
   const byKey = new Map(cells.map((c) => [`${c.weekday}:${c.band}`, c]));
-  const hc = hover ? byKey.get(hover) : null;
+  const hc = hover ? byKey.get(hover.key) : null;
+  const nCols = bandOrder.length;
 
   return (
-    <div className="space-y-2">
+    <div className="relative space-y-2">
       <div
         className="mx-auto grid max-w-[320px] gap-[2px]"
         style={{
-          gridTemplateColumns: `2rem repeat(${bandOrder.length}, 1fr)`,
+          gridTemplateColumns: `2rem repeat(${nCols}, 1fr)`,
         }}
       >
         <div />
@@ -55,17 +58,21 @@ export function WeekdayHourHeatmap({ cells }: Props) {
               <div className="flex items-center text-[11px] text-ink-sub">
                 {label}
               </div>
-              {bandOrder.map((b) => {
+              {bandOrder.map((b, col) => {
                 const cell = byKey.get(`${wd}:${b}`);
                 const key = `${wd}:${b}`;
                 return (
                   <button
                     key={key}
                     type="button"
-                    onMouseEnter={() => setHover(key)}
-                    onMouseLeave={() => setHover((h) => (h === key ? null : h))}
-                    onFocus={() => setHover(key)}
-                    onBlur={() => setHover((h) => (h === key ? null : h))}
+                    onMouseEnter={() => setHover({ key, col })}
+                    onMouseLeave={() =>
+                      setHover((h) => (h?.key === key ? null : h))
+                    }
+                    onFocus={() => setHover({ key, col })}
+                    onBlur={() =>
+                      setHover((h) => (h?.key === key ? null : h))
+                    }
                     style={cellStyle(cell?.winRate ?? null)}
                     className="flex aspect-square min-w-0 items-center justify-center rounded bg-tag text-[10px] font-medium text-ink"
                   >
@@ -90,18 +97,40 @@ export function WeekdayHourHeatmap({ cells }: Props) {
         <span>勝率高い</span>
       </div>
 
-      {hc && (
-        <p className="text-xs text-ink-mute">
-          {hc.weekdayLabel}・{hc.bandLabel}：
+      {hc && hover && (
+        <div
+          role="status"
+          className="pointer-events-none absolute top-1 z-10 w-44 rounded-btn border border-line bg-surface px-3 py-2 text-xs shadow-lg"
+          style={
+            hover.col / nCols > 0.6
+              ? { right: `${(1 - (hover.col + 1) / nCols) * 100 + 2}%` }
+              : { left: `${(hover.col / nCols) * 100 + 2}%` }
+          }
+        >
+          <p className="font-bold text-ink">
+            {hc.weekdayLabel}・{hc.bandLabel}
+          </p>
           {hc.n === 0 ? (
-            "トレードなし"
+            <p className="mt-1 text-ink-sub">トレードなし</p>
           ) : (
             <>
-              勝率{Math.round((hc.winRate ?? 0) * 100)}%（n={hc.n}）、損益
-              {formatYenSigned(hc.pnlJpy)}
+              <p className="mt-1 flex justify-between gap-2">
+                <span className="text-ink-sub">勝率</span>
+                <span className="num font-bold">
+                  {Math.round((hc.winRate ?? 0) * 100)}%
+                </span>
+              </p>
+              <p className="flex justify-between gap-2">
+                <span className="text-ink-sub">損益</span>
+                <span className="num">{formatYenSigned(hc.pnlJpy)}</span>
+              </p>
+              <p className="flex justify-between gap-2">
+                <span className="text-ink-sub">件数</span>
+                <span className="num">n={hc.n}</span>
+              </p>
             </>
           )}
-        </p>
+        </div>
       )}
 
       <p className="text-xs text-ink-mute">
